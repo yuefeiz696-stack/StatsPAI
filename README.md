@@ -124,10 +124,24 @@ StatsPAI's focus is **causal inference** — and on this axis we aim to be the m
 
 ---
 
-**📦 v1.14.0 (2026-05-04) — External-validity dossier + cold-start surgery**
+**📦 v1.13.1 (2026-05-05) — Stability tiers + external-validity dossier + cold-start surgery**
 
-v1.14 ships a 36-module R parity harness (`tests/r_parity/`), a 21-module
-Stata parity harness (`tests/stata_parity/`), 4 canonical-dataset
+v1.13 stamps every `FunctionSpec` with a `stability` tier (`stable` /
+`experimental` / `deprecated`) plus per-function `limitations`,
+surfaced through `sp.describe_function`, `sp.list_functions(stability=...)`,
+the `statspai list` CLI, and the LLM-facing `sp.function_schema`;
+`sp.recommend` / `sp.causal` / `sp.paper` default to dropping
+`experimental` / `deprecated` entries unless `allow_experimental=True`
+is passed. Eight high-impact estimators (`aipw`, `aggte`,
+`pretrends_test`, `sensitivity_rr`, `mccrary_test`, `oster_bounds`,
+`wild_cluster_bootstrap`, `rd_honest`) are upgraded from
+auto-registered stubs to hand-written specs. A weak-instrument
+preflight gate in `sp.preflight(... "ivreg", formula=...)` flags
+first-stage F below the Staiger–Stock (1997) / Stock–Yogo (2005)
+thresholds, and `sp.recommend(... design='iv')` adaptively reorders
+LIML / AR ahead of 2SLS on weak first stages. v1.13 also ships a
+36-module R parity harness (`tests/r_parity/`), a 21-module Stata
+parity harness (`tests/stata_parity/`), 4 canonical-dataset
 original-paper replays (Card 1995, Callaway–Sant'Anna `mpdta`, Abadie
 Basque, LaLonde NSW + PSID-1 — all bit-equal to the published headline
 numbers), a Track-C performance harness (HDFE / CS-DiD / SCM / DML
@@ -145,7 +159,7 @@ submodules (down from 245). **⚠️ Correctness fix** —
 `sp.callaway_santanna(method='reg')` had a latent influence-function
 scaling bug; `'ipw'` and `'dr'` are unchanged but **re-run any
 v1.10–v1.13 CS-DiD analyses that used `method='reg'`**. Full notes in
-[`CHANGELOG.md`](CHANGELOG.md) under `[1.14.0]`.
+[`CHANGELOG.md`](CHANGELOG.md) under `[1.13.1]`.
 
 **📦 v1.12.2 (2026-05-01) — ML routing for `sp.causal_question` + shared robustness battery + weighted PLIV/IIVM**
 
@@ -1250,7 +1264,7 @@ resolves to the latest version):
   author       = {Wang, Biaoyue},
   title        = {StatsPAI: The Agent-Native Causal Inference \& Econometrics Toolkit for Python},
   year         = {2026},
-  version      = {1.14.0},
+  version      = {1.13.1},
   doi          = {10.5281/zenodo.19933900},
   url          = {https://doi.org/10.5281/zenodo.19933900},
   license      = {MIT},

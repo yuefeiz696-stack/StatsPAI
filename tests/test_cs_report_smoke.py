@@ -141,8 +141,8 @@ def test_breakdown_M_all_strictly_positive(demo_report):
     assert (demo_report.breakdown["breakdown_M_star"] > 0).all()
     # Most event times should remain robust at one SE on this DGP.
     # We allow at most one boundary event-time to fall short because
-    # the v1.14 simple-ATT influence-function scaling fix
-    # (CHANGELOG ## [1.14.0]) made the SEs larger and therefore
+    # the v1.13 simple-ATT influence-function scaling fix
+    # (CHANGELOG ## [1.13.1]) made the SEs larger and therefore
     # makes the m_star >= se criterion stricter.  Pre-fix this
     # assertion was `.all()`; post-fix the right contract is
     # "essentially all".

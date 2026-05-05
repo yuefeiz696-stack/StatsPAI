@@ -10,9 +10,9 @@ numerical change) or to revert the behavioural drift.
 The fixtures are checked to 4 decimal places so bit-level floating-point
 differences across BLAS backends do not cause spurious failures.
 
-History note (CHANGELOG ``[1.14.0]``): the SEs in ``PINNED_ATT_GT``,
+History note (CHANGELOG ``[1.13.1]``): the SEs in ``PINNED_ATT_GT``,
 ``PINNED_EVENT_STUDY``, and the overall-ATT SE in
-``test_overall_att_matches_pinned`` were re-pinned in v1.14 to absorb
+``test_overall_att_matches_pinned`` were re-pinned in v1.13 to absorb
 the simple-ATT influence-function scaling fix
 (``Fix CS-DiD parity inference``).  Each group-time IF is now
 multiplied by ``n_total / n_relevant`` when embedded in the full unit
@@ -59,7 +59,7 @@ def cs_fixture():
 
 # (group, time) -> (att, se).  Generated from the current implementation.
 PINNED_ATT_GT = {
-    # Re-pinned 2026-05-05 after the v1.14 simple-ATT IF-scaling fix.
+    # Re-pinned 2026-05-05 after the v1.13 simple-ATT IF-scaling fix.
     # ATT point estimates unchanged; SEs grew by the
     # n_total/n_relevant correction.
     (3, 1): (-0.583666, 0.552161),
@@ -102,7 +102,7 @@ def test_att_gt_matches_pinned_values(cs_fixture):
 
 def test_overall_att_matches_pinned(cs_fixture):
     assert cs_fixture.estimate == pytest.approx(1.282166, abs=1e-4)
-    # SE re-pinned to 0.289142 (was 0.101724 pre-v1.14) following the
+    # SE re-pinned to 0.289142 (was 0.101724 pre-v1.13) following the
     # simple-ATT IF-scaling fix; see module docstring.
     assert cs_fixture.se == pytest.approx(0.289142, abs=1e-4)
 
@@ -112,7 +112,7 @@ def test_overall_att_matches_pinned(cs_fixture):
 # --------------------------------------------------------------------------- #
 
 PINNED_EVENT_STUDY = {
-    # Re-pinned 2026-05-05 after the v1.14 simple-ATT IF-scaling fix.
+    # Re-pinned 2026-05-05 after the v1.13 simple-ATT IF-scaling fix.
     -6: (0.082153,  0.602161),
     -5: (0.284830,  0.536783),
     -4: (0.135512,  0.419463),

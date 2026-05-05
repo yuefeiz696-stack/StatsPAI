@@ -2,7 +2,64 @@
 
 All notable changes to StatsPAI will be documented in this file.
 
-## [Unreleased]
+## [1.13.1] — 2026-05-05
+
+### Headline
+
+Stability tiers, external-validity dossier, and cold-start surgery in a
+single release. Every `FunctionSpec` now carries a `stability` field
+plus per-function `limitations`, surfaced through
+`sp.describe_function`, `sp.help`, `sp.list_functions(stability=...)`,
+the `statspai list` CLI, and the LLM-facing `sp.function_schema`
+description; `sp.recommend` / `sp.causal` / `sp.paper` default to
+dropping `experimental` / `deprecated` entries unless
+`allow_experimental=True` is passed — closing a path where an agent
+could silently land on a frontier MVP. Eight high-impact estimators
+(`aipw`, `aggte`, `pretrends_test`, `sensitivity_rr`, `mccrary_test`,
+`oster_bounds`, `wild_cluster_bootstrap`, `rd_honest`) are upgraded
+from auto-registered stubs to hand-written specs with full assumption
+/ failure-mode / alternative metadata. A weak-instrument preflight
+gate in `sp.preflight(data, "ivreg", formula=...)` raises a structured
+`warning` row when the first-stage F falls below the Staiger–Stock
+(1997) or Stock–Yogo (2005) thresholds, and `sp.recommend(...
+design='iv')` adaptively reorders LIML / AR ahead of 2SLS on weak
+first stages. A 36-module R parity harness, 21-module Stata parity
+harness, 4-dataset original-paper replay (Card 1995, Callaway–Sant'Anna
+`mpdta`, Abadie Basque, LaLonde NSW + PSID-1), Track-C performance
+harness (HDFE / CS-DiD / SCM / DML log-log scaling), B=1000
+Monte-Carlo coverage run, and a 900-trial CausalAgentBench prompt
+suite all ship under `tests/r_parity/`, `tests/stata_parity/`,
+`tests/orig_parity/`, `tests/perf/`, and `tests/agent_bench/` with
+paired R/Python/Stata drivers, JSON results, and 3-way Markdown +
+LaTeX parity tables suitable for direct paper inclusion. A new
+`sp.validation_report()` / `sp.coverage_matrix()` /
+`sp.reproduce_jss_tables()` meta-API summarises the live registry,
+materialises the parity / coverage / agent-bench artifacts as JSON,
+and optionally re-runs the harnesses end-to-end so referees can
+verify StatsPAI's external-validity claims without leaving Python.
+Cold-start surgery in three steps brings sklearn submodules pulled by
+`import statspai` from 245 to **0** (`statspai.forest` lazy-loaded —
+Step 1B; 18 estimator files import sklearn lazily inside function
+bodies — Step 1C; HAL TMLE classes drop sklearn class inheritance —
+Step 1D), pinned by a new
+`test_sklearn_budget_ceiling_on_bare_import_statspai` contract. The
+workflow / paper orchestration layer replaces silent `except: pass`
+paths with `WorkflowDegradedWarning` + structured `degradations`
+records on the result object, so optional-stage failures surface in
+`PaperDraft.to_dict()` and the rendered `Pipeline notes` section
+instead of disappearing. `sp.principal_strat(instrument=...)` ships a
+proper Angrist-Imbens-Rubin Wald-LATE estimator (the kwarg was
+previously stubbed); `sp.hal_tmle(variant='projection')` keeps its
+`NotImplementedError` but now points at a written-out RFC
+(`docs/rfc/hal_tmle_projection.md`) instead of raising in silence.
+Lazy-loading of optional families via `__getattr__` keeps `import
+statspai` fast without breaking same-name function/subpackage
+collisions (`bartik`, `deepiv`, `proximal`, …) — pinned by a
+late-bind / post-import-shadow contract test and a committed
+`__init__.pyi` stub generator so IDE / mypy see lazy-loaded names. A
+latent Callaway–Sant'Anna REG inference scaling bug — discovered
+*because* the parity harness flagged it — is fixed in
+`did/callaway_santanna.py`.
 
 ### Added
 
@@ -30,42 +87,12 @@ All notable changes to StatsPAI will be documented in this file.
   Stock–Yogo threshold. The 2SLS row now also carries
   `first_stage_F` as a numeric field so downstream tooling can
   consume it without regex.
-- **Tests.** `tests/test_preflight.py` adds
+- **Preflight / recommend tests.** `tests/test_preflight.py` adds
   `TestIVFirstStageStrength` (6 cases covering strong / weak /
   borderline / non-IV / missing-columns / JSON-safe payloads).
   `tests/test_smart_workflow.py::TestRecommend` adds two cases
   pinning the 2SLS-first ordering on strong instruments and the
   LIML-first / AR-included ordering on weak instruments.
-
-## [1.14.0] — 2026-05-04
-
-### Headline
-
-External-validity dossier and cold-start surgery. v1.14 adds a 36-module
-R parity harness, a 21-module Stata parity harness, a 4-dataset
-original-paper replay (Card 1995, Callaway–Sant'Anna `mpdta`, Abadie
-Basque, LaLonde NSW + PSID-1), a Track-C performance harness (HDFE /
-CS-DiD / SCM / DML log-log scaling), a B=1000 Monte-Carlo coverage run
-on `tests/coverage_monte_carlo/`, and a 900-trial CausalAgentBench
-prompt suite — all committed under `tests/r_parity/`,
-`tests/stata_parity/`, `tests/orig_parity/`, `tests/perf/`, and
-`tests/agent_bench/` with paired R/Python/Stata drivers, JSON results,
-and 3-way Markdown + LaTeX parity tables suitable for direct paper
-inclusion. A new `sp.validation_report()` / `sp.coverage_matrix()` /
-`sp.reproduce_jss_tables()` meta-API summarises the live registry,
-materialises the parity / coverage / agent-bench artifacts as JSON, and
-optionally re-runs the harnesses end-to-end so referees can verify
-StatsPAI's external-validity claims without leaving Python. Cold-start
-work continues in three steps: `statspai.forest` is lazy-loaded (Step
-1B), 18 estimator files now import sklearn lazily inside function
-bodies (Step 1C), and the HAL TMLE classes drop sklearn class
-inheritance entirely (Step 1D). The combined effect is **0 sklearn
-submodules** loaded by `import statspai` (down from 245), pinned by a
-new `test_sklearn_budget_ceiling_on_bare_import_statspai` contract.
-A latent Callaway–Sant'Anna REG inference scaling bug — discovered
-*because* the parity harness flagged it — is fixed in `did/callaway_santanna.py`.
-
-### Added
 
 - **R parity harness — 36 paired R/Python modules.** New
   `tests/r_parity/` ships 36 paired scripts (one R, one Python) that
@@ -152,163 +179,7 @@ A latent Callaway–Sant'Anna REG inference scaling bug — discovered
   in dependency order with timing + return codes recorded per
   step. The default mode is metadata-only (no R / Stata / LaTeX
   required), so `import statspai as sp; print(sp.validation_report().summary())`
-  works on a stock `pip install statspai==1.14.0` install.
-
-### Changed
-
-- **Cold-start: lazy-load `statspai.forest` (Step 1B).** `import
-  statspai` previously chained
-  ``from .forest.causal_forest import CausalForest, causal_forest`` plus
-  three sibling eager imports for `forest_inference` /
-  `multi_arm_forest` / `iv_forest` at module load, transitively pulling
-  ~245 `sklearn.*` submodules into `sys.modules` (~270 ms cumulative on
-  cold cache) for every session — even ones that never touch
-  heterogeneous-effect forests. The four eager lines are removed; the
-  ten public leaves (`CausalForest`, `causal_forest`,
-  `calibration_test`, `test_calibration`, `rate`, `honest_variance`,
-  `multi_arm_forest`, `MultiArmForestResult`, `iv_forest`,
-  `IVForestResult`) now resolve via `_LAZY_ATTRS` keyed to dotted
-  submodule paths (e.g. `forest.causal_forest`) and fault in on first
-  `sp.<name>` access. `forest` does not collide with a top-level function
-  (no `sp.forest` callable export) so the standard lazy path is safe;
-  `sp.causal`'s callable shim and the `statspai.causal` deprecation
-  shim continue to work unchanged. Pinned by three new contracts in
-  `tests/test_late_bind_contracts.py` — `import statspai` must not
-  pre-load any `statspai.forest.*` submodule (subprocess-isolated to
-  avoid `sys.modules` pollution that would corrupt downstream
-  `isinstance` checks); each of the 10 forest leaves must resolve to a
-  callable on first access; and a downstream
-  `from statspai.forest.causal_forest import CausalForest` must not
-  re-shadow `sp.causal_forest` to the leaf module via Python's
-  post-import attribute binding. Other sklearn-eager paths
-  (`did/overlap_did`, `metalearners/*`, `policy_learning/*`,
-  `synth/cluster`, plus ~7 conflict-prone same-name modules pinned eager
-  for the late-bind contract) still pull `sklearn` on bare import; those
-  are tracked separately for Step 1C and do not block this lazy-forest
-  win.
-
-- **Cold-start: drop sklearn class inheritance from HAL estimators
-  (Step 1D).** ``HALRegressor`` / ``HALClassifier`` in
-  ``tmle/hal_tmle.py`` previously subclassed
-  ``sklearn.base.BaseEstimator`` plus a Mixin, which pulled ~39
-  ``sklearn.*`` submodules into ``sys.modules`` at module-load time —
-  the *only* remaining sklearn footprint after Steps 1B/1C lazy-loaded
-  ``forest`` and the 18 estimator files.  The inheritance is gratuitous
-  here: ``super_learner.fit`` only needs ``sklearn.base.clone(learner)``
-  (which is duck-typed — ``get_params(deep=False)`` + ``cls(**params)``
-  reconstruction) plus ``.fit`` / ``.predict`` / ``.predict_proba``; no
-  code path calls ``.score(...)``, ``is_classifier(...)``, or
-  ``is_regressor(...)`` on the HAL classes.  Replaced the inheritance
-  with a minimal ``_BaseHAL`` providing the ``get_params`` /
-  ``set_params`` / ``__repr__`` slice that ``clone()`` actually
-  consumes (introspection via ``inspect.signature(self.__init__)``,
-  with object identity preserved so sklearn's post-clone
-  ``param1 is param2`` sanity check passes).  ``_estimator_type =
-  "regressor"`` / ``"classifier"`` class attributes keep
-  ``sklearn.base.is_regressor`` / ``is_classifier`` returning True for
-  any future external caller.  After Step 1D, ``import statspai`` pulls
-  **zero** sklearn submodules — full 245 → 0 — and the
-  ``test_sklearn_budget_ceiling_on_bare_import_statspai`` contract is
-  tightened from ``<= 50`` to ``<= 0`` to pin the floor.  152 tests
-  across ``test_hal_tmle`` / ``test_tmle`` / ``test_late_bind_contracts``
-  / ``test_low_cov_battery`` / ``test_metalearners`` pass cleanly.
-
-- **Cold-start: lazy-import sklearn across 18 estimator files (Step
-  1C).** Building on Step 1B, every remaining top-level
-  `from sklearn.X import Y` in
-  `did/overlap_did.py`, `metalearners/{auto_cate,metalearners,auto_cate_tuned}.py`,
-  `policy_learning/{policy_tree,ope}.py`, `synth/cluster.py`,
-  `proximal/pci_regression.py`, `bcf/{bcf,longitudinal}.py`,
-  `tmle/{tmle,super_learner,ltmle,ltmle_survival}.py`,
-  `dose_response/gps.py`, `multi_treatment/multi_ipw.py`,
-  `mediation/four_way.py`, and `interference/orthogonal.py` was moved
-  inside the function bodies that actually use it.  `BaseEstimator`
-  type annotations were converted to string-literal form under
-  `if TYPE_CHECKING:` so `inspect.signature` / Pyright / mypy still
-  resolve them without forcing `sklearn.base` at module load.  Several
-  long-standing dead imports were dropped (`BaseEstimator` /
-  `is_classifier` / `cross_val_predict` in
-  `metalearners/metalearners.py`; `LinearRegression` in
-  `proximal/pci_regression.py`; `BaseEstimator` / `clone` /
-  `GradientBoostingClassifier` in `multi_treatment/multi_ipw.py`;
-  etc.).  After Step 1B + 1C, `import statspai` pulls **39** sklearn
-  submodules instead of **245** — a 5.3× reduction.  The 39 are
-  `sklearn.base` plus its mandatory deps, pulled by `tmle/hal_tmle.py`
-  whose `HALRegressor(BaseEstimator, RegressorMixin)` /
-  `HALClassifier(BaseEstimator, ClassifierMixin)` need sklearn at
-  class-definition time; refactoring that inheritance hierarchy is
-  out of scope.  Pinned by a new
-  `test_sklearn_budget_ceiling_on_bare_import_statspai` contract in
-  `tests/test_late_bind_contracts.py` (≤ 50 ceiling, ~39 floor + 11
-  slack for sklearn-version drift) running in a subprocess so the
-  cold-state measurement does not perturb other tests' `sys.modules`.
-  248 tests across the 18 affected modules (metalearners /
-  metalearner_frontiers / auto_cate / auto_cate_tuned / overlap_did /
-  tmle / hal_tmle / proximal / proximal_frontiers / bcf_longitudinal /
-  bcf_ordinal / conformal_bcf_bunching_mc / policy_learning / mediation
-  / mediation_sensitivity / interference_extensions / late_bind_contracts
-  / causal_forest_grf / forest_inference / ope_cevae / ope_extensions /
-  cluster_rct) pass cleanly.
-
-- **README lead aligned with the agent-native + parity-validated
-  positioning.** `README.md` and `README_CN.md` both foreground "first
-  agent-native Python platform" and surface R / Stata parity
-  validation in the lead paragraph (was previously buried in the Task
-  View comparison section further down).
-
-### Fixed
-
-- **⚠️ Correctness — `sp.callaway_santanna(method='reg')` inference.**
-  The Callaway–Sant'Anna outcome-regression (REG) path produced
-  influence-function standard errors that were inconsistent with the
-  IPW / DR variants because the control-regression uncertainty was
-  not propagated and the per-cohort scaling in the influence-function
-  aggregation was off by the cohort-size weighting. Coverage
-  simulations under the `mpdta` DGP were running ~88% (nominal 95%)
-  on `method='reg'`, while `'ipw'` and `'dr'` were inside the 99%
-  Wilson band. The fix tightens the REG influence-function scaling
-  and explicitly adds the control-regression contribution; the
-  parity table at `tests/r_parity/results/parity_table_3way.md` and
-  the coverage frame at `tests/coverage_monte_carlo/FINDINGS.md` are
-  refreshed accordingly. Regression-pinned by
-  `tests/reference_parity/test_did_parity.py` and the new
-  `tests/r_parity/04_csdid.py` driver. **Re-run any v1.10–v1.13
-  Callaway–Sant'Anna analyses that used `method='reg'`**;
-  `'ipw'` and `'dr'` are unchanged.
-
-## [1.13.0] — 2026-05-04
-
-### Headline
-
-Stability tiers and agent-safe gating across the smart layer. Every
-`FunctionSpec` now carries a `stability` field plus per-function
-`limitations`, surfaced through `sp.describe_function`, `sp.help`,
-`sp.list_functions(stability=...)`, the `statspai list` CLI, and the
-LLM-facing `sp.function_schema` description. `sp.recommend` /
-`sp.causal` / `sp.paper` default to dropping `experimental` /
-`deprecated` entries unless `allow_experimental=True` is passed —
-closing a path where an agent could silently land on a frontier MVP.
-Eight high-impact estimators (`aipw`, `aggte`, `pretrends_test`,
-`sensitivity_rr`, `mccrary_test`, `oster_bounds`,
-`wild_cluster_bootstrap`, `rd_honest`) are upgraded from
-auto-registered stubs to hand-written specs with full assumption /
-failure-mode / alternative metadata. The workflow / paper
-orchestration layer replaces silent `except: pass` paths with
-`WorkflowDegradedWarning` + structured `degradations` records on the
-result object, so optional-stage failures surface in
-`PaperDraft.to_dict()` and the rendered `Pipeline notes` section
-instead of disappearing. `sp.principal_strat(instrument=...)` ships a
-proper Angrist-Imbens-Rubin Wald-LATE estimator (the kwarg was
-previously stubbed); `sp.hal_tmle(variant='projection')` keeps its
-`NotImplementedError` but now points at a written-out RFC
-(`docs/rfc/hal_tmle_projection.md`) instead of raising in silence.
-Lazy-loading of optional families via `__getattr__` keeps `import
-statspai` fast without breaking same-name function/subpackage
-collisions (`bartik`, `deepiv`, `proximal`, …) — pinned by a
-late-bind / post-import-shadow contract test and a committed
-`__init__.pyi` stub generator so IDE / mypy see lazy-loaded names.
-
-### Added
+  works on a stock `pip install statspai==1.13.1` install.
 
 - **8 high-impact estimators upgraded from auto-registered to
   hand-written FunctionSpec.** `aipw`, `aggte`, `pretrends_test`,
@@ -463,6 +334,106 @@ late-bind / post-import-shadow contract test and a committed
 
 ### Changed
 
+- **Cold-start: lazy-load `statspai.forest` (Step 1B).** `import
+  statspai` previously chained
+  ``from .forest.causal_forest import CausalForest, causal_forest`` plus
+  three sibling eager imports for `forest_inference` /
+  `multi_arm_forest` / `iv_forest` at module load, transitively pulling
+  ~245 `sklearn.*` submodules into `sys.modules` (~270 ms cumulative on
+  cold cache) for every session — even ones that never touch
+  heterogeneous-effect forests. The four eager lines are removed; the
+  ten public leaves (`CausalForest`, `causal_forest`,
+  `calibration_test`, `test_calibration`, `rate`, `honest_variance`,
+  `multi_arm_forest`, `MultiArmForestResult`, `iv_forest`,
+  `IVForestResult`) now resolve via `_LAZY_ATTRS` keyed to dotted
+  submodule paths (e.g. `forest.causal_forest`) and fault in on first
+  `sp.<name>` access. `forest` does not collide with a top-level function
+  (no `sp.forest` callable export) so the standard lazy path is safe;
+  `sp.causal`'s callable shim and the `statspai.causal` deprecation
+  shim continue to work unchanged. Pinned by three new contracts in
+  `tests/test_late_bind_contracts.py` — `import statspai` must not
+  pre-load any `statspai.forest.*` submodule (subprocess-isolated to
+  avoid `sys.modules` pollution that would corrupt downstream
+  `isinstance` checks); each of the 10 forest leaves must resolve to a
+  callable on first access; and a downstream
+  `from statspai.forest.causal_forest import CausalForest` must not
+  re-shadow `sp.causal_forest` to the leaf module via Python's
+  post-import attribute binding. Other sklearn-eager paths
+  (`did/overlap_did`, `metalearners/*`, `policy_learning/*`,
+  `synth/cluster`, plus ~7 conflict-prone same-name modules pinned eager
+  for the late-bind contract) still pull `sklearn` on bare import; those
+  are tracked separately for Step 1C and do not block this lazy-forest
+  win.
+
+- **Cold-start: drop sklearn class inheritance from HAL estimators
+  (Step 1D).** ``HALRegressor`` / ``HALClassifier`` in
+  ``tmle/hal_tmle.py`` previously subclassed
+  ``sklearn.base.BaseEstimator`` plus a Mixin, which pulled ~39
+  ``sklearn.*`` submodules into ``sys.modules`` at module-load time —
+  the *only* remaining sklearn footprint after Steps 1B/1C lazy-loaded
+  ``forest`` and the 18 estimator files.  The inheritance is gratuitous
+  here: ``super_learner.fit`` only needs ``sklearn.base.clone(learner)``
+  (which is duck-typed — ``get_params(deep=False)`` + ``cls(**params)``
+  reconstruction) plus ``.fit`` / ``.predict`` / ``.predict_proba``; no
+  code path calls ``.score(...)``, ``is_classifier(...)``, or
+  ``is_regressor(...)`` on the HAL classes.  Replaced the inheritance
+  with a minimal ``_BaseHAL`` providing the ``get_params`` /
+  ``set_params`` / ``__repr__`` slice that ``clone()`` actually
+  consumes (introspection via ``inspect.signature(self.__init__)``,
+  with object identity preserved so sklearn's post-clone
+  ``param1 is param2`` sanity check passes).  ``_estimator_type =
+  "regressor"`` / ``"classifier"`` class attributes keep
+  ``sklearn.base.is_regressor`` / ``is_classifier`` returning True for
+  any future external caller.  After Step 1D, ``import statspai`` pulls
+  **zero** sklearn submodules — full 245 → 0 — and the
+  ``test_sklearn_budget_ceiling_on_bare_import_statspai`` contract is
+  tightened from ``<= 50`` to ``<= 0`` to pin the floor.  152 tests
+  across ``test_hal_tmle`` / ``test_tmle`` / ``test_late_bind_contracts``
+  / ``test_low_cov_battery`` / ``test_metalearners`` pass cleanly.
+
+- **Cold-start: lazy-import sklearn across 18 estimator files (Step
+  1C).** Building on Step 1B, every remaining top-level
+  `from sklearn.X import Y` in
+  `did/overlap_did.py`, `metalearners/{auto_cate,metalearners,auto_cate_tuned}.py`,
+  `policy_learning/{policy_tree,ope}.py`, `synth/cluster.py`,
+  `proximal/pci_regression.py`, `bcf/{bcf,longitudinal}.py`,
+  `tmle/{tmle,super_learner,ltmle,ltmle_survival}.py`,
+  `dose_response/gps.py`, `multi_treatment/multi_ipw.py`,
+  `mediation/four_way.py`, and `interference/orthogonal.py` was moved
+  inside the function bodies that actually use it.  `BaseEstimator`
+  type annotations were converted to string-literal form under
+  `if TYPE_CHECKING:` so `inspect.signature` / Pyright / mypy still
+  resolve them without forcing `sklearn.base` at module load.  Several
+  long-standing dead imports were dropped (`BaseEstimator` /
+  `is_classifier` / `cross_val_predict` in
+  `metalearners/metalearners.py`; `LinearRegression` in
+  `proximal/pci_regression.py`; `BaseEstimator` / `clone` /
+  `GradientBoostingClassifier` in `multi_treatment/multi_ipw.py`;
+  etc.).  After Step 1B + 1C, `import statspai` pulls **39** sklearn
+  submodules instead of **245** — a 5.3× reduction.  The 39 are
+  `sklearn.base` plus its mandatory deps, pulled by `tmle/hal_tmle.py`
+  whose `HALRegressor(BaseEstimator, RegressorMixin)` /
+  `HALClassifier(BaseEstimator, ClassifierMixin)` need sklearn at
+  class-definition time; refactoring that inheritance hierarchy is
+  out of scope.  Pinned by a new
+  `test_sklearn_budget_ceiling_on_bare_import_statspai` contract in
+  `tests/test_late_bind_contracts.py` (≤ 50 ceiling, ~39 floor + 11
+  slack for sklearn-version drift) running in a subprocess so the
+  cold-state measurement does not perturb other tests' `sys.modules`.
+  248 tests across the 18 affected modules (metalearners /
+  metalearner_frontiers / auto_cate / auto_cate_tuned / overlap_did /
+  tmle / hal_tmle / proximal / proximal_frontiers / bcf_longitudinal /
+  bcf_ordinal / conformal_bcf_bunching_mc / policy_learning / mediation
+  / mediation_sensitivity / interference_extensions / late_bind_contracts
+  / causal_forest_grf / forest_inference / ope_cevae / ope_extensions /
+  cluster_rct) pass cleanly.
+
+- **README lead aligned with the agent-native + parity-validated
+  positioning.** `README.md` and `README_CN.md` both foreground "first
+  agent-native Python platform" and surface R / Stata parity
+  validation in the lead paragraph (was previously buried in the Task
+  View comparison section further down).
+
 - `sp.recommend()` now defaults to an agent-safe stability gate:
   recommendations whose registry entry is marked
   `stability='experimental'` or `stability='deprecated'` are dropped
@@ -489,6 +460,24 @@ late-bind / post-import-shadow contract test and a committed
   visible in the artifact itself rather than only via warnings.
 
 ### Fixed
+
+- **⚠️ Correctness — `sp.callaway_santanna(method='reg')` inference.**
+  The Callaway–Sant'Anna outcome-regression (REG) path produced
+  influence-function standard errors that were inconsistent with the
+  IPW / DR variants because the control-regression uncertainty was
+  not propagated and the per-cohort scaling in the influence-function
+  aggregation was off by the cohort-size weighting. Coverage
+  simulations under the `mpdta` DGP were running ~88% (nominal 95%)
+  on `method='reg'`, while `'ipw'` and `'dr'` were inside the 99%
+  Wilson band. The fix tightens the REG influence-function scaling
+  and explicitly adds the control-regression contribution; the
+  parity table at `tests/r_parity/results/parity_table_3way.md` and
+  the coverage frame at `tests/coverage_monte_carlo/FINDINGS.md` are
+  refreshed accordingly. Regression-pinned by
+  `tests/reference_parity/test_did_parity.py` and the new
+  `tests/r_parity/04_csdid.py` driver. **Re-run any v1.10–v1.13
+  Callaway–Sant'Anna analyses that used `method='reg'`**;
+  `'ipw'` and `'dr'` are unchanged.
 
 - **`isinstance(res, sp.OPEResult)` no longer false-negative on results
   from `sp.ope.*`.** During the lazy-load refactor of optional families

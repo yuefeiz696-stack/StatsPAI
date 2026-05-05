@@ -72,7 +72,7 @@ the reason and the 3-way table prints it explicitly:
 The remaining modules (23-36, minus 25/28/30) currently have the
 status "Stata harness not yet built": a Stata sibling is feasible
 (many of them — `stcox`, `melogit`, `var`, `lpirf`, `xtreg`,
-`sfpanel`, etc. — are reachable) but is outside the v1.13.0 scope.
+`sfpanel`, etc. — are reachable) but is outside the v1.13.1 scope.
 
 ## Running
 

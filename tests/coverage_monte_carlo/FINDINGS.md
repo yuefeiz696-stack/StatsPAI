@@ -66,9 +66,9 @@ Findings interpretation:
   Stock–Yogo critical values, HC1 ignores the weak-instrument bias of
   2SLS, so CIs miss truth more often than nominal 0.95.  Recovery
   routes for users are LIML (`method='liml'`) or Anderson–Rubin
-  inference (`sp.iv(.., inference='ar')`); both are on the v1.14
-  roadmap as automatic fall-backs in the design-detect / preflight
-  pipeline.
+  inference (`sp.iv(.., inference='ar')`); both are wired into the
+  v1.13 design-detect / preflight pipeline as automatic fall-backs
+  via the new `first_stage_strength` gate.
 - **CS-DiD passes the heterogeneity stress test.** This is the
   designed behaviour of Callaway–Sant'Anna 2021: cell-by-cell ATT(g, t)
   estimation with the simple-ATT aggregation as an equally-weighted
