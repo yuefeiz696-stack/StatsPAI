@@ -101,13 +101,19 @@ jobs:
         # -o 'addopts=' overrides the project-wide pyproject.toml addopts
         # (which pull in --cov=statspai for local dev); the auditor tests
         # are stdlib-only and don't need the full coverage toolchain.
+        #
+        # --noconftest skips tests/conftest.py, which pre-imports
+        # ``scipy.optimize`` to stabilise the PyO3 type registry for the
+        # full pytest session. The auditor tests are stdlib-only and
+        # never touch scipy, and this Gate-0 image deliberately doesn't
+        # install scipy to keep the image small.
         run: |
           python -m pytest \
             tests/test_audit_citations.py \
             tests/test_audit_bib_duplicates.py \
             tests/test_audit_bib_coverage.py \
             tests/test_suggest_bibkey_backfills.py \
-            -o 'addopts=' -q
+            --noconftest -o 'addopts=' -q
 
       - name: Gate 1 — paper.bib duplicate auditor (strict)
         id: bib_audit

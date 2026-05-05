@@ -97,8 +97,9 @@ def render_tex() -> str:
             if ratio_max and ratio_max < 0.67 else
             f"${ratio_max:.2f}\\times$"
         )
+        est_tex = est.replace('_', '\\_')
         rows.append(
-            f"\\code{{{est.replace('_', '\\_')}}} & {cfg['name']} & "
+            f"\\code{{{est_tex}}} & {cfg['name']} & "
             f"{cfg['ref']} & {max_n} & {last['median_time_s']:.3f}~s & "
             f"{last_r:.3f}~s & {ratio_str} \\\\"
         )
