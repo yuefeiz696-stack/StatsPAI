@@ -22,7 +22,7 @@ Unified API for causal inference and econometrics:
 >>> sp.outreg2(result, filename="results.xlsx")
 """
 
-__version__ = "1.14.0"
+__version__ = "1.15.0"
 __author__ = "Biaoyue Wang"
 __email__ = "brycew6m@stanford.edu"
 
@@ -89,6 +89,9 @@ from .rd import (
     rd_distribution, DistRDResult,
     rd_bayes_hte, BayesRDHTEResult,
     rd_distributional_design, DDDResult,
+    # v1.15 polish
+    rd_flex, rd_bias_aware_fuzzy, rd_discrete,
+    rd_dashboard, rd_compare, rd_robustness_table,
 )
 from .synth import (
     synth, SyntheticControl, synthplot, sdid, augsynth,
@@ -101,6 +104,7 @@ from .synth import (
     synth_power, synth_mde, synth_power_plot,
     synth_compare, synth_recommend, SynthComparison,
     synth_report, synth_report_to_file,
+    synth_to_latex, synth_to_markdown, synth_to_excel,
     german_reunification, basque_terrorism, california_tobacco,
     synthdid_estimate, sc_estimate, did_estimate,
     synthdid_placebo, synthdid_plot, synthdid_units_plot, synthdid_rmse_plot,
@@ -368,6 +372,7 @@ from .decomposition import (
     inequality_index, subgroup_decompose, source_decompose, shapley_inequality,
     kitagawa_decompose, das_gupta,
     gap_closing, mediation_decompose, disparity_decompose,
+    yu_elwert_decompose, YuElwertResult,
     decompose, available_methods,
     cps_wage, chilean_households, mincer_wage_panel, disparity_panel,
 )
@@ -941,6 +946,13 @@ __all__ = [
     "TARNet",
     "CFRNet",
     "DragonNet",
+    "neural_effects_frame",
+    "neural_summary_frame",
+    "neural_training_frame",
+    "neural_causal_to_markdown",
+    "neural_causal_to_html",
+    "neural_causal_to_excel",
+    "neural_causal_plot",
     # Causal Discovery
     "notears",
     "NOTEARS",
@@ -1179,6 +1191,7 @@ __all__ = [
     "synth_power", "synth_mde", "synth_power_plot",
     "synth_compare", "synth_recommend", "SynthComparison",
     "synth_report", "synth_report_to_file",
+    "synth_to_latex", "synth_to_markdown", "synth_to_excel",
     "german_reunification", "basque_terrorism", "california_tobacco",
     # Spatial
     "W",
@@ -1203,6 +1216,7 @@ __all__ = [
     "source_decompose", "subgroup_decompose",
     "disparity_decompose", "disparity_panel",
     "mediation_decompose",
+    "yu_elwert_decompose", "YuElwertResult",
     "inequality_index", "shapley_inequality",
     # Panel / DID extras
     "aggte", "ggdid", "bjs_pretrend_joint", "cs_report", "CSReport",
@@ -1335,6 +1349,9 @@ __all__ = [
     # RDD frontier — only the new rd_bayes_hte / rd_distributional_design here
     "rd_bayes_hte", "BayesRDHTEResult",
     "rd_distributional_design", "DDDResult",
+    # v1.15 RDD polish (recent literature)
+    "rd_flex", "rd_bias_aware_fuzzy", "rd_discrete",
+    "rd_dashboard", "rd_compare", "rd_robustness_table",
     # Causal × LLM
     "llm_dag_propose", "LLMDAGProposal",
     "llm_unobserved_confounders", "UnobservedConfounderProposal",
@@ -1520,9 +1537,19 @@ _register_lazy("bayes",
     "policy_weight_prte", "policy_weight_marginal",
     "policy_weight_observed_prte",
 )
-_register_lazy("neural_causal",
+_register_lazy("neural_causal.models",
     "tarnet", "cfrnet", "dragonnet", "TARNet", "CFRNet", "DragonNet",
+)
+_register_lazy("neural_causal.gnn_causal",
     "gnn_causal", "GNNCausalResult",
+)
+_register_lazy("neural_causal.exports",
+    "neural_effects_frame", "neural_summary_frame", "neural_training_frame",
+    "neural_causal_to_markdown", "neural_causal_to_html",
+    "neural_causal_to_excel",
+)
+_register_lazy("neural_causal.plots",
+    "neural_causal_plot",
 )
 _register_lazy("neural_causal.cevae",
     "cevae", "CEVAE", "CEVAEResult",
