@@ -522,6 +522,13 @@ from .neural_causal.models import TARNet as TARNet
 from .neural_causal.models import cfrnet as cfrnet
 from .neural_causal.models import dragonnet as dragonnet
 from .neural_causal.models import tarnet as tarnet
+from .neural_causal.exports import neural_causal_to_excel as neural_causal_to_excel
+from .neural_causal.exports import neural_causal_to_html as neural_causal_to_html
+from .neural_causal.exports import neural_causal_to_markdown as neural_causal_to_markdown
+from .neural_causal.exports import neural_effects_frame as neural_effects_frame
+from .neural_causal.exports import neural_summary_frame as neural_summary_frame
+from .neural_causal.exports import neural_training_frame as neural_training_frame
+from .neural_causal.plots import neural_causal_plot as neural_causal_plot
 from .nonparametric.kdensity import KDensityResult as KDensityResult
 from .nonparametric.kdensity import kdensity as kdensity
 from .nonparametric.lpoly import LPolyResult as LPolyResult

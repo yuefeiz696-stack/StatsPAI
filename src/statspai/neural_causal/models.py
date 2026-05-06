@@ -41,6 +41,7 @@ Shi, C., Blei, D. M., & Veitch, V. (2019).
 Advances in Neural Information Processing Systems, 32. [@shi2019adapting]
 """
 
+import copy
 from typing import Optional, List, Tuple, Dict, Any
 import numpy as np
 import pandas as pd
@@ -68,6 +69,10 @@ def tarnet(
     alpha: float = 0.05,
     n_bootstrap: int = 500,
     random_state: int = 42,
+    validation_fraction: float = 0.0,
+    early_stopping: bool = False,
+    patience: int = 20,
+    min_delta: float = 1e-4,
     verbose: bool = False,
 ) -> CausalResult:
     """
@@ -109,6 +114,16 @@ def tarnet(
         Random seed.
     verbose : bool, default False
         Print training progress.
+    validation_fraction : float, default 0.0
+        Fraction of rows held out for validation diagnostics. Set to a
+        value in ``(0, 0.5)`` to record validation loss.
+    early_stopping : bool, default False
+        Stop training when validation loss does not improve for
+        ``patience`` epochs. Requires ``validation_fraction > 0``.
+    patience : int, default 20
+        Validation-loss patience for early stopping.
+    min_delta : float, default 1e-4
+        Minimum validation-loss improvement counted by early stopping.
 
     Returns
     -------
@@ -130,7 +145,9 @@ def tarnet(
         epochs=epochs, batch_size=batch_size,
         learning_rate=learning_rate, weight_decay=weight_decay,
         dropout=dropout, alpha=alpha, n_bootstrap=n_bootstrap,
-        random_state=random_state, verbose=verbose,
+        random_state=random_state, validation_fraction=validation_fraction,
+        early_stopping=early_stopping, patience=patience,
+        min_delta=min_delta, verbose=verbose,
     )
     return est.fit()
 
@@ -151,6 +168,10 @@ def cfrnet(
     alpha: float = 0.05,
     n_bootstrap: int = 500,
     random_state: int = 42,
+    validation_fraction: float = 0.0,
+    early_stopping: bool = False,
+    patience: int = 20,
+    min_delta: float = 1e-4,
     verbose: bool = False,
 ) -> CausalResult:
     """
@@ -195,6 +216,16 @@ def cfrnet(
         Random seed.
     verbose : bool, default False
         Print training progress.
+    validation_fraction : float, default 0.0
+        Fraction of rows held out for validation diagnostics. Set to a
+        value in ``(0, 0.5)`` to record validation loss.
+    early_stopping : bool, default False
+        Stop training when validation loss does not improve for
+        ``patience`` epochs. Requires ``validation_fraction > 0``.
+    patience : int, default 20
+        Validation-loss patience for early stopping.
+    min_delta : float, default 1e-4
+        Minimum validation-loss improvement counted by early stopping.
 
     Returns
     -------
@@ -215,7 +246,9 @@ def cfrnet(
         epochs=epochs, batch_size=batch_size,
         learning_rate=learning_rate, weight_decay=weight_decay,
         dropout=dropout, alpha=alpha, n_bootstrap=n_bootstrap,
-        random_state=random_state, verbose=verbose,
+        random_state=random_state, validation_fraction=validation_fraction,
+        early_stopping=early_stopping, patience=patience,
+        min_delta=min_delta, verbose=verbose,
     )
     return est.fit()
 
@@ -237,6 +270,10 @@ def dragonnet(
     alpha: float = 0.05,
     n_bootstrap: int = 500,
     random_state: int = 42,
+    validation_fraction: float = 0.0,
+    early_stopping: bool = False,
+    patience: int = 20,
+    min_delta: float = 1e-4,
     verbose: bool = False,
 ) -> CausalResult:
     """
@@ -285,6 +322,16 @@ def dragonnet(
         Random seed.
     verbose : bool, default False
         Print training progress.
+    validation_fraction : float, default 0.0
+        Fraction of rows held out for validation diagnostics. Set to a
+        value in ``(0, 0.5)`` to record validation loss.
+    early_stopping : bool, default False
+        Stop training when validation loss does not improve for
+        ``patience`` epochs. Requires ``validation_fraction > 0``.
+    patience : int, default 20
+        Validation-loss patience for early stopping.
+    min_delta : float, default 1e-4
+        Minimum validation-loss improvement counted by early stopping.
 
     Returns
     -------
@@ -312,7 +359,9 @@ def dragonnet(
         epochs=epochs, batch_size=batch_size,
         learning_rate=learning_rate, weight_decay=weight_decay,
         dropout=dropout, alpha=alpha, n_bootstrap=n_bootstrap,
-        random_state=random_state, verbose=verbose,
+        random_state=random_state, validation_fraction=validation_fraction,
+        early_stopping=early_stopping, patience=patience,
+        min_delta=min_delta, verbose=verbose,
     )
     return est.fit()
 
@@ -400,6 +449,77 @@ def _module_device(module):
     return next(module.parameters()).device
 
 
+def _train_val_indices(n: int, validation_fraction: float, random_state: int):
+    """Deterministically split row positions into train/validation indices."""
+    if validation_fraction < 0 or validation_fraction >= 0.5:
+        raise ValueError("validation_fraction must be in [0, 0.5)")
+    idx = np.arange(n)
+    if validation_fraction == 0 or n < 4:
+        return idx, np.array([], dtype=int)
+    rng = np.random.default_rng(random_state)
+    rng.shuffle(idx)
+    n_val = max(1, int(round(n * validation_fraction)))
+    return np.sort(idx[n_val:]), np.sort(idx[:n_val])
+
+
+def _checkpoint_modules(*modules):
+    """Copy torch module states so early stopping can restore the best epoch."""
+    return [copy.deepcopy(m.state_dict()) for m in modules]
+
+
+def _restore_modules(states, *modules) -> None:
+    for module, state in zip(modules, states):
+        module.load_state_dict(state)
+
+
+def _history_frame(history: List[Dict[str, Any]]) -> pd.DataFrame:
+    if not history:
+        return pd.DataFrame(columns=["epoch", "train_loss"])
+    return pd.DataFrame(history)
+
+
+def _basic_neural_info(
+    *,
+    architecture: str,
+    cate: np.ndarray,
+    mu0: np.ndarray,
+    mu1: np.ndarray,
+    D: np.ndarray,
+    device: Any,
+    history: List[Dict[str, Any]],
+    validation_fraction: float,
+    early_stopping: bool,
+    n_epochs_trained: int,
+) -> Dict[str, Any]:
+    """Common result metadata for neural treatment-effect estimators."""
+    return {
+        'architecture': architecture,
+        'neural_causal': True,
+        'device': str(device),
+        'validation_fraction': float(validation_fraction),
+        'early_stopping': bool(early_stopping and validation_fraction > 0),
+        'n_epochs_trained': int(n_epochs_trained),
+        'loss_history': history,
+        'training_history': _history_frame(history),
+        'se_method': 'unit_bootstrap_cate_plugin',
+        'mu0': mu0,
+        'mu1': mu1,
+        'cate': cate,
+        'treatment': D.astype(int),
+        'cate_mean': float(np.mean(cate)),
+        'cate_median': float(np.median(cate)),
+        'cate_std': float(np.std(cate)),
+        'cate_min': float(np.min(cate)),
+        'cate_max': float(np.max(cate)),
+        'cate_q05': float(np.percentile(cate, 5)),
+        'cate_q25': float(np.percentile(cate, 25)),
+        'cate_q75': float(np.percentile(cate, 75)),
+        'cate_q95': float(np.percentile(cate, 95)),
+        'n_treated': int(np.sum(D == 1)),
+        'n_control': int(np.sum(D == 0)),
+    }
+
+
 # ======================================================================
 # TARNet
 # ======================================================================
@@ -431,10 +551,14 @@ class TARNet:
     weight_decay : float
         L2 regularisation.
     dropout : float
-    alpha : float
+        alpha : float
         Significance level.
     n_bootstrap : int
     random_state : int
+    validation_fraction : float
+    early_stopping : bool
+    patience : int
+    min_delta : float
     verbose : bool
     """
 
@@ -454,6 +578,10 @@ class TARNet:
         alpha: float = 0.05,
         n_bootstrap: int = 500,
         random_state: int = 42,
+        validation_fraction: float = 0.0,
+        early_stopping: bool = False,
+        patience: int = 20,
+        min_delta: float = 1e-4,
         verbose: bool = False,
     ):
         self.data = data
@@ -470,6 +598,10 @@ class TARNet:
         self.alpha = alpha
         self.n_bootstrap = n_bootstrap
         self.random_state = random_state
+        self.validation_fraction = validation_fraction
+        self.early_stopping = early_stopping
+        self.patience = patience
+        self.min_delta = min_delta
         self.verbose = verbose
 
     def fit(self) -> CausalResult:
@@ -508,11 +640,22 @@ class TARNet:
         Y_t = torch.tensor(Y_s, dtype=torch.float32, device=device)
         D_t = torch.tensor(D, dtype=torch.float32, device=device)
 
-        dataset = TensorDataset(X_t, Y_t, D_t)
+        train_idx, val_idx = _train_val_indices(
+            n, self.validation_fraction, self.random_state
+        )
+        train_t = torch.tensor(train_idx, dtype=torch.long, device=device)
+        val_t = torch.tensor(val_idx, dtype=torch.long, device=device)
+
+        dataset = TensorDataset(X_t[train_t], Y_t[train_t], D_t[train_t])
         loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                             drop_last=False)
 
         # Training loop
+        history: List[Dict[str, Any]] = []
+        best_val = float("inf")
+        best_state = None
+        best_epsilon = None
+        wait = 0
         for epoch in range(self.epochs):
             repr_net.train()
             head_0.train()
@@ -534,9 +677,48 @@ class TARNet:
                 optimiser.step()
                 epoch_loss += loss.item() * len(y_b)
 
+            train_loss = epoch_loss / max(len(train_idx), 1)
+            val_loss = None
+            if len(val_idx) > 0:
+                repr_net.eval()
+                head_0.eval()
+                head_1.eval()
+                with torch.no_grad():
+                    phi_v = repr_net(X_t[val_t])
+                    y0_v = head_0(phi_v).squeeze()
+                    y1_v = head_1(phi_v).squeeze()
+                    d_v = D_t[val_t]
+                    y_pred_v = d_v * y1_v + (1 - d_v) * y0_v
+                    val_loss = float(torch.mean((Y_t[val_t] - y_pred_v) ** 2).item())
+
+                if val_loss + self.min_delta < best_val:
+                    best_val = val_loss
+                    best_state = _checkpoint_modules(repr_net, head_0, head_1)
+                    wait = 0
+                else:
+                    wait += 1
+
+                if self.early_stopping and wait >= self.patience:
+                    history.append({
+                        'epoch': epoch + 1,
+                        'train_loss': float(train_loss),
+                        'val_loss': val_loss,
+                    })
+                    if best_state is not None:
+                        _restore_modules(best_state, repr_net, head_0, head_1)
+                    if self.verbose:
+                        print(f"  TARNet early stopped at epoch {epoch+1}")
+                    break
+
+            history.append({
+                'epoch': epoch + 1,
+                'train_loss': float(train_loss),
+                'val_loss': val_loss,
+            })
+
             if self.verbose and (epoch + 1) % 50 == 0:
                 print(f"  TARNet epoch {epoch+1}/{self.epochs}, "
-                      f"loss={epoch_loss/n:.6f}")
+                      f"loss={train_loss:.6f}")
 
         # Predict CATE
         repr_net.eval()
@@ -549,7 +731,9 @@ class TARNet:
             mu1 = head_1(phi).squeeze().cpu().numpy()
 
         # Rescale to original Y scale
-        cate = (mu1 - mu0) * self._y_std[0]
+        mu0_orig = mu0 * self._y_std[0] + self._y_mean[0]
+        mu1_orig = mu1 * self._y_std[0] + self._y_mean[0]
+        cate = mu1_orig - mu0_orig
         ate = float(np.mean(cate))
 
         se = _bootstrap_ate_se(cate, self.n_bootstrap, self.random_state)
@@ -561,7 +745,9 @@ class TARNet:
         self._cate = cate
         self._device = device
 
-        model_info = self._build_model_info(cate, D, n)
+        model_info = self._build_model_info(
+            cate, D, n, mu0_orig, mu1_orig, device, history
+        )
 
         return CausalResult(
             method='TARNet (Shalit et al. 2017)',
@@ -615,9 +801,20 @@ class TARNet:
 
         return (mu1 - mu0) * self._y_std[0]
 
-    def _build_model_info(self, cate, D, n):
-        return {
-            'architecture': 'TARNet',
+    def _build_model_info(self, cate, D, n, mu0, mu1, device, history):
+        info = _basic_neural_info(
+            architecture='TARNet',
+            cate=cate,
+            mu0=mu0,
+            mu1=mu1,
+            D=D,
+            device=device,
+            history=history,
+            validation_fraction=self.validation_fraction,
+            early_stopping=self.early_stopping,
+            n_epochs_trained=len(history),
+        )
+        info.update({
             'repr_layers': self.repr_layers,
             'head_layers': self.head_layers,
             'epochs': self.epochs,
@@ -626,15 +823,8 @@ class TARNet:
             'dropout': self.dropout,
             'n_covariates': len(self.covariates),
             'covariates': self.covariates,
-            'cate': cate,
-            'cate_mean': float(np.mean(cate)),
-            'cate_median': float(np.median(cate)),
-            'cate_std': float(np.std(cate)),
-            'cate_q25': float(np.percentile(cate, 25)),
-            'cate_q75': float(np.percentile(cate, 75)),
-            'n_treated': int(np.sum(D == 1)),
-            'n_control': int(np.sum(D == 0)),
-        }
+        })
+        return info
 
 
 # ======================================================================
@@ -669,6 +859,10 @@ class CFRNet:
     alpha : float
     n_bootstrap : int
     random_state : int
+    validation_fraction : float
+    early_stopping : bool
+    patience : int
+    min_delta : float
     verbose : bool
     """
 
@@ -689,6 +883,10 @@ class CFRNet:
         alpha: float = 0.05,
         n_bootstrap: int = 500,
         random_state: int = 42,
+        validation_fraction: float = 0.0,
+        early_stopping: bool = False,
+        patience: int = 20,
+        min_delta: float = 1e-4,
         verbose: bool = False,
     ):
         self.data = data
@@ -706,6 +904,10 @@ class CFRNet:
         self.alpha = alpha
         self.n_bootstrap = n_bootstrap
         self.random_state = random_state
+        self.validation_fraction = validation_fraction
+        self.early_stopping = early_stopping
+        self.patience = patience
+        self.min_delta = min_delta
         self.verbose = verbose
 
     def fit(self) -> CausalResult:
@@ -743,10 +945,20 @@ class CFRNet:
         Y_t = torch.tensor(Y_s, dtype=torch.float32, device=device)
         D_t = torch.tensor(D, dtype=torch.float32, device=device)
 
-        dataset = TensorDataset(X_t, Y_t, D_t)
+        train_idx, val_idx = _train_val_indices(
+            n, self.validation_fraction, self.random_state
+        )
+        train_t = torch.tensor(train_idx, dtype=torch.long, device=device)
+        val_t = torch.tensor(val_idx, dtype=torch.long, device=device)
+
+        dataset = TensorDataset(X_t[train_t], Y_t[train_t], D_t[train_t])
         loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                             drop_last=False)
 
+        history: List[Dict[str, Any]] = []
+        best_val = float("inf")
+        best_state = None
+        wait = 0
         for epoch in range(self.epochs):
             repr_net.train()
             head_0.train()
@@ -778,10 +990,65 @@ class CFRNet:
                 epoch_loss += mse_loss.item() * len(y_b)
                 epoch_ipm += ipm.item() * len(y_b)
 
+            train_loss = epoch_loss / max(len(train_idx), 1)
+            train_ipm = epoch_ipm / max(len(train_idx), 1)
+            val_loss = None
+            val_ipm = None
+            if len(val_idx) > 0:
+                repr_net.eval()
+                head_0.eval()
+                head_1.eval()
+                with torch.no_grad():
+                    phi_v = repr_net(X_t[val_t])
+                    y0_v = head_0(phi_v).squeeze()
+                    y1_v = head_1(phi_v).squeeze()
+                    d_v = D_t[val_t]
+                    y_pred_v = d_v * y1_v + (1 - d_v) * y0_v
+                    val_mse = torch.mean((Y_t[val_t] - y_pred_v) ** 2)
+                    mask1_v = d_v == 1
+                    mask0_v = d_v == 0
+                    if mask1_v.sum() > 1 and mask0_v.sum() > 1:
+                        ipm_v = _mmd_rbf(phi_v[mask1_v], phi_v[mask0_v])
+                    else:
+                        ipm_v = torch.tensor(0.0, device=device)
+                    val_ipm = float(ipm_v.item())
+                    val_loss = float((val_mse + self.ipm_weight * ipm_v).item())
+
+                if val_loss + self.min_delta < best_val:
+                    best_val = val_loss
+                    best_state = _checkpoint_modules(repr_net, head_0, head_1)
+                    wait = 0
+                else:
+                    wait += 1
+
+                if self.early_stopping and wait >= self.patience:
+                    history.append({
+                        'epoch': epoch + 1,
+                        'train_loss': float(train_loss + self.ipm_weight * train_ipm),
+                        'train_mse': float(train_loss),
+                        'train_ipm': float(train_ipm),
+                        'val_loss': val_loss,
+                        'val_ipm': val_ipm,
+                    })
+                    if best_state is not None:
+                        _restore_modules(best_state, repr_net, head_0, head_1)
+                    if self.verbose:
+                        print(f"  CFRNet early stopped at epoch {epoch+1}")
+                    break
+
+            history.append({
+                'epoch': epoch + 1,
+                'train_loss': float(train_loss + self.ipm_weight * train_ipm),
+                'train_mse': float(train_loss),
+                'train_ipm': float(train_ipm),
+                'val_loss': val_loss,
+                'val_ipm': val_ipm,
+            })
+
             if self.verbose and (epoch + 1) % 50 == 0:
                 print(f"  CFRNet epoch {epoch+1}/{self.epochs}, "
-                      f"MSE={epoch_loss/n:.6f}, "
-                      f"IPM={epoch_ipm/n:.6f}")
+                      f"MSE={train_loss:.6f}, "
+                      f"IPM={train_ipm:.6f}")
 
         # Predict CATE
         repr_net.eval()
@@ -793,7 +1060,9 @@ class CFRNet:
             mu0 = head_0(phi).squeeze().cpu().numpy()
             mu1 = head_1(phi).squeeze().cpu().numpy()
 
-        cate = (mu1 - mu0) * self._y_std[0]
+        mu0_orig = mu0 * self._y_std[0] + self._y_mean[0]
+        mu1_orig = mu1 * self._y_std[0] + self._y_mean[0]
+        cate = mu1_orig - mu0_orig
         ate = float(np.mean(cate))
 
         se = _bootstrap_ate_se(cate, self.n_bootstrap, self.random_state)
@@ -805,8 +1074,19 @@ class CFRNet:
         self._cate = cate
         self._device = device
 
-        model_info = {
-            'architecture': 'CFRNet',
+        model_info = _basic_neural_info(
+            architecture='CFRNet',
+            cate=cate,
+            mu0=mu0_orig,
+            mu1=mu1_orig,
+            D=D,
+            device=device,
+            history=history,
+            validation_fraction=self.validation_fraction,
+            early_stopping=self.early_stopping,
+            n_epochs_trained=len(history),
+        )
+        model_info.update({
             'repr_layers': self.repr_layers,
             'head_layers': self.head_layers,
             'ipm_weight': self.ipm_weight,
@@ -816,15 +1096,7 @@ class CFRNet:
             'dropout': self.dropout,
             'n_covariates': len(self.covariates),
             'covariates': self.covariates,
-            'cate': cate,
-            'cate_mean': float(np.mean(cate)),
-            'cate_median': float(np.median(cate)),
-            'cate_std': float(np.std(cate)),
-            'cate_q25': float(np.percentile(cate, 25)),
-            'cate_q75': float(np.percentile(cate, 75)),
-            'n_treated': int(np.sum(D == 1)),
-            'n_control': int(np.sum(D == 0)),
-        }
+        })
 
         return CausalResult(
             method='CFRNet (Shalit et al. 2017)',
@@ -907,6 +1179,10 @@ class DragonNet:
     alpha : float
     n_bootstrap : int
     random_state : int
+    validation_fraction : float
+    early_stopping : bool
+    patience : int
+    min_delta : float
     verbose : bool
     """
 
@@ -928,6 +1204,10 @@ class DragonNet:
         alpha: float = 0.05,
         n_bootstrap: int = 500,
         random_state: int = 42,
+        validation_fraction: float = 0.0,
+        early_stopping: bool = False,
+        patience: int = 20,
+        min_delta: float = 1e-4,
         verbose: bool = False,
     ):
         self.data = data
@@ -946,6 +1226,10 @@ class DragonNet:
         self.alpha = alpha
         self.n_bootstrap = n_bootstrap
         self.random_state = random_state
+        self.validation_fraction = validation_fraction
+        self.early_stopping = early_stopping
+        self.patience = patience
+        self.min_delta = min_delta
         self.verbose = verbose
 
     def fit(self) -> CausalResult:
@@ -1001,12 +1285,22 @@ class DragonNet:
         Y_t = torch.tensor(Y_s, dtype=torch.float32, device=device)
         D_t = torch.tensor(D, dtype=torch.float32, device=device)
 
-        dataset = TensorDataset(X_t, Y_t, D_t)
+        train_idx, val_idx = _train_val_indices(
+            n, self.validation_fraction, self.random_state
+        )
+        train_t = torch.tensor(train_idx, dtype=torch.long, device=device)
+        val_t = torch.tensor(val_idx, dtype=torch.long, device=device)
+
+        dataset = TensorDataset(X_t[train_t], Y_t[train_t], D_t[train_t])
         loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                             drop_last=False)
 
         bce = nn.BCELoss()
 
+        history: List[Dict[str, Any]] = []
+        best_val = float("inf")
+        best_state = None
+        wait = 0
         for epoch in range(self.epochs):
             repr_net.train()
             head_0.train()
@@ -1015,6 +1309,7 @@ class DragonNet:
             epoch_mse = 0.0
             epoch_prop = 0.0
             epoch_treg = 0.0
+            epoch_total = 0.0
 
             for x_b, y_b, d_b in loader:
                 optimiser.zero_grad()
@@ -1048,12 +1343,83 @@ class DragonNet:
                 epoch_mse += mse_loss.item() * len(y_b)
                 epoch_prop += prop_loss.item() * len(y_b)
                 epoch_treg += t_reg.item() * len(y_b)
+                epoch_total += loss.item() * len(y_b)
+
+            denom = max(len(train_idx), 1)
+            train_loss = epoch_total / denom
+            train_mse = epoch_mse / denom
+            train_prop = epoch_prop / denom
+            train_treg = epoch_treg / denom
+            val_loss = None
+            if len(val_idx) > 0:
+                repr_net.eval()
+                head_0.eval()
+                head_1.eval()
+                prop_head.eval()
+                with torch.no_grad():
+                    phi_v = repr_net(X_t[val_t])
+                    mu0_v = head_0(phi_v).squeeze()
+                    mu1_v = head_1(phi_v).squeeze()
+                    e_v = prop_head(phi_v).squeeze().clamp(0.01, 0.99)
+                    d_v = D_t[val_t]
+                    y_v = Y_t[val_t]
+                    y_pred_v = d_v * mu1_v + (1 - d_v) * mu0_v
+                    mse_v = torch.mean((y_v - y_pred_v) ** 2)
+                    prop_v = bce(e_v, d_v)
+                    if self.targeted_reg_weight > 0:
+                        clever_v = d_v / e_v - (1 - d_v) / (1 - e_v)
+                        y_targeted_v = y_pred_v + epsilon * clever_v
+                        treg_v = torch.mean((y_v - y_targeted_v) ** 2)
+                    else:
+                        treg_v = torch.tensor(0.0, device=device)
+                    val_loss = float((
+                        mse_v
+                        + self.propensity_weight * prop_v
+                        + self.targeted_reg_weight * treg_v
+                    ).item())
+
+                if val_loss + self.min_delta < best_val:
+                    best_val = val_loss
+                    best_state = _checkpoint_modules(
+                        repr_net, head_0, head_1, prop_head
+                    )
+                    best_epsilon = epsilon.detach().clone()
+                    wait = 0
+                else:
+                    wait += 1
+
+                if self.early_stopping and wait >= self.patience:
+                    history.append({
+                        'epoch': epoch + 1,
+                        'train_loss': float(train_loss),
+                        'train_mse': float(train_mse),
+                        'train_propensity': float(train_prop),
+                        'train_targeted_reg': float(train_treg),
+                        'val_loss': val_loss,
+                    })
+                    if best_state is not None:
+                        _restore_modules(best_state, repr_net, head_0, head_1, prop_head)
+                        if best_epsilon is not None:
+                            with torch.no_grad():
+                                epsilon.copy_(best_epsilon)
+                    if self.verbose:
+                        print(f"  DragonNet early stopped at epoch {epoch+1}")
+                    break
+
+            history.append({
+                'epoch': epoch + 1,
+                'train_loss': float(train_loss),
+                'train_mse': float(train_mse),
+                'train_propensity': float(train_prop),
+                'train_targeted_reg': float(train_treg),
+                'val_loss': val_loss,
+            })
 
             if self.verbose and (epoch + 1) % 50 == 0:
                 print(f"  DragonNet epoch {epoch+1}/{self.epochs}, "
-                      f"MSE={epoch_mse/n:.6f}, "
-                      f"Prop={epoch_prop/n:.6f}, "
-                      f"TReg={epoch_treg/n:.6f}")
+                      f"MSE={train_mse:.6f}, "
+                      f"Prop={train_prop:.6f}, "
+                      f"TReg={train_treg:.6f}")
 
         # Predict
         repr_net.eval()
@@ -1096,12 +1462,24 @@ class DragonNet:
         self._e_hat = e_hat
         self._device = device
 
-        model_info = {
-            'architecture': 'DragonNet',
+        model_info = _basic_neural_info(
+            architecture='DragonNet',
+            cate=cate,
+            mu0=mu0_orig,
+            mu1=mu1_orig,
+            D=D,
+            device=device,
+            history=history,
+            validation_fraction=self.validation_fraction,
+            early_stopping=self.early_stopping,
+            n_epochs_trained=len(history),
+        )
+        model_info.update({
             'repr_layers': self.repr_layers,
             'head_layers': self.head_layers,
             'propensity_weight': self.propensity_weight,
             'targeted_reg_weight': self.targeted_reg_weight,
+            'epsilon': float(epsilon.detach().cpu().item()),
             'epochs': self.epochs,
             'learning_rate': self.learning_rate,
             'weight_decay': self.weight_decay,
@@ -1111,17 +1489,13 @@ class DragonNet:
             'se_method': 'AIPW_influence_function',
             'ate_plugin': float(np.mean(cate)),
             'ate_aipw': ate_aipw,
+            'aipw_scores': aipw_scores,
             'propensity_mean': float(np.mean(e_hat)),
             'propensity_std': float(np.std(e_hat)),
-            'cate': cate,
-            'cate_mean': float(np.mean(cate)),
-            'cate_median': float(np.median(cate)),
-            'cate_std': float(np.std(cate)),
-            'cate_q25': float(np.percentile(cate, 25)),
-            'cate_q75': float(np.percentile(cate, 75)),
-            'n_treated': int(np.sum(D == 1)),
-            'n_control': int(np.sum(D == 0)),
-        }
+            'propensity_min': float(np.min(e_hat)),
+            'propensity_max': float(np.max(e_hat)),
+            'propensity': e_hat,
+        })
 
         return CausalResult(
             method='DragonNet (Shi et al. 2019)',
@@ -1252,12 +1626,18 @@ def _mmd_rbf(X, Y, bandwidth=None):
     Kyy = rbf(Y, Y)
     Kxy = rbf(X, Y)
 
-    # Unbiased MMD^2 estimator
-    mmd2 = (Kxx.sum() / max(nx * (nx - 1), 1)
-            + Kyy.sum() / max(ny * (ny - 1), 1)
-            - 2 * Kxy.sum() / (nx * ny))
+    # Unbiased MMD^2 estimator: exclude diagonal self-similarities.
+    if nx > 1:
+        xx = (Kxx.sum() - torch.diagonal(Kxx).sum()) / (nx * (nx - 1))
+    else:
+        xx = torch.tensor(0.0, device=X.device)
+    if ny > 1:
+        yy = (Kyy.sum() - torch.diagonal(Kyy).sum()) / (ny * (ny - 1))
+    else:
+        yy = torch.tensor(0.0, device=Y.device)
+    mmd2 = xx + yy - 2 * Kxy.sum() / (nx * ny)
 
-    return mmd2
+    return torch.clamp(mmd2, min=0.0)
 
 
 # ======================================================================

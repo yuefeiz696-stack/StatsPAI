@@ -24,6 +24,7 @@ outcome heads) factorisation. This keeps the import hierarchy light.
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
+import pandas as pd
 
 
 @dataclass
@@ -39,6 +40,115 @@ class CEVAEResult:
             f"  ITE spread: [{self.ite.min():.3f}, {self.ite.max():.3f}] "
             f"(median {np.median(self.ite):.3f})"
         )
+
+    def tidy(self) -> pd.DataFrame:
+        """Return a one-row CEVAE ATE table."""
+        return pd.DataFrame([{
+            "term": "ATE",
+            "estimate": self.ate,
+            "backend": self.backend,
+            "ite_mean": float(np.mean(self.ite)),
+            "ite_std": float(np.std(self.ite)),
+            "ite_q25": float(np.percentile(self.ite, 25)),
+            "ite_median": float(np.median(self.ite)),
+            "ite_q75": float(np.percentile(self.ite, 75)),
+        }])
+
+    def effects_frame(self) -> pd.DataFrame:
+        """Return unit-level ITE estimates."""
+        return pd.DataFrame({"unit": np.arange(len(self.ite)), "ite": self.ite})
+
+    def training_frame(self) -> pd.DataFrame:
+        """Return per-epoch CEVAE loss history."""
+        return pd.DataFrame({
+            "epoch": np.arange(1, len(self.loss_history) + 1),
+            "loss": self.loss_history,
+        })
+
+    def to_markdown(self, path: str | None = None, digits: int = 4) -> str:
+        parts = [
+            "# CEVAE",
+            "",
+            "## Summary",
+            self.tidy().round(digits).to_markdown(index=False),
+            "",
+            "## Unit-Level Effects",
+            self.effects_frame().head(20).round(digits).to_markdown(index=False),
+        ]
+        training = self.training_frame().round(digits)
+        if not training.empty:
+            parts.extend(["", "## Training Diagnostics", training.to_markdown(index=False)])
+        text = "\n".join(parts) + "\n"
+        if path is not None:
+            from pathlib import Path
+            Path(path).write_text(text, encoding="utf-8")
+        return text
+
+    def to_html(self, path: str | None = None, digits: int = 4) -> str:
+        html = "\n".join([
+            "<html><body>",
+            "<h1>CEVAE</h1>",
+            "<h2>Summary</h2>",
+            self.tidy().round(digits).to_html(index=False),
+            "<h2>Unit-Level Effects</h2>",
+            self.effects_frame().head(50).round(digits).to_html(index=False),
+            "<h2>Training Diagnostics</h2>",
+            self.training_frame().round(digits).to_html(index=False),
+            "</body></html>",
+        ])
+        if path is not None:
+            from pathlib import Path
+            Path(path).write_text(html, encoding="utf-8")
+        return html
+
+    def to_excel(self, path: str, digits: int = 6) -> str:
+        with pd.ExcelWriter(path) as writer:
+            self.tidy().round(digits).to_excel(
+                writer, sheet_name="Summary", index=False
+            )
+            self.effects_frame().round(digits).to_excel(
+                writer, sheet_name="Effects", index=False
+            )
+            self.training_frame().round(digits).to_excel(
+                writer, sheet_name="Training", index=False
+            )
+        return path
+
+    def plot(self, type: str = "ite", *, ax=None, figsize=(8, 5), bins: int = 30):
+        """Plot ITE distribution or training loss."""
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError as exc:
+            raise ImportError(
+                "matplotlib required for CEVAE plots. "
+                "Install: pip install statspai[plotting]"
+            ) from exc
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
+        typ = type.lower()
+        if typ in {"ite", "cate", "effects", "distribution"}:
+            ax.hist(self.ite, bins=bins, color="#2563EB", alpha=0.72,
+                    edgecolor="white")
+            ax.axvline(self.ate, color="#111827", linewidth=1.5, label="ATE")
+            ax.axvline(0, color="#9CA3AF", linestyle=":", linewidth=1)
+            ax.set_xlabel("Estimated individual treatment effect")
+            ax.set_ylabel("Count")
+            ax.set_title("CEVAE ITE Distribution")
+            ax.legend(frameon=False)
+        elif typ in {"loss", "training"}:
+            frame = self.training_frame()
+            ax.plot(frame["epoch"], frame["loss"], color="#2563EB", linewidth=1.6)
+            ax.set_xlabel("Epoch")
+            ax.set_ylabel("Loss")
+            ax.set_title("CEVAE Training Loss")
+        else:
+            raise ValueError("type must be 'ite' or 'loss'")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        fig.tight_layout()
+        return fig, ax
 
 
 class CEVAE:

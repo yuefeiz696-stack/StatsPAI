@@ -927,6 +927,13 @@ __all__ = [
     "TARNet",
     "CFRNet",
     "DragonNet",
+    "neural_effects_frame",
+    "neural_summary_frame",
+    "neural_training_frame",
+    "neural_causal_to_markdown",
+    "neural_causal_to_html",
+    "neural_causal_to_excel",
+    "neural_causal_plot",
     # Causal Discovery
     "notears",
     "NOTEARS",
@@ -1502,9 +1509,19 @@ _register_lazy("bayes",
     "policy_weight_prte", "policy_weight_marginal",
     "policy_weight_observed_prte",
 )
-_register_lazy("neural_causal",
+_register_lazy("neural_causal.models",
     "tarnet", "cfrnet", "dragonnet", "TARNet", "CFRNet", "DragonNet",
+)
+_register_lazy("neural_causal.gnn_causal",
     "gnn_causal", "GNNCausalResult",
+)
+_register_lazy("neural_causal.exports",
+    "neural_effects_frame", "neural_summary_frame", "neural_training_frame",
+    "neural_causal_to_markdown", "neural_causal_to_html",
+    "neural_causal_to_excel",
+)
+_register_lazy("neural_causal.plots",
+    "neural_causal_plot",
 )
 _register_lazy("neural_causal.cevae",
     "cevae", "CEVAE", "CEVAEResult",
