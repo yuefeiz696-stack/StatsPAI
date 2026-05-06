@@ -83,6 +83,7 @@ nav:
       - "v1.7.2 LLM-DAG setup: providers, env vars, configure_llm(), sp.paper(llm='auto')": guides/llm_dag_setup.md
       - "v1.9.0 Agent-native API surface: detect_design / preflight / audit / brief / cite / examples / session / MCP prompts": guides/agent_api.md
       - "v1.13 Stability tiers — parity-grade vs. frontier-grade (stable / experimental / deprecated + limitations)": guides/stability.md
+      - "v1.14 GPU acceleration — neural causal (PyTorch) + JAX feols + vmap'd bootstrap": guides/gpu_acceleration.md
   - Reference:
       - "Overview": reference/index.md
       - "Difference-in-differences": reference/did.md

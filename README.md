@@ -323,7 +323,7 @@ StatsPAI 1.4.0 is Sprint 2 of the 知识地图 v3 roadmap. Closes the four secon
 | Heterogeneity analysis | Manual subgroup splits + forest plots | Manual `lapply` + `ggplot` | **`subgroup_analysis()` with Wald test** |
 | Modern ML causal | Limited (no DML, no causal forest) | Fragmented (DoubleML, grf, SuperLearner separate) | **DML, Causal Forest, Meta-Learners, TMLE, DeepIV** |
 | Neural causal models | None | None | **TARNet, CFRNet, DragonNet** |
-| Accelerator-ready paths | CPU / Stata/MP multicore model | GPU support exists package-by-package | **Opt-in JAX/PyTorch backends under the same econometric API** |
+| Accelerator-ready paths | CPU / Stata/MP multicore model | GPU support exists package-by-package | **Opt-in JAX/PyTorch backends under the same econometric API ([guide](docs/guides/gpu_acceleration.md))** |
 | Causal discovery | None | `pcalg` (complex API) | **`notears()`, `pc_algorithm()`, `lingam()`, `ges()`** |
 | Spatial econometrics | None | 5 packages (spdep+spatialreg+sphet+splm+GWmodel) | **38 functions: weights→ESDA→ML/GMM→GWR/MGWR→panel** |
 | Policy learning | None | `policytree` (standalone) | **`policy_tree()` + `policy_value()`** |
@@ -339,7 +339,7 @@ StatsPAI is **not** a wrapper for R. We independently re-implement every algorit
 - **One result object, one API surface.** Every estimator — from `regress()` to `callaway_santanna()` to `causal_forest()` to `notears()` — returns a `CausalResult` with the same `.summary()` / `.plot()` / `.to_latex()` / `.cite()` interface. R users juggle 20+ incompatible S3 classes; StatsPAI users juggle one.
 - **Scope no single R or Python package matches.** DID + RD + Synth + Matching + DML + Meta-learners + TMLE + Neural Causal + Causal Discovery + Policy Learning + Conformal + Bunching + Spillover + Matrix Completion — all consistent, all under `sp.*`.
 - **Agent-native by design.** Self-describing schemas (`list_functions()`, `describe_function()`, `function_schema()`) make StatsPAI the first econometrics toolkit built for LLM-driven research workflows. No other package — in any language — offers this.
-- **Accelerator-ready where it matters.** Selected workloads can opt into accelerator backends without changing the public API: neural causal estimators route through PyTorch CUDA/MPS via `STATSPAI_TORCH_DEVICE`, and the HDFE residualizer exposes `backend="jax"`. This is not a universal GPU-speed claim; GPU benchmarks are hardware-specific and should be reported separately.
+- **Accelerator-ready where it matters.** Selected workloads can opt into accelerator backends without changing the public API: neural causal estimators route through PyTorch CUDA/MPS via `STATSPAI_TORCH_DEVICE`; the HDFE residualizer exposes `backend="jax"`; `sp.fast.feols_jax` runs end-to-end OLS on XLA; and **`sp.fast.feols_jax_bootstrap`** uses `jax.vmap` to lift pairs / cluster bootstrap into a single batched device program — 10–100x faster on CUDA / TPU than a sequential CPU loop at B ≥ 1000. See [GPU acceleration guide](docs/guides/gpu_acceleration.md). This is not a universal GPU-speed claim; most StatsPAI estimators are CPU-only by design (and that's the right choice for them).
 - **Publication pipeline out of the box.** Word + Excel + LaTeX + HTML + Markdown export from every estimator, not a separate `modelsummary`-style dance.
 
 If a method exists in R, we aim to match or exceed its feature set in Python — and then add what Python can uniquely offer: sklearn integration, opt-in JAX/PyTorch accelerator backends, and agent-native schemas.
