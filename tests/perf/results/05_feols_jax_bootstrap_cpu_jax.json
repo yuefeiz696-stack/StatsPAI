@@ -1,0 +1,108 @@
+{
+  "estimator": "feols_jax_bootstrap",
+  "side": "cpu_jax",
+  "mode": "cpu_jax",
+  "rows": [
+    {
+      "estimator": "feols_jax_bootstrap",
+      "side": "cpu_jax",
+      "n": 1000000,
+      "n_reps": 3,
+      "median_time_s": 0.6925476249307394,
+      "iqr_time_s": 0.15813125018030405,
+      "min_time_s": 0.6091956659220159,
+      "max_time_s": 0.76732691610232,
+      "peak_mem_mb": 792.828125,
+      "extra": {
+        "variant": "pairs",
+        "B": 3,
+        "n_clusters": 5000,
+        "p": 2,
+        "fe": [
+          "firm",
+          "year"
+        ]
+      }
+    },
+    {
+      "estimator": "feols_jax_bootstrap",
+      "side": "cpu_jax",
+      "n": 1000000,
+      "n_reps": 3,
+      "median_time_s": 0.6041725417599082,
+      "iqr_time_s": 0.1817134995944798,
+      "min_time_s": 0.5782785001210868,
+      "max_time_s": 0.7599919997155666,
+      "peak_mem_mb": 802.921875,
+      "extra": {
+        "variant": "cluster",
+        "B": 3,
+        "n_clusters": 5000,
+        "p": 2,
+        "fe": [
+          "firm",
+          "year"
+        ]
+      }
+    },
+    {
+      "estimator": "feols_jax_bootstrap",
+      "side": "cpu_jax",
+      "n": 1000000,
+      "n_reps": 3,
+      "median_time_s": 0.4826762918382883,
+      "iqr_time_s": 0.0710712093859911,
+      "min_time_s": 0.4394767079502344,
+      "max_time_s": 0.5105479173362255,
+      "peak_mem_mb": 735.015625,
+      "extra": {
+        "variant": "wild",
+        "B": 3,
+        "n_clusters": 5000,
+        "p": 2,
+        "fe": [
+          "firm",
+          "year"
+        ]
+      }
+    },
+    {
+      "estimator": "feols_jax_bootstrap",
+      "side": "cpu_jax",
+      "n": 1000000,
+      "n_reps": 3,
+      "median_time_s": 0.42695866571739316,
+      "iqr_time_s": 0.041922916658222675,
+      "min_time_s": 0.42526904214173555,
+      "max_time_s": 0.46719195879995823,
+      "peak_mem_mb": 737.25,
+      "extra": {
+        "variant": "wild_cluster",
+        "B": 3,
+        "n_clusters": 5000,
+        "p": 2,
+        "fe": [
+          "firm",
+          "year"
+        ]
+      }
+    }
+  ],
+  "hardware": {
+    "platform": "macOS-26.3.1-arm64-arm-64bit-Mach-O",
+    "processor": "arm",
+    "machine": "arm64",
+    "python": "3.13.5",
+    "cpu_logical": 8,
+    "cpu_physical": 8,
+    "mem_gb": 24.0
+  },
+  "extra": {
+    "n": 1000000,
+    "n_firms": 5000,
+    "n_years": 20,
+    "B": 3,
+    "formula": "y ~ x1 + x2 | firm + year",
+    "cluster": "firm"
+  }
+}
