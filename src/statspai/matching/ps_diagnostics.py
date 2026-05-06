@@ -15,6 +15,7 @@ ps_balance       : Comprehensive balance table with SMD, KS, variance ratios.
 Classes
 -------
 PSBalanceResult  : Container for balance diagnostics with summary/plot methods.
+BalanceDiagnosticsResult : Unified raw/weighted balance diagnostics.
 
 References
 ----------
@@ -25,7 +26,7 @@ Rosenbaum, P.R. and Rubin, D.B. (1983). Biometrika, 70(1), 41-55.
 Austin, P.C. (2011). Multivariate Behavioral Research, 46(3), 399-424. [@crump2009dealing]
 """
 
-from typing import Optional, List, Tuple, Union
+from typing import Any, Dict, Optional, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -383,6 +384,53 @@ class PSBalanceResult:
         return self.summary()
 
 
+class BalanceDiagnosticsResult:
+    """Container for raw/weighted matching balance diagnostics."""
+
+    def __init__(
+        self,
+        table: pd.DataFrame,
+        summary: Dict[str, Any],
+        ps: Optional[pd.Series] = None,
+        weights: Optional[pd.Series] = None,
+    ):
+        self.table = table
+        self.summary_stats = summary
+        self.ps = ps
+        self.weights = weights
+
+    def summary(self) -> str:
+        lines = [
+            "Balance Diagnostics",
+            "=" * 70,
+            self.table.to_string(float_format=lambda x: f"{x:.4f}"),
+            "",
+        ]
+        s = self.summary_stats
+        lines.append(
+            "Max |SMD| raw -> weighted: "
+            f"{s.get('max_abs_smd_raw', np.nan):.4f} -> "
+            f"{s.get('max_abs_smd_weighted', np.nan):.4f}"
+        )
+        lines.append(
+            "Covariates above threshold: "
+            f"{s.get('n_imbalanced_raw', 0)} -> "
+            f"{s.get('n_imbalanced_weighted', 0)}"
+        )
+        if "effective_sample_size" in s:
+            lines.append(f"Effective sample size: {s['effective_sample_size']:.2f}")
+        return "\n".join(lines)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "table": self.table.to_dict(orient="index"),
+            "summary": dict(self.summary_stats),
+        }
+
+    def __repr__(self):
+        return self.summary()
+
+
 def table_to_string(df: pd.DataFrame) -> str:
     """Format a DataFrame as an aligned text table."""
     return df.to_string(float_format=lambda x: f"{x:.4f}")
@@ -461,6 +509,151 @@ def ps_balance(
 
     table = pd.DataFrame(rows).set_index("variable")
     return PSBalanceResult(table=table, ps=ps)
+
+
+def balance_diagnostics(
+    data: pd.DataFrame,
+    treatment: str,
+    covariates: List[str],
+    weights: Optional[Union[np.ndarray, pd.Series, str]] = None,
+    ps: Optional[Union[np.ndarray, pd.Series, str]] = None,
+    method: str = "logit",
+    threshold: float = 0.1,
+) -> BalanceDiagnosticsResult:
+    """Unified balance diagnostics for matching and weighting estimators.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Analysis frame.
+    treatment : str
+        Binary treatment indicator.
+    covariates : list of str
+        Covariates to audit.
+    weights : array-like or str, optional
+        Observation weights after matching/weighting. If omitted, ATE
+        inverse-propensity weights are computed from ``ps``.
+    ps : array-like or str, optional
+        Propensity scores. If omitted, estimated with ``method``.
+    method : {'logit', 'probit', 'gbm'}, default 'logit'
+        Propensity-score model when ``ps`` is not supplied.
+    threshold : float, default 0.1
+        Balance threshold for absolute standardized mean differences.
+
+    Returns
+    -------
+    BalanceDiagnosticsResult
+        ``.table`` has one row per covariate; ``.summary_stats`` records
+        max/mean SMDs, imbalance counts, effective sample size, and
+        propensity-score overlap.
+    """
+    cols = [treatment] + list(covariates)
+    df = data[cols].dropna().copy()
+    if df.empty:
+        raise ValueError("No complete observations for balance diagnostics.")
+
+    D = df[treatment].to_numpy(dtype=float)
+    if not set(np.unique(D)).issubset({0, 1}):
+        raise ValueError(f"Treatment '{treatment}' must be binary.")
+
+    ps_series = _coerce_vector(ps, data, df.index, "propensity_score")
+    if ps_series is None:
+        ps_series = propensity_score(df, treatment, covariates, method=method)
+    ps_vals = np.clip(ps_series.to_numpy(dtype=float), 1e-8, 1 - 1e-8)
+
+    w_series = _coerce_vector(weights, data, df.index, "weights")
+    if w_series is None:
+        w_vals = np.where(D == 1, 1.0 / ps_vals, 1.0 / (1.0 - ps_vals))
+        w_series = pd.Series(w_vals, index=df.index, name="weights")
+    else:
+        w_vals = w_series.to_numpy(dtype=float)
+
+    treat_mask = D == 1
+    ctrl_mask = D == 0
+    rows = []
+    for cov in covariates:
+        x = df[cov].to_numpy(dtype=float)
+        x_t, x_c = x[treat_mask], x[ctrl_mask]
+        w_t, w_c = w_vals[treat_mask], w_vals[ctrl_mask]
+        smd_raw = _smd(x_t, x_c)
+        smd_weighted = _smd(x_t, x_c, w_t, w_c)
+        rows.append({
+            "variable": cov,
+            "mean_treat": float(np.mean(x_t)),
+            "mean_control": float(np.mean(x_c)),
+            "weighted_mean_treat": float(np.average(x_t, weights=w_t)),
+            "weighted_mean_control": float(np.average(x_c, weights=w_c)),
+            "smd_raw": float(smd_raw),
+            "smd_weighted": float(smd_weighted),
+            "variance_ratio_weighted": float(_variance_ratio(x_t, x_c, w_t, w_c)),
+            "ks_stat_weighted": float(_ks_stat(x_t, x_c, w_t, w_c)),
+            "balanced": bool(abs(smd_weighted) <= threshold),
+        })
+
+    table = pd.DataFrame(rows).set_index("variable")
+    abs_raw = table["smd_raw"].abs()
+    abs_wtd = table["smd_weighted"].abs()
+    ess = _effective_sample_size(w_vals)
+    ps_t, ps_c = ps_vals[treat_mask], ps_vals[ctrl_mask]
+    common_low = float(max(ps_t.min(), ps_c.min()))
+    common_high = float(min(ps_t.max(), ps_c.max()))
+    summary = {
+        "threshold": float(threshold),
+        "n_obs": int(len(df)),
+        "n_treated": int(treat_mask.sum()),
+        "n_control": int(ctrl_mask.sum()),
+        "max_abs_smd_raw": float(abs_raw.max()) if len(abs_raw) else np.nan,
+        "max_abs_smd_weighted": float(abs_wtd.max()) if len(abs_wtd) else np.nan,
+        "mean_abs_smd_raw": float(abs_raw.mean()) if len(abs_raw) else np.nan,
+        "mean_abs_smd_weighted": float(abs_wtd.mean()) if len(abs_wtd) else np.nan,
+        "n_imbalanced_raw": int((abs_raw > threshold).sum()),
+        "n_imbalanced_weighted": int((abs_wtd > threshold).sum()),
+        "effective_sample_size": float(ess),
+        "pscore_min": float(ps_vals.min()),
+        "pscore_max": float(ps_vals.max()),
+        "common_support_low": common_low,
+        "common_support_high": common_high,
+        "common_support_width": max(0.0, common_high - common_low),
+    }
+    return BalanceDiagnosticsResult(
+        table=table,
+        summary=summary,
+        ps=pd.Series(ps_vals, index=df.index, name="propensity_score"),
+        weights=w_series,
+    )
+
+
+def _coerce_vector(
+    value: Optional[Union[np.ndarray, pd.Series, str]],
+    data: pd.DataFrame,
+    index: pd.Index,
+    name: str,
+) -> Optional[pd.Series]:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        if value not in data.columns:
+            raise ValueError(f"Column {value!r} not found for {name}.")
+        return data.loc[index, value].astype(float).rename(name)
+    if isinstance(value, pd.Series):
+        return value.reindex(index).astype(float).rename(name)
+    arr = np.asarray(value, dtype=float).ravel()
+    if len(arr) == len(data):
+        return pd.Series(arr, index=data.index, name=name).loc[index]
+    if len(arr) == len(index):
+        return pd.Series(arr, index=index, name=name)
+    raise ValueError(
+        f"{name} length must match data ({len(data)}) or complete-case "
+        f"rows ({len(index)}); got {len(arr)}."
+    )
+
+
+def _effective_sample_size(weights: np.ndarray) -> float:
+    w = np.asarray(weights, dtype=float)
+    denom = float(np.sum(w ** 2))
+    if denom <= 0:
+        return np.nan
+    return float((np.sum(w) ** 2) / denom)
 
 
 # ======================================================================

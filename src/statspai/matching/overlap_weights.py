@@ -37,6 +37,7 @@ import pandas as pd
 from scipy import stats as sp_stats
 
 from ..core.results import CausalResult
+from .ps_diagnostics import balance_diagnostics
 
 
 def overlap_weights(
@@ -119,6 +120,14 @@ def overlap_weights(
     pval = float(2 * (1 - sp_stats.norm.cdf(abs(est) / se))) if se > 0 else 1.0
 
     ess = (h.sum()) ** 2 / (h ** 2).sum() if (h ** 2).sum() > 0 else np.nan
+    full_weights = T * h / ps + (1 - T) * h / (1 - ps)
+    balance = balance_diagnostics(
+        df,
+        treatment=treat,
+        covariates=covariates,
+        weights=full_weights,
+        ps=pd.Series(ps, index=df.index),
+    )
     model_info = {
         "model_type": "OverlapWeights" if estimand == "ATO" else f"PSWeights_{estimand}",
         "estimand": estimand,
@@ -130,6 +139,7 @@ def overlap_weights(
         "effective_sample_size": float(ess),
         "tilt_sum": float(h.sum()),
         "n_bootstrap": n_bootstrap,
+        "balance_summary": balance.summary_stats,
     }
     return CausalResult(
         method=f"Overlap Weights ({estimand})",
@@ -140,6 +150,7 @@ def overlap_weights(
         ci=ci,
         alpha=alpha,
         n_obs=n,
+        detail=balance.table,
         model_info=model_info,
     )
 

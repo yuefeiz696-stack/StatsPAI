@@ -8,7 +8,7 @@ legacy API backward compatibility, and all matching variants.
 import pytest
 import numpy as np
 import pandas as pd
-from statspai.matching import match, MatchEstimator
+from statspai.matching import match, MatchEstimator, balance_diagnostics
 from statspai.core.results import CausalResult
 
 
@@ -116,6 +116,18 @@ class TestNearestPropensity:
         )
         assert isinstance(result, CausalResult)
         assert abs(result.estimate - 2.0) < 1.5
+
+
+def test_balance_diagnostics_returns_summary(selection_bias_data):
+    out = balance_diagnostics(
+        selection_bias_data,
+        treatment="treat",
+        covariates=["x1", "x2"],
+    )
+    assert "smd_raw" in out.table.columns
+    assert "smd_weighted" in out.table.columns
+    assert out.summary_stats["n_obs"] == len(selection_bias_data)
+    assert out.summary_stats["effective_sample_size"] > 0
 
 
 class TestNearestMahalanobis:

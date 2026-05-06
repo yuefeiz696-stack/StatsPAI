@@ -58,6 +58,19 @@ def test_overlap_weights_tilt_matching():
     assert ess > 0
 
 
+def test_overlap_weights_attaches_balance_diagnostics():
+    df = _sim_obs(n=400, seed=12)
+    res = overlap_weights(
+        df, y="y", treat="t", covariates=["x1", "x2", "x3"],
+        estimand="ATO", n_bootstrap=20, seed=6,
+    )
+    assert res.detail is not None
+    assert "smd_weighted" in res.detail.columns
+    summary = res.model_info["balance_summary"]
+    assert summary["effective_sample_size"] > 0
+    assert "common_support_width" in summary
+
+
 # --------------------------------------------------------------------- #
 # CBPS
 # --------------------------------------------------------------------- #

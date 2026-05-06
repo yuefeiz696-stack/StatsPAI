@@ -115,6 +115,7 @@ from .matching import (
     match, MatchEstimator, ebalance, balanceplot, psplot,
     propensity_score, overlap_plot, trimming, love_plot,
     ps_balance, PSBalanceResult,
+    balance_diagnostics, BalanceDiagnosticsResult,
     optimal_match, cardinality_match,
     OptimalMatchResult, CardinalityMatchResult,
     overlap_weights, cbps,
@@ -658,6 +659,8 @@ __all__ = [
     "love_plot",
     "ps_balance",
     "PSBalanceResult",
+    "balance_diagnostics",
+    "BalanceDiagnosticsResult",
     # Double ML
     "dml",
     "DoubleML",

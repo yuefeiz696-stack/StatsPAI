@@ -47,6 +47,7 @@ from .ebalance import ebalance
 from .ps_diagnostics import (
     propensity_score, overlap_plot, trimming, love_plot,
     ps_balance, PSBalanceResult,
+    balance_diagnostics, BalanceDiagnosticsResult,
 )
 from .optimal import (
     optimal_match, cardinality_match,
@@ -242,6 +243,7 @@ __all__ = [
     'match', 'MatchEstimator', 'ebalance', 'balanceplot', 'psplot',
     'propensity_score', 'overlap_plot', 'trimming', 'love_plot',
     'ps_balance', 'PSBalanceResult',
+    'balance_diagnostics', 'BalanceDiagnosticsResult',
     'optimal_match', 'cardinality_match',
     'OptimalMatchResult', 'CardinalityMatchResult',
     'overlap_weights',
