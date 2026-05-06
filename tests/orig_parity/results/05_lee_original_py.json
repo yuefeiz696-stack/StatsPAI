@@ -1,0 +1,21 @@
+{
+  "module": "05_lee_original",
+  "side": "py",
+  "rows": [
+    {
+      "module": "05_lee_original",
+      "side": "py",
+      "statistic": "rd_jump_robust",
+      "estimate": 12.394533033714481,
+      "se": 4.147330892733667,
+      "n": 1390,
+      "published": null,
+      "citation": "rdrobust::rdrobust bias-corrected robust point and SE",
+      "extra": {}
+    }
+  ],
+  "extra": {
+    "data_source": "rdrobust::rdrobust_RDsenate",
+    "n_obs": 1390
+  }
+}

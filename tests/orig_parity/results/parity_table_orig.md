@@ -44,3 +44,10 @@ Data source: `causalsens::lalonde.psid` (2675 obs)
 | `adj_ols_att` | 751.9 | 751.9 | 700 | 2.2e-13 | 0.074 | Dehejia-Wahba (1999) covariate-adjusted OLS on NSW+PSID-1 |
 | `psm_att` | 2126 | 2126 | 1690 | 4.3e-16 | 0.26 | Dehejia-Wahba (1999) PSM 1:1 NN on NSW+PSID-1 |
 
+## Module `05_lee_original`
+Data source: `rdrobust::rdrobust_RDsenate` (1390 obs)
+
+| stat | sp | R | published | rel(sp vs R) | rel(sp vs published) | citation |
+|---|---:|---:|---:|---:|---:|---|
+| `rd_jump_robust` | 12.39 | 7.507 | — | 0.65 | — | rdrobust::rdrobust bias-corrected robust point and SE |
+
