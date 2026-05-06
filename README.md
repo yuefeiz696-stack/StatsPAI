@@ -124,6 +124,43 @@ StatsPAI's focus is **causal inference** — and on this axis we aim to be the m
 
 ---
 
+**📦 v1.15.0 (2026-05-06) — Five polish waves (IV / synth / decomposition / ML+causal / RDD)**
+
+A bundled minor release covering five module-level polish waves on top
+of v1.13.1 (1.14.0 was an internal cut never released to PyPI). **IV**:
+a new `sp.iv.iv_diag` reporting bundle (Olea-Pflueger effective F,
+Lee-McCrary-Moreira-Porter `tF` adjusted CI, Anderson-Rubin / Moreira
+CLR / Kleibergen K weak-IV-robust sets, Conley-Hansen-Rossi LTZ
+sensitivity, Blandhol-Mogstad-Słoczyński TSLS-as-LATE caveat) plus
+`sp.iv.iv_compare` forest comparison and four IV diagnostic plots.
+**Synth**: every estimator gains a publication-grade
+`.to_latex()` / `.to_excel()` / `.to_word()` table-export pipeline,
+trajectory and gap plots get prediction-interval / pre-RMSPE ribbons
+(Cattaneo-Feng-Titiunik 2021 / Cattaneo-Feng-Palomba-Titiunik 2025), and
+the SDID schema is canonicalised so `sp.synth_report(method='sdid')`
+produces a full report. **Decomposition**: a new Yu-Elwert (2024)
+distributional-decomposition module + a unified `sp.decompose()`
+dispatcher and shared influence-function / WLS / statistic-value
+backbone. **ML+causal**: `sp.dml_sensitivity` (Chernozhukov-Cinelli-
+Newey-Sharma-Syrgkanis 2022 long-story-short framework),
+`sp.dml_diagnostics` (DoubleML-style 2×2 panel), `sp.cate_eval`
+(Yadlowsky-et-al 2025 RATE / AUTOC / Qini decoupled from the forest
+backbone), causal-discovery DAG visualisation, `PolicyTreeResult`
+promotion, and ⚠️ correctness fixes in
+`forest.CausalForest.best_linear_projection` (now AIPW + HC1 SEs) and
+`mediation.mediate` (no silent bootstrap-failure substitution). **RDD**:
+three new estimators (`sp.rd_flex` cross-fit ML adjustment,
+`sp.rd_bias_aware_fuzzy` Anderson-Rubin-style weak-IV-robust fuzzy CI,
+`sp.rd_discrete` Kolesár-Rothe honest CIs for discrete RVs), three
+reporting helpers (`sp.rd_dashboard`, `sp.rd_compare`,
+`sp.rd_robustness_table`), `rho` parameter + discrete-RV / weak-first-
+stage warnings on `sp.rdrobust`, and a Cattaneo-Jansson-Ma (2020)
+boundary-adaptive `sp.rdplotdensity` upgrade. Also: BJS imputation
+(Borusyak-Jaravel-Spiess 2024) DiD support repaired, neural-causal /
+synth / spatial-DID export modules added, and a `sp.iv(absorb=...)`
+HDFE 2SLS path. Full notes in [`CHANGELOG.md`](CHANGELOG.md) under
+`[1.15.0]`.
+
 **📦 v1.13.1 (2026-05-05) — Stability tiers + external-validity dossier + cold-start surgery**
 
 v1.13 stamps every `FunctionSpec` with a `stability` tier (`stable` /
@@ -1277,7 +1314,7 @@ resolves to the latest version):
   author       = {Wang, Biaoyue},
   title        = {StatsPAI: The Agent-Native Causal Inference \& Econometrics Toolkit for Python},
   year         = {2026},
-  version      = {1.13.1},
+  version      = {1.15.0},
   doi          = {10.5281/zenodo.19933900},
   url          = {https://doi.org/10.5281/zenodo.19933900},
   license      = {MIT},

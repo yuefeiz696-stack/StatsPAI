@@ -2,7 +2,7 @@
 
 All notable changes to StatsPAI will be documented in this file.
 
-## [Unreleased]
+## [1.15.0] — 2026-05-05
 
 ### Docs — v1.14 GPU sprint follow-up
 
@@ -27,98 +27,14 @@ All notable changes to StatsPAI will be documented in this file.
   1.14.0 (GPU sprint cut, commit `a87d788`) to 1.15.0 (RDD polish
   cut) within a single day. Both `[1.14.0]` and `[1.15.0]` entries
   below remain historically correct for the work each release
-  contained; no retroactive renaming is needed.
-
-### Added — ML+causal polish
-
-A cross-cutting polish wave on the machine-learning + causal-inference
-module family (DML / meta-learners / causal forests / causal discovery
-/ policy learning / mediation / OPE) so the package matches the
-2024–2026 reporting frontier set by DoubleML, EconML, grf, and lmtp.
-
-- **DML-OVB sensitivity analysis** (`sp.dml_sensitivity`,
-  `DMLSensitivityResult`) implementing the Chernozhukov–Cinelli–
-  Newey–Sharma–Syrgkanis (2022) "Long Story Short" framework
-  (NBER WP 30302; arXiv:2112.13398). Returns the robustness value
-  RV_q (strength of confounder needed to shrink the estimate to
-  zero), the significance-loss value RV_{q,α}, scenario bias
-  bounds for user-specified (cf_y, cf_d), benchmark-covariate
-  comparisons, and a `plot()` rendering bias contours over the
-  (cf_d, cf_y) grid à la R `sensemakr`. Refs verified via NBER + arXiv.
-- **DML diagnostics bundle** (`sp.dml_diagnostics`, `DMLDiagnostics`)
-  bundles overlap (propensity histogram for IRM; |D-residual|
-  distribution for PLR), score density (with N(0,σ̂²) overlay and
-  Q-Q plot), residual-balance check (corr(X_k, Ỹ) and corr(X_k, D̃)
-  for each covariate), and an orthogonality-score test in a single
-  2×2 publication-style panel matching DoubleML's defaults
-  (Bach–Kurz–Chernozhukov–Spindler–Klaassen 2024, *JSS* 108(3),
-  DOI 10.18637/jss.v108.i03).
-- **Backbone-agnostic CATE evaluation** (`sp.cate_eval`,
-  `CATEEvalResult`) computing Yadlowsky–Fleming–Shah–Brunskill–
-  Wager (2025) RATE / AUTOC / Qini with closed-form influence-
-  function SEs for *any* CATE array (meta-learner, BCF, conformal-
-  CATE, neural-CATE), so the metric is decoupled from the forest
-  backbone. JASA 120(549), DOI 10.1080/01621459.2024.2393466
-  (arXiv:2111.07966). Verified via Crossref + arXiv.
-- ⚠️ **Correctness fix** — `forest.CausalForest.best_linear_projection`
-  is rewritten to use the Semenova–Chernozhukov (2021) AIPW
-  pseudo-outcome Γ_i with HC1 standard errors. The previous
-  implementation regressed the plug-in CATE estimate on X with
-  naïve OLS SEs, which was anti-conservative in finite samples.
-  *Econometrics Journal* 24(2): 264–289, DOI 10.1093/ectj/utaa027.
-  Users who relied on the prior BLP SEs should re-fit and report
-  the new HC1 numbers.
-- ⚠️ **Correctness fix** — `mediation.mediate` no longer silently
-  substitutes the point estimate for failed bootstrap replicates
-  (which artificially shrunk SEs). Each failure now triggers up to
-  five retry draws; remaining failures are dropped, and a
-  `RuntimeWarning` fires if more than 10% of replicates fail. The
-  result's `model_info` exposes `n_boot_requested`,
-  `n_boot_successful`, `n_boot_failed`, and `boot_failure_rate`
-  for audit. SEs estimated under heavy bootstrap failure on prior
-  versions should be regenerated.
-- **OPE namespace deduplication** — `sp.policy_learning.OPEResult`
-  is now an alias for the canonical `sp.ope.estimators.OPEResult`,
-  so `isinstance(sp.direct_method(X, A, R, π), sp.OPEResult)` is
-  True regardless of which entry point was used. The legacy
-  `estimator` / `n_obs` attributes survive as properties on the
-  unified class.
-- **Causal-discovery graph visualization** — every result class
-  (`LiNGAMResult`, `GESResult`, `FCIResult`, `ICPResult`,
-  `PCMCIResult`, `LPCMCIResult`, `DYNOTEARSResult`) and the dict-
-  shaped returns from `sp.notears` and `sp.pc_algorithm` (now
-  promoted to a `DAGDict` thin subclass) expose a unified
-  `.to_networkx()` / `.to_dot()` / `.plot()` / `.edge_list()` API.
-  Module-level helpers `sp.causal_discovery.{to_networkx, to_dot,
-  plot_dag, edge_list, shd}` work standalone on any adjacency
-  matrix; `shd()` follows the Tsamardinos–Brown–Aliferis (2006)
-  Structural Hamming Distance convention.
-- **PolicyTreeResult promotion** — `sp.policy_tree` now returns a
-  `PolicyTreeResult` (subclass of `dict` for full back-compat) with
-  influence-function SE on the policy value and a 95% CI from the
-  AIPW scores, plus a Graphviz-style `plot_tree()`, `summary()`,
-  `to_latex()`, `to_excel()`, and `cite()` (Athey & Wager 2021,
-  *Econometrica* 89(1)).
-- **Mediation sensitivity plot upgrade** — `MediateSensitivityResult.plot()`
-  now produces a publication-style ACME(ρ) curve with coloured fill
-  for the {ACME>0} / {ACME<0} regions, annotated baseline, and
-  explicit ρ-at-zero (the robustness threshold).
-- **DTR + QTE test coverage** — `tests/test_dtr.py` (10 new tests)
-  and `tests/test_qte.py` (7 new tests) close two zero-coverage
-  modules flagged in the v1.13 audit.
-- **`tests/test_ml_causal_polish.py`** (22 new tests) covers all of
-  the above end-to-end (BLP DR-score recovery, mediation bootstrap
-  diagnostics, OPE isinstance, DAG viz, `PolicyTreeResult` contract,
-  DML sensitivity / diagnostics, `cate_eval` direction, `to_word`
-  integration).
-- **Citation expansion** — 4 new bib entries added to `paper.bib`,
-  each verified independently via NBER / arXiv / journal site:
-  `chernozhukov2022long`, `semenova2021debiased`,
-  `yadlowsky2025evaluating`, `bach2024doubleml`.
+  contained; no retroactive renaming is needed. **PyPI publishes
+  `1.13.1 → 1.15.0` directly — `1.14.0` was an internal cut that was
+  never released to PyPI and is recorded here for git / CHANGELOG
+  history only.**
 
 ### Headline
 
-Four pushes in this cycle. First, an IV-module polish to the post-2022
+Five pushes in this cycle. First, an IV-module polish to the post-2022
 reporting standard (the `sp.iv.iv_diag` bundle, see below). Second, a
 synthetic-control polish pass: every estimator the package already
 ships now has a publication-grade table-export pipeline, the trajectory
@@ -133,7 +49,14 @@ each verified independently via Crossref / arXiv (refs verified
 via `crossref` + `arxiv`). Third, a decomposition-module polish — see
 the dedicated section below. Fourth, a **ML+causal polish wave (v1.15)**
 covering DML / meta-learners / causal forests / causal discovery /
-policy learning / mediation — see the dedicated section below.
+policy learning / mediation — see the dedicated section below. Fifth,
+an **RDD module polish (v1.15)** to the 2018–2026 frontier with three
+new estimators (`sp.rd_flex`, `sp.rd_bias_aware_fuzzy`, `sp.rd_discrete`),
+three reporting helpers (`sp.rd_dashboard`, `sp.rd_compare`,
+`sp.rd_robustness_table`), an `sp.rdrobust` polish pass with the CCT-2018
+`rho` parameter and discrete-RV / weak-first-stage warnings, and a
+`sp.rdplotdensity` upgrade to the Cattaneo-Jansson-Ma (2020) boundary-
+adaptive density estimator — see the dedicated section below.
 
 ### Added — ML+causal polish (v1.15)
 
@@ -333,7 +256,7 @@ policy learning / mediation — see the dedicated section below.
   and comparison LaTeX / Markdown / Excel exports, the new plot
   options, and SDID-canonicalised reports.
 
-### Added
+### Added — IV polish (v1.15)
 
 - `sp.iv.iv_diag(data, y, endog, instruments, exog, ...)` — modern IV
   reporting bundle. Returns an `IVDiagResult` containing:
@@ -385,7 +308,7 @@ policy learning / mediation — see the dedicated section below.
   enriched with verified volume / issue / pages: `mikusheva2024weak`,
   `lee2022valid`, `borusyak2022quasi`, `masten2021salvaging`.
 
-### Changed
+### Changed — IV polish (v1.15)
 
 - `docs/guides/choosing_iv_estimator.md` adds §10 (`sp.iv.iv_compare`
   forest comparison), §11 (`sp.iv.iv_diag` modern reporting bundle),
@@ -394,7 +317,7 @@ policy learning / mediation — see the dedicated section below.
   *Methodological coverage* documenting the new bundle and recent
   methodology references.
 
-### Notes
+### Notes — IV polish (v1.15)
 
 - `iv_diag` is single-endogenous by design; for multi-endogenous
   specifications continue to use `sp.weakrobust` plus
@@ -405,9 +328,7 @@ policy learning / mediation — see the dedicated section below.
   numeric path. The 18 new tests in `tests/iv/test_iv_diag.py` all
   pass; no regressions in the 188 prior IV tests.
 
-## [1.15.0] — 2026-05-05
-
-### Headline
+### Added — RDD polish (v1.15)
 
 RDD module polish to state-of-the-art (2018–2026 literature). Six
 additions close the gap between `sp.rd` and the canonical R/Stata
@@ -473,14 +394,14 @@ additions close the gap between `sp.rd` and the canonical R/Stata
   `bias_aware_fuzzy`, `noack_rothe`, `rd_discrete`,
   `kolesar_rothe`, `discrete_rv`, …).
 
-### Tests
+### Tests — RDD polish (v1.15)
 
 - New `tests/test_rd_polish.py` with 21 checks: estimator parity
   recovery, dispatcher routing, warning behaviour, dashboard smoke
   tests.
 - All 156 RD tests (existing + new) pass on Python 3.13 / macOS.
 
-### Citations
+### Citations — RDD polish (v1.15)
 
 DOI-verified via Crossref / publisher pages 2026-05-05:
 `noack2024biasaware`, `noack2025flexible`, `kolesar2018inference`,
