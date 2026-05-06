@@ -2,7 +2,7 @@
 
 All notable changes to StatsPAI will be documented in this file.
 
-## [Unreleased]
+## [1.15.0] — 2026-05-05
 
 ### Docs — `sp.dml_panel` citation correction
 
@@ -27,17 +27,21 @@ All notable changes to StatsPAI will be documented in this file.
   each unit's full time series to a single fold, and cluster-robust
   variance at the unit level — point-for-point match with the
   StatsPAI implementation. Companion Stata package: `xtdml`.
+- `sp.synth(method='cluster')` method-citations registry: ClusterSC
+  author list corrected from "Rho, S., Yan, X. et al. (2025)" to
+  "Rho, S., Tang, A. et al. (2025)" to match arXiv 2503.21629
+  (`paper.bib` was already correct).
 - Updated callsites: [`paper.bib`](paper.bib) (new
   `clarke2025double` entry), [`src/statspai/dml/panel_dml.py`](src/statspai/dml/panel_dml.py)
   (module docstring + within-transform comment), [`src/statspai/dml/__init__.py`](src/statspai/dml/__init__.py)
   (lazy-export tag), [`src/statspai/registry.py`](src/statspai/registry.py)
   (FunctionSpec description + reference field), [`README.md`](README.md)
-  (Long-panel Double-ML row), and the historical v1.7 entry below
+  (Long-panel Double-ML row), [`src/statspai/synth/report.py`](src/statspai/synth/report.py)
+  (ClusterSC author list), and the historical v1.7 entry below
   (annotated, not silently rewritten). No code logic, numerical path,
   API signature, or test changed — pure citation correction.
-- Refs verified via Crossref (DOI 10.1093/ectj/utaf011) and OpenAlex.
-
-## [1.15.0] — 2026-05-05
+- Refs verified via Crossref (DOIs `10.1093/ectj/utaf011` and arXiv
+  `2503.21629`) and OpenAlex.
 
 ### Docs — v1.14 GPU sprint follow-up
 
