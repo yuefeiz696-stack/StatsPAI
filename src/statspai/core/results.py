@@ -1449,6 +1449,7 @@ class CausalResult:
         - Staggered SCM → cohort-level ATT comparison
         - Causal Impact → 3-panel (original + pointwise + cumulative)
         - Matching → Love plot (covariate balance)
+        - Neural causal estimators → CATE distribution
         - RD → coefplot (use ``rdplot()`` for binned scatter)
         - Other → coefplot
         """
@@ -1488,6 +1489,10 @@ class CausalResult:
                 from ..matching.match import balanceplot
                 return balanceplot(self, **kwargs)
 
+            if self.model_info.get('neural_causal'):
+                from ..neural_causal.plots import neural_causal_plot
+                return neural_causal_plot(self, type='cate', **kwargs)
+
             return self._coefplot(**kwargs)
 
         # Explicit type overrides
@@ -1502,6 +1507,9 @@ class CausalResult:
         if type == 'balance':
             from ..matching.match import balanceplot
             return balanceplot(self, **kwargs)
+        if type in ('cate', 'ite', 'effects', 'propensity', 'overlap', 'loss'):
+            from ..neural_causal.plots import neural_causal_plot
+            return neural_causal_plot(self, type=type, **kwargs)
         return self._coefplot(**kwargs)
 
     def _is_synth_result(self) -> bool:
@@ -1559,6 +1567,193 @@ class CausalResult:
     # ------------------------------------------------------------------
     # Export
     # ------------------------------------------------------------------
+
+    def to_markdown(self, path: Optional[str] = None,
+                    digits: int = 4) -> str:
+        """Render the causal result as Markdown.
+
+        Neural causal results delegate to the richer neural exporter,
+        which includes unit-level effects and training diagnostics.
+        Other causal results render the broom-style tidy table plus
+        scalar diagnostics.
+        """
+        if self.model_info.get('neural_causal'):
+            from ..neural_causal.exports import neural_causal_to_markdown
+            return neural_causal_to_markdown(self, path=path, digits=digits)
+
+        tidy = self.tidy().round(digits)
+        glance = self.glance().round(digits)
+        parts = [
+            f"# {self.method}",
+            "",
+            "## Estimates",
+            tidy.to_markdown(index=False),
+            "",
+            "## Summary",
+            glance.to_markdown(index=False),
+        ]
+        if self.detail is not None and len(self.detail) > 0:
+            parts.extend([
+                "",
+                "## Detail",
+                self.detail.round(digits).to_markdown(index=False),
+            ])
+        text = "\n".join(parts) + "\n"
+        if path is not None:
+            from pathlib import Path
+            Path(path).write_text(text, encoding="utf-8")
+        return text
+
+    def to_html(self, path: Optional[str] = None,
+                digits: int = 4) -> str:
+        """Render the causal result as an HTML report."""
+        if self.model_info.get('neural_causal'):
+            from ..neural_causal.exports import neural_causal_to_html
+            return neural_causal_to_html(self, path=path, digits=digits)
+
+        tidy = self.tidy().round(digits)
+        glance = self.glance().round(digits)
+        blocks = [
+            "<html><body>",
+            f"<h1>{_html_escape(self.method)}</h1>",
+            "<h2>Estimates</h2>",
+            tidy.to_html(index=False),
+            "<h2>Summary</h2>",
+            glance.to_html(index=False),
+        ]
+        if self.detail is not None and len(self.detail) > 0:
+            blocks.extend([
+                "<h2>Detail</h2>",
+                self.detail.round(digits).to_html(index=False),
+            ])
+        blocks.append("</body></html>")
+        html = "\n".join(blocks)
+        if path is not None:
+            from pathlib import Path
+            Path(path).write_text(html, encoding="utf-8")
+        return html
+
+    def to_excel(self, path: str, digits: int = 6) -> str:
+        """Write a multi-sheet Excel workbook for the causal result."""
+        if self.model_info.get('neural_causal'):
+            from ..neural_causal.exports import neural_causal_to_excel
+            return neural_causal_to_excel(self, path, digits=digits)
+
+        with pd.ExcelWriter(path) as writer:
+            self.tidy().round(digits).to_excel(
+                writer, sheet_name="Estimates", index=False
+            )
+            self.glance().round(digits).to_excel(
+                writer, sheet_name="Summary", index=False
+            )
+            if self.detail is not None and len(self.detail) > 0:
+                self.detail.round(digits).to_excel(
+                    writer, sheet_name="Detail", index=False
+                )
+            diagnostics = _filter_jsonable_scalars(self.model_info)
+            if diagnostics:
+                pd.DataFrame([diagnostics]).to_excel(
+                    writer, sheet_name="Diagnostics", index=False
+                )
+        return path
+
+    def to_word(
+        self,
+        path: str,
+        digits: int = 4,
+        caption: Optional[str] = None,
+    ) -> str:
+        """Write a Word (``.docx``) report for the causal result.
+
+        Produces a publication-style three-block document:
+
+        1. Title (``caption`` or ``"<method> Results"``).
+        2. Estimates table (variables × coefficient/SE/t/p/CI), formatted
+           with stars (``* p<0.1, ** p<0.05, *** p<0.01``) and Times New
+           Roman 9-10pt typography matching :file:`output/_aer_style.py`.
+        3. Detail table (group/time/ATT or estimator-specific) if
+           ``self.detail`` is non-empty.
+        4. Trailing notes paragraph: ``"Standard errors in parentheses.
+           Observations: N. Method: <method>."``.
+
+        Requires ``python-docx``.
+        """
+        try:
+            from docx import Document
+            from docx.shared import Pt
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            from docx.enum.table import WD_TABLE_ALIGNMENT
+        except ImportError as e:  # pragma: no cover
+            raise ImportError(
+                "python-docx required for to_word(). "
+                "Install: pip install python-docx"
+            ) from e
+        from ..output._aer_style import (
+            apply_word_booktab_rules,
+            style_word_table_typography,
+            add_word_notes_paragraph,
+        )
+
+        doc = Document()
+        title = caption or f"{self.method} — {self.estimand} Estimates"
+        p = doc.add_paragraph()
+        run = p.add_run(title)
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.name = "Times New Roman"
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        def _write_df_to_table(df: pd.DataFrame) -> None:
+            n_rows = len(df) + 1
+            n_cols = len(df.columns) + 1
+            table = doc.add_table(rows=n_rows, cols=n_cols)
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            table.autofit = True
+            table.rows[0].cells[0].text = ""
+            for j, col in enumerate(df.columns, 1):
+                table.rows[0].cells[j].text = str(col)
+            for i, (idx, row) in enumerate(df.iterrows()):
+                table.rows[i + 1].cells[0].text = str(idx)
+                for j, val in enumerate(row, 1):
+                    if isinstance(val, float):
+                        cell_text = f"{val:.{digits}f}" if np.isfinite(val) else ""
+                    elif pd.isna(val):
+                        cell_text = ""
+                    else:
+                        cell_text = str(val)
+                    table.rows[i + 1].cells[j].text = cell_text
+            style_word_table_typography(
+                table, header_rows=(0,),
+                header_pt=10, body_pt=9,
+                align_first_col="left", align_data_cols="center",
+            )
+            apply_word_booktab_rules(table, header_top_idx=0, header_bot_idx=0)
+
+        # Estimates block — always present
+        tidy = self.tidy().round(digits).set_index(
+            self.tidy().columns[0]
+        ) if "term" in self.tidy().columns or "estimand" in self.tidy().columns else \
+            self.tidy().round(digits)
+        _write_df_to_table(tidy)
+
+        # Detail block — group/time ATTs, etc.
+        if self.detail is not None and len(self.detail) > 0:
+            doc.add_paragraph().add_run("Detail").bold = True
+            detail_view = self.detail.round(digits)
+            if not detail_view.index.is_unique or detail_view.index.equals(
+                pd.RangeIndex(len(detail_view))
+            ):
+                detail_view = detail_view.reset_index(drop=True)
+            _write_df_to_table(detail_view)
+
+        notes = (
+            "Standard errors in parentheses. "
+            "* p<0.1, ** p<0.05, *** p<0.01. "
+            f"Observations: {self.n_obs:,}. Method: {self.method}."
+        )
+        add_word_notes_paragraph(doc, notes)
+        doc.save(path)
+        return path
 
     def to_latex(self, caption: Optional[str] = None,
                  label: Optional[str] = None) -> str:

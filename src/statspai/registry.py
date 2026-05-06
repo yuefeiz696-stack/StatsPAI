@@ -813,6 +813,132 @@ def _build_registry():
         typical_n_min=500,
     ))
 
+    _neural_common_params = [
+        ParamSpec("data", "DataFrame", True),
+        ParamSpec("y", "str", True, description="Outcome"),
+        ParamSpec("treat", "str", True, description="Binary treatment column"),
+        ParamSpec("covariates", "list", True, description="Numeric covariate columns"),
+        ParamSpec("repr_layers", "list", False, [200, 200],
+                  "Shared representation hidden-layer sizes"),
+        ParamSpec("head_layers", "list", False, [100],
+                  "Outcome-head hidden-layer sizes"),
+        ParamSpec("epochs", "int", False, 300, "Training epochs"),
+        ParamSpec("batch_size", "int", False, 256, "Mini-batch size"),
+        ParamSpec("learning_rate", "float", False, 1e-3, "Adam learning rate"),
+        ParamSpec("dropout", "float", False, 0.1, "Representation dropout rate"),
+        ParamSpec("validation_fraction", "float", False, 0.0,
+                  "Holdout fraction for validation-loss diagnostics"),
+        ParamSpec("early_stopping", "bool", False, False,
+                  "Stop on validation-loss patience when validation_fraction > 0"),
+        ParamSpec("random_state", "int", False, 42, "Random seed"),
+    ]
+    _neural_common_pre = [
+        "treatment is binary 0/1; use other estimators for multi-valued treatments",
+        "covariates are numeric and include all measured confounders for ignorability",
+        "n is large enough for neural nets; use validation_fraction for overfit diagnostics",
+        "install statspai[neural] or torch for the PyTorch backend",
+    ]
+    _neural_common_assumptions = [
+        "Unconfoundedness: Y(0), Y(1) independent of treatment conditional on X",
+        "Overlap: both treatment arms have support in the learned representation",
+        "Network optimization reaches a useful local optimum under the chosen architecture",
+        "CATE is a meaningful function of the supplied covariates, not latent-only variation",
+    ]
+    _neural_common_failures = [
+        FailureMode(
+            symptom="validation loss rises while training loss falls",
+            exception="statspai.AssumptionWarning",
+            remedy="Enable early_stopping=True, raise dropout/weight_decay, or shrink the network.",
+            alternative="sp.tarnet",
+        ),
+        FailureMode(
+            symptom="estimated CATE distribution is extreme or multimodal without substantive support",
+            exception="statspai.AssumptionWarning",
+            remedy="Inspect sp.neural_causal_plot(result, type='cate') and compare with DML/TMLE.",
+            alternative="sp.tmle",
+        ),
+        FailureMode(
+            symptom="propensity scores concentrate near 0 or 1",
+            exception="statspai.AssumptionViolation",
+            remedy="Restrict to the overlap sample or use overlap-weighted estimands.",
+            alternative="sp.overlap_weights",
+        ),
+    ]
+
+    register(FunctionSpec(
+        name="tarnet",
+        category="neural_causal",
+        description=(
+            "Treatment-Agnostic Representation Network for neural CATE/ATE "
+            "estimation. Stores CATE, potential-outcome predictions, training "
+            "diagnostics, and export-ready unit effects."
+        ),
+        params=_neural_common_params,
+        returns="CausalResult",
+        example='sp.tarnet(df, y="outcome", treat="treated", covariates=["x1","x2"], validation_fraction=0.2)',
+        tags=["neural_causal", "tarnet", "cate", "representation_learning", "pytorch"],
+        reference="Shalit, Johansson & Sontag (2017) ICML",
+        pre_conditions=_neural_common_pre,
+        assumptions=_neural_common_assumptions,
+        failure_modes=_neural_common_failures,
+        alternatives=["cfrnet", "dragonnet", "tmle", "dml", "causal_forest"],
+        typical_n_min=1000,
+        validation_status="validated",
+    ))
+
+    register(FunctionSpec(
+        name="cfrnet",
+        category="neural_causal",
+        description=(
+            "Counterfactual Regression Network: TARNet plus an MMD/IPM "
+            "representation-balance penalty for neural CATE/ATE estimation."
+        ),
+        params=_neural_common_params + [
+            ParamSpec("ipm_weight", "float", False, 1.0,
+                      "Weight on the MMD representation-balance penalty"),
+        ],
+        returns="CausalResult",
+        example='sp.cfrnet(df, y="outcome", treat="treated", covariates=["x1","x2"], ipm_weight=1.0)',
+        tags=["neural_causal", "cfrnet", "cate", "mmd", "representation_balance", "pytorch"],
+        reference="Shalit, Johansson & Sontag (2017) ICML",
+        pre_conditions=_neural_common_pre,
+        assumptions=_neural_common_assumptions + [
+            "The IPM/MMD penalty is appropriate for the scale of the learned representation",
+        ],
+        failure_modes=_neural_common_failures,
+        alternatives=["tarnet", "dragonnet", "tmle", "dml", "causal_forest"],
+        typical_n_min=1000,
+        validation_status="validated",
+    ))
+
+    register(FunctionSpec(
+        name="dragonnet",
+        category="neural_causal",
+        description=(
+            "DragonNet: neural potential-outcome heads plus a propensity head "
+            "and targeted regularisation; reports AIPW ATE, CATE, propensity "
+            "overlap diagnostics, and export-ready unit effects."
+        ),
+        params=_neural_common_params + [
+            ParamSpec("propensity_weight", "float", False, 1.0,
+                      "Weight on the propensity cross-entropy loss"),
+            ParamSpec("targeted_reg_weight", "float", False, 1.0,
+                      "Weight on targeted regularisation"),
+        ],
+        returns="CausalResult",
+        example='sp.dragonnet(df, y="outcome", treat="treated", covariates=["x1","x2"], validation_fraction=0.2)',
+        tags=["neural_causal", "dragonnet", "cate", "aipw", "targeted_regularisation", "pytorch"],
+        reference="Shi, Blei & Veitch (2019) NeurIPS",
+        pre_conditions=_neural_common_pre,
+        assumptions=_neural_common_assumptions + [
+            "The learned propensity head is calibrated enough for AIPW correction",
+        ],
+        failure_modes=_neural_common_failures,
+        alternatives=["tmle", "tarnet", "cfrnet", "dml", "causal_forest"],
+        typical_n_min=1000,
+        validation_status="validated",
+    ))
+
     register(FunctionSpec(
         name="causal_forest",
         category="causal",
