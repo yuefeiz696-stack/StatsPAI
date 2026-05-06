@@ -18,9 +18,13 @@ donors (by Euclidean distance) to the selected cluster.
 
 References
 ----------
-Rho, S. (2024). "Cluster Synthetic Control Methods."
+Rho, S., Tang, A., Bergam, N., Cummings, R. and Misra, V. (2025).
+"ClusterSC: Advancing Synthetic Control with Donor Selection."
+arXiv:2503.21629. [@rho2025clustersc]
+
 Billmeier, A. and Nannicini, T. (2013). "Assessing Economic Liberalization
-    Episodes: A Synthetic Control Approach."
+Episodes: A Synthetic Control Approach." Review of Economics and
+Statistics, 95(3), 983–1001.
 """
 
 from __future__ import annotations

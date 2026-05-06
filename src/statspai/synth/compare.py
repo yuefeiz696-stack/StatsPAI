@@ -198,6 +198,46 @@ class SynthComparison:
         result_list = list(self.results.values())
         return synthplot(result_list, type="compare", **kwargs)
 
+    # ------------------------------------------------------------------ #
+    #  Publication-grade exports
+    # ------------------------------------------------------------------ #
+
+    def to_latex(self, **kwargs) -> str:
+        """Render the comparison as a publication-grade LaTeX table.
+
+        Forwards to :func:`statspai.synth.exports.synth_to_latex` with
+        the side-by-side multi-method layout.
+
+        Parameters
+        ----------
+        **kwargs
+            See :func:`synth_to_latex` (e.g. ``caption``, ``label``,
+            ``show_weights``, ``digits``).
+
+        Returns
+        -------
+        str
+        """
+        from .exports import synth_to_latex
+        return synth_to_latex(self, **kwargs)
+
+    def to_markdown(self, **kwargs) -> str:
+        """Render the comparison as a Markdown table.
+
+        Forwards to :func:`statspai.synth.exports.synth_to_markdown`.
+        """
+        from .exports import synth_to_markdown
+        return synth_to_markdown(self, **kwargs)
+
+    def to_excel(self, path: str, **kwargs) -> str:
+        """Write a multi-sheet Excel workbook covering all methods.
+
+        Forwards to :func:`statspai.synth.exports.synth_to_excel`.
+        Returns the absolute path of the file written.
+        """
+        from .exports import synth_to_excel
+        return synth_to_excel(self, path, **kwargs)
+
 
 # ====================================================================== #
 #  Recommendation algorithm

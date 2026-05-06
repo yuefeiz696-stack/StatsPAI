@@ -16,9 +16,9 @@ Two approaches
 
 References
 ----------
-Sun, L. (2023).
+Sun, L., Ben-Michael, E. and Feller, A. (2025).
 "Using Multiple Outcomes to Improve the Synthetic Control Method."
-*Review of Economics and Statistics*, forthcoming.
+*Review of Economics and Statistics*. [@sun2023multiple]
 """
 
 from __future__ import annotations

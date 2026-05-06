@@ -53,15 +53,181 @@ _METHOD_LABELS: Dict[str, str] = {
     "mc": "Matrix Completion (Athey et al., 2021)",
     "matrix_completion": "Matrix Completion (Athey et al., 2021)",
     "discos": "Distributional SCM (Gunsilius, 2023)",
-    "scpi": "SC Prediction Intervals (Cattaneo et al., 2021)",
+    "scpi": "SC Prediction Intervals (Cattaneo, Feng & Titiunik, 2021)",
+    "conformal": "Conformal SC (Chernozhukov, Wüthrich & Zhu, 2021)",
+    "bayesian": "Bayesian SCM with MCMC posterior",
+    "bsts": "Bayesian Structural Time Series (Brodersen et al., 2015)",
+    "causal_impact": "Bayesian Structural Time Series (Brodersen et al., 2015)",
+    "penscm": "Penalized SCM (Abadie & L'Hour, 2021)",
+    "abadie_lhour": "Penalized SCM (Abadie & L'Hour, 2021)",
+    "fdid": "Forward DID (Li, 2024)",
+    "forward_did": "Forward DID (Li, 2024)",
+    "cluster": "Cluster SCM (Rho et al., 2025)",
+    "sparse": "Sparse SCM with L1 penalty (Amjad, Shah & Shen, 2018)",
+    "lasso": "Sparse SCM with L1 penalty (Amjad, Shah & Shen, 2018)",
+    "kernel": "Kernel SCM",
+    "kernel_ridge": "Kernel-ridge SCM",
+    "multi_outcome": "Multi-outcome SCM (Sun, Ben-Michael & Feller, 2023)",
+    "sequential_sdid": "Sequential SDID for staggered adoption",
+    "synth_survival": "Synthetic Survival Control (Han & Shah, 2025)",
 }
 
-_CITATION_TEXT = (
-    "Abadie, A., Diamond, A. and Hainmueller, J. (2010). "
-    '"Synthetic Control Methods for Comparative Case Studies: '
-    "Estimating the Effect of California's Tobacco Control Program.\" "
-    "Journal of the American Statistical Association, 105(490), 493-505."
-)
+# Method-specific citations. Each entry is the human-readable string used
+# in the report's "Citation" section; bibtex equivalents live in
+# paper.bib under the listed keys, never duplicated here.
+_METHOD_CITATIONS: Dict[str, str] = {
+    "classic": (
+        "Abadie, A., Diamond, A. and Hainmueller, J. (2010). "
+        '"Synthetic Control Methods for Comparative Case Studies: '
+        "Estimating the Effect of California's Tobacco Control Program.\" "
+        "Journal of the American Statistical Association, 105(490), 493–505. "
+        "[@abadie2010synthetic]"
+    ),
+    "augmented": (
+        "Ben-Michael, E., Feller, A. and Rothstein, J. (2021). "
+        '"The Augmented Synthetic Control Method." '
+        "Journal of the American Statistical Association, 116(536), 1789–1803. "
+        "[@benmichael2021augmented]"
+    ),
+    "ascm": (
+        "Ben-Michael, E., Feller, A. and Rothstein, J. (2021). "
+        '"The Augmented Synthetic Control Method." '
+        "Journal of the American Statistical Association, 116(536), 1789–1803. "
+        "[@benmichael2021augmented]"
+    ),
+    "sdid": (
+        "Arkhangelsky, D., Athey, S., Hirshberg, D., Imbens, G. and Wager, S. "
+        '(2021). "Synthetic Difference-in-Differences." '
+        "American Economic Review, 111(12), 4088–4118. "
+        "[@arkhangelsky2021synthetic]"
+    ),
+    "gsynth": (
+        "Xu, Y. (2017). "
+        '"Generalized Synthetic Control Method: Causal Inference with '
+        "Interactive Fixed Effects Models.\" "
+        "Political Analysis, 25(1), 57–76. [@xu2017generalized]"
+    ),
+    "factor": (
+        "Xu, Y. (2017). "
+        '"Generalized Synthetic Control Method." '
+        "Political Analysis, 25(1), 57–76. [@xu2017generalized]"
+    ),
+    "staggered": (
+        "Ben-Michael, E., Feller, A. and Rothstein, J. (2022). "
+        '"Synthetic Controls with Staggered Adoption." '
+        "Journal of the Royal Statistical Society Series B, 84(2), 351–381. "
+        "[@benmichael2022synthetic]"
+    ),
+    "mc": (
+        "Athey, S., Bayati, M., Doudchenko, N., Imbens, G. and Khosravi, K. "
+        '(2021). "Matrix Completion Methods for Causal Panel Data Models." '
+        "Journal of the American Statistical Association, 116(536), 1716–1730. "
+        "[@athey2021matrix]"
+    ),
+    "matrix_completion": (
+        "Athey, S., Bayati, M., Doudchenko, N., Imbens, G. and Khosravi, K. "
+        '(2021). "Matrix Completion Methods for Causal Panel Data Models." '
+        "Journal of the American Statistical Association, 116(536), 1716–1730. "
+        "[@athey2021matrix]"
+    ),
+    "discos": (
+        "Gunsilius, F.F. (2023). "
+        '"Distributional Synthetic Controls." '
+        "Econometrica, 91(3). [@gunsilius2023distributional]"
+    ),
+    "scpi": (
+        "Cattaneo, M.D., Feng, Y. and Titiunik, R. (2021). "
+        '"Prediction Intervals for Synthetic Control Methods." '
+        "Journal of the American Statistical Association, 116(536), 1865–1880. "
+        "[@cattaneo2021prediction]"
+    ),
+    "conformal": (
+        "Chernozhukov, V., Wüthrich, K. and Zhu, Y. (2021). "
+        '"An Exact and Robust Conformal Inference Method for '
+        "Counterfactual and Synthetic Controls.\" "
+        "Journal of the American Statistical Association, 116(536), 1849–1864. "
+        "[@chernozhukov2021exact]"
+    ),
+    "demeaned": (
+        "Ferman, B. and Pinto, C. (2021). "
+        '"Synthetic Controls with Imperfect Pre-Treatment Fit." '
+        "Quantitative Economics, 12(4), 1197–1221. [@ferman2021synthetic]"
+    ),
+    "detrended": (
+        "Ferman, B. and Pinto, C. (2021). "
+        '"Synthetic Controls with Imperfect Pre-Treatment Fit." '
+        "Quantitative Economics, 12(4), 1197–1221. [@ferman2021synthetic]"
+    ),
+    "unconstrained": (
+        "Doudchenko, N. and Imbens, G.W. (2016). "
+        '"Balancing, Regression, Difference-in-Differences and Synthetic '
+        "Control Methods: A Synthesis.\" NBER Working Paper No. 22791. "
+        "[@doudchenko2016balancing]"
+    ),
+    "elastic_net": (
+        "Doudchenko, N. and Imbens, G.W. (2016). "
+        '"Balancing, Regression, Difference-in-Differences and Synthetic '
+        "Control Methods: A Synthesis.\" NBER Working Paper No. 22791. "
+        "[@doudchenko2016balancing]"
+    ),
+    "penscm": (
+        "Abadie, A. and L'Hour, J. (2021). "
+        '"A Penalized Synthetic Control Estimator for Disaggregated Data." '
+        "Journal of the American Statistical Association, 116(536), 1817–1834. "
+        "[@abadie2021penalized]"
+    ),
+    "abadie_lhour": (
+        "Abadie, A. and L'Hour, J. (2021). "
+        '"A Penalized Synthetic Control Estimator for Disaggregated Data." '
+        "Journal of the American Statistical Association, 116(536), 1817–1834. "
+        "[@abadie2021penalized]"
+    ),
+    "bsts": (
+        "Brodersen, K.H., Gallusser, F., Koehler, J., Remy, N. and Scott, S.L. "
+        '(2015). "Inferring Causal Impact Using Bayesian Structural Time-Series '
+        "Models.\" Annals of Applied Statistics, 9(1), 247–274. "
+        "[@brodersen2015inferring]"
+    ),
+    "causal_impact": (
+        "Brodersen, K.H., Gallusser, F., Koehler, J., Remy, N. and Scott, S.L. "
+        '(2015). "Inferring Causal Impact Using Bayesian Structural Time-Series '
+        "Models.\" Annals of Applied Statistics, 9(1), 247–274. "
+        "[@brodersen2015inferring]"
+    ),
+    "fdid": (
+        "Li, K.T. (2024). "
+        '"Frontiers: A Simple Forward Difference-in-Differences Method." '
+        "[@li2024forward]"
+    ),
+    "forward_did": (
+        "Li, K.T. (2024). "
+        '"Frontiers: A Simple Forward Difference-in-Differences Method." '
+        "[@li2024forward]"
+    ),
+    "multi_outcome": (
+        "Sun, L., Ben-Michael, E. and Feller, A. (2023). "
+        '"Using Multiple Outcomes to Improve the Synthetic Control Method." '
+        "[@sun2023multiple]"
+    ),
+    "cluster": (
+        "Rho, S., Yan, X. et al. (2025). "
+        '"ClusterSC: Cluster-Aware Synthetic Control." '
+        "arXiv:2503.21629. [@rho2025clustersc]"
+    ),
+    "sparse": (
+        "Amjad, M., Shah, D. and Shen, D. (2018). "
+        '"Robust Synthetic Control." '
+        "Journal of Machine Learning Research, 19(22), 1–51."
+    ),
+    "lasso": (
+        "Amjad, M., Shah, D. and Shen, D. (2018). "
+        '"Robust Synthetic Control." '
+        "Journal of Machine Learning Research, 19(22), 1–51."
+    ),
+}
+
+# Backwards-compatible default — used when the report can't infer the method
+_CITATION_TEXT = _METHOD_CITATIONS["classic"]
 
 _CITATION_BIBTEX = (
     "@article{abadie2010synthetic,\n"
@@ -75,6 +241,78 @@ _CITATION_BIBTEX = (
     "  year={2010}\n"
     "}"
 )
+
+
+def _citation_for(method: str) -> str:
+    """Look up the human-readable citation for a method.
+
+    Falls back to the classic Abadie–Diamond–Hainmueller (2010) reference
+    when the variant has no specific entry, so the report always closes
+    with a citation rather than a placeholder.
+    """
+    return _METHOD_CITATIONS.get(method, _CITATION_TEXT)
+
+
+def _canonicalise_mi(
+    result: Any, treated_unit: Any, treatment_time: Any,
+) -> Dict[str, Any]:
+    """Return a model_info dict normalised to the report's expected schema.
+
+    Different SCM variants store identical concepts under different
+    keys. SDID, for example, uses ``T_pre`` / ``T_post`` / ``n_control``
+    instead of ``n_pre_periods`` / ``n_post_periods`` / ``n_donors``,
+    and exposes ``Y_obs`` rather than building a ``gap_table``. This
+    helper backfills the canonical names plus a recomputed
+    ``gap_table`` and ``pre_treatment_rmse`` so the existing text /
+    Markdown / LaTeX formatters behave uniformly across variants.
+
+    The returned dict is a shallow copy with the canonical keys
+    overwritten — callers that need the original schema should keep
+    working with ``result.model_info`` directly.
+    """
+    from .exports import _gap_table as _exp_gap_table  # local import
+    from .exports import _pre_rmspe as _exp_pre_rmspe
+
+    raw = result.model_info or {}
+    mi: Dict[str, Any] = dict(raw)
+
+    # Treated unit / treatment time
+    if "treated_unit" not in mi:
+        if treated_unit is not None:
+            mi["treated_unit"] = treated_unit
+        elif "treated_units" in raw and isinstance(raw["treated_units"], list):
+            tu = raw["treated_units"]
+            mi["treated_unit"] = tu[0] if len(tu) == 1 else ", ".join(map(str, tu))
+    if "treatment_time" not in mi:
+        if treatment_time is not None:
+            mi["treatment_time"] = treatment_time
+        elif "treat_time" in raw:
+            mi["treatment_time"] = raw["treat_time"]
+
+    # Period / donor counts
+    if "n_pre_periods" not in mi and "T_pre" in raw:
+        mi["n_pre_periods"] = raw["T_pre"]
+    if "n_post_periods" not in mi and "T_post" in raw:
+        mi["n_post_periods"] = raw["T_post"]
+    if "n_donors" not in mi and "n_control" in raw:
+        mi["n_donors"] = raw["n_control"]
+
+    # Pre-RMSPE (recompute from gap if absent)
+    if (
+        mi.get("pre_treatment_rmse") is None
+        and mi.get("pre_treatment_mspe") is None
+    ):
+        pre = _exp_pre_rmspe(result)
+        if not (isinstance(pre, float) and (pre != pre)):  # not nan
+            mi["pre_treatment_rmse"] = pre
+
+    # Gap table (recompute from Y_obs / Y_synth if absent)
+    if not isinstance(mi.get("gap_table"), pd.DataFrame):
+        gt = _exp_gap_table(result)
+        if isinstance(gt, pd.DataFrame):
+            mi["gap_table"] = gt
+
+    return mi
 
 
 # ======================================================================
@@ -261,7 +499,7 @@ def _format_text(
     # 8. CITATION
     section_num = 8 if sensitivity is not None else 7
     lines.append(f"{section_num}. CITATION")
-    lines.append(f"   {_CITATION_TEXT}")
+    lines.append(f"   {_citation_for(method)}")
     lines.append("")
     lines.append("\u2550" * w)
 
@@ -449,7 +687,7 @@ def _format_markdown(
     section_num = 8 if sensitivity is not None else 7
     lines.append(f"## {section_num}. Citation")
     lines.append("")
-    lines.append(f"> {_CITATION_TEXT}")
+    lines.append(f"> {_citation_for(method)}")
     lines.append("")
     lines.append("---")
     lines.append("*Report generated by StatsPAI synth_report()*")
@@ -797,7 +1035,7 @@ def synth_report(
         **kwargs,
     )
 
-    mi = result.model_info
+    mi = _canonicalise_mi(result, treated_unit, treatment_time)
 
     # --- Sensitivity (optional) ---
     sens_result: Optional[Dict[str, Any]] = None

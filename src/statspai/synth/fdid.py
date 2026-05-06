@@ -20,9 +20,11 @@ errors.
 
 References
 ----------
-Li, K.T. (2024). "Forward Difference-in-Differences."
+Li, K.T. (2024). "Frontiers: A Simple Forward Difference-in-Differences
+Method." Marketing Science, 43(2), 267–279. [@li2024forward]
+
 Greathouse, J. (2024). "Forward Difference-in-Differences: fdid command
-for Stata."
+for Stata." (citation pending verification — Stata Journal)
 """
 
 from __future__ import annotations

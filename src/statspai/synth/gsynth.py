@@ -19,7 +19,7 @@ References
 Xu, Y. (2017).
 "Generalized Synthetic Control Method: Causal Inference with
 Interactive Fixed Effects Models."
-*Political Analysis*, 25(1), 57-76.
+*Political Analysis*, 25(1), 57–76. [@xu2017generalized]
 """
 
 from __future__ import annotations

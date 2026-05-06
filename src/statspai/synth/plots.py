@@ -102,7 +102,14 @@ def synthplot(
     labels : list of str, optional
         Labels for ``type='compare'``.
     **kwargs
-        Additional arguments passed to individual plotters.
+        Additional arguments passed to individual plotters. Notable:
+
+        * ``pre_band=True`` — for ``type='trajectory'`` / ``'gap'`` /
+          ``'both'``: overlay a ±1.96 × pre-RMSPE noise envelope.
+        * ``pi_band=True`` — for ``type='trajectory'``: overlay the
+          prediction-interval / conformal CI ribbon around the
+          synthetic counterfactual when the result carries one
+          (``sp.scpi`` / ``sp.conformal_synth``).
 
     Returns
     -------
@@ -302,7 +309,27 @@ def _extract_weights(result: CausalResult):
 #  Individual plotters
 # ====================================================================== #
 
-def _plot_trajectory(result, ax=None, figsize=(10, 6.5), title=None, **kw):
+def _plot_trajectory(
+    result, ax=None, figsize=(10, 6.5), title=None,
+    *, pi_band: bool = False, pre_band: bool = False, **kw,
+):
+    """Treated-vs-synthetic trajectory plot.
+
+    Parameters
+    ----------
+    pi_band : bool, default False
+        Overlay the prediction-interval / conformal CI band on the
+        synthetic counterfactual when the result carries
+        ``period_results`` with ``pi_lower`` / ``pi_upper`` columns
+        (e.g. ``sp.scpi`` per Cattaneo, Feng & Titiunik 2021;
+        ``sp.conformal_synth`` per Chernozhukov, Wüthrich & Zhu 2021).
+    pre_band : bool, default False
+        Overlay a ±1.96 × pre-treatment RMSPE band around the synthetic
+        counterfactual. Useful for visualising whether post-period gaps
+        exceed the noise envelope implied by the pre-period fit
+        (the convention popularised by Abadie, Diamond & Hainmueller
+        2010, §III).
+    """
     import matplotlib.pyplot as plt
 
     times, y_tr, y_syn, t_time, label = _extract_trajectories(result)
@@ -312,6 +339,48 @@ def _plot_trajectory(result, ax=None, figsize=(10, 6.5), title=None, **kw):
     else:
         fig = ax.get_figure()
 
+    # --- pre-treatment equivalence band (drawn under everything) ---
+    if pre_band:
+        from .exports import _pre_rmspe
+        pre = _pre_rmspe(result)
+        if not np.isnan(pre):
+            band = 1.96 * pre
+            ax.fill_between(
+                times, np.asarray(y_syn) - band, np.asarray(y_syn) + band,
+                alpha=0.10, color=_PALETTE["gap_fill"],
+                label=r"$\pm 1.96 \times$pre-RMSPE", zorder=1,
+            )
+
+    # --- prediction-interval band around synthetic (post period) ---
+    if pi_band:
+        mi = result.model_info
+        pr = mi.get("period_results")
+        if (
+            isinstance(pr, pd.DataFrame)
+            and "pi_lower" in pr.columns
+            and "pi_upper" in pr.columns
+        ):
+            pi_times = np.asarray(pr["time"].values)
+            time_to_idx = {t: i for i, t in enumerate(times)}
+            keep = np.array([t in time_to_idx for t in pi_times])
+            if keep.any():
+                pi_times_use = pi_times[keep]
+                yt_at = np.array(
+                    [y_tr[time_to_idx[t]] for t in pi_times_use]
+                )
+                pi_lo = pr["pi_lower"].to_numpy()[keep]
+                pi_hi = pr["pi_upper"].to_numpy()[keep]
+                level_pct = int(round((1 - getattr(result, "alpha", 0.05))
+                                      * 100))
+                ax.fill_between(
+                    pi_times_use,
+                    yt_at - pi_hi,  # lower bound on synthetic
+                    yt_at - pi_lo,  # upper bound on synthetic
+                    alpha=0.18, color=_PALETTE["ci_band"],
+                    label=f"{level_pct}% PI on counterfactual",
+                    zorder=2,
+                )
+
     ax.plot(times, y_tr, color=_PALETTE["treated"], linewidth=2.2,
             label=str(label), zorder=3)
     ax.plot(times, y_syn, color=_PALETTE["synthetic"], linewidth=2.2,
@@ -320,7 +389,7 @@ def _plot_trajectory(result, ax=None, figsize=(10, 6.5), title=None, **kw):
     # Shade post-treatment gap
     if t_time is not None:
         post = np.array([t >= t_time for t in times])
-        if post.any():
+        if post.any() and not pi_band:
             ax.fill_between(
                 np.asarray(times)[post], y_tr[post], y_syn[post],
                 alpha=0.12, color=_PALETTE["ci_band"],
@@ -350,7 +419,20 @@ def _plot_trajectory(result, ax=None, figsize=(10, 6.5), title=None, **kw):
     return fig, ax
 
 
-def _plot_gap(result, ax=None, figsize=(10, 5), title=None, **kw):
+def _plot_gap(
+    result, ax=None, figsize=(10, 5), title=None,
+    *, pre_band: bool = False, **kw,
+):
+    """Treatment-effect (gap) plot.
+
+    Parameters
+    ----------
+    pre_band : bool, default False
+        Overlay a ±1.96 × pre-treatment RMSPE band around zero. Used as
+        a quick visual sanity check: if the post-period gap exits this
+        envelope the effect is meaningfully larger than the typical
+        pre-period prediction error.
+    """
     import matplotlib.pyplot as plt
 
     times, y_tr, y_syn, t_time, label = _extract_trajectories(result)
@@ -361,6 +443,17 @@ def _plot_gap(result, ax=None, figsize=(10, 5), title=None, **kw):
     else:
         fig = ax.get_figure()
 
+    if pre_band:
+        from .exports import _pre_rmspe
+        pre = _pre_rmspe(result)
+        if not np.isnan(pre):
+            band = 1.96 * pre
+            ax.fill_between(
+                times, -band, band, alpha=0.10,
+                color=_PALETTE["gap_fill"],
+                label=r"$\pm 1.96 \times$pre-RMSPE", zorder=1,
+            )
+
     ax.plot(times, gap, color=_PALETTE["treated"], linewidth=2, zorder=3)
     ax.fill_between(times, 0, gap, alpha=0.12, color=_PALETTE["gap_fill"],
                     zorder=2)
@@ -370,19 +463,33 @@ def _plot_gap(result, ax=None, figsize=(10, 5), title=None, **kw):
         ax.axvline(x=t_time, color=_PALETTE["treatment_line"],
                    linestyle=":", linewidth=1.2, alpha=0.8, zorder=1)
 
-    # Conformal: add per-period CI bands if available
+    # Conformal / scpi: per-period CI / PI bands when present
     mi = result.model_info
-    if "period_results" in mi:
-        pr = mi["period_results"]
-        ax.fill_between(
-            pr["time"].values,
-            pr["ci_lower"].values,
-            pr["ci_upper"].values,
-            alpha=0.15, color=_PALETTE["ci_band"],
-            label=f"{int((1 - result.alpha) * 100)}% Conformal CI",
-            zorder=2,
+    pr = mi.get("period_results")
+    if isinstance(pr, pd.DataFrame):
+        cols = pr.columns
+        lo_col = next(
+            (c for c in ("ci_lower", "pi_lower", "lower") if c in cols),
+            None,
         )
-        ax.legend(fontsize=9, frameon=False)
+        hi_col = next(
+            (c for c in ("ci_upper", "pi_upper", "upper") if c in cols),
+            None,
+        )
+        if lo_col is not None and hi_col is not None:
+            band_label = (
+                "Conformal CI" if "ci_lower" in cols else "Prediction interval"
+            )
+            level_pct = int(round((1 - getattr(result, "alpha", 0.05)) * 100))
+            ax.fill_between(
+                pr["time"].values,
+                pr[lo_col].values,
+                pr[hi_col].values,
+                alpha=0.15, color=_PALETTE["ci_band"],
+                label=f"{level_pct}% {band_label}",
+                zorder=2,
+            )
+            ax.legend(fontsize=9, frameon=False)
 
     method_short = _method_short_label(result)
     ax.set_title(
