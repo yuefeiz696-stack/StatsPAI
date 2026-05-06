@@ -323,6 +323,7 @@ StatsPAI 1.4.0 is Sprint 2 of the 知识地图 v3 roadmap. Closes the four secon
 | Heterogeneity analysis | Manual subgroup splits + forest plots | Manual `lapply` + `ggplot` | **`subgroup_analysis()` with Wald test** |
 | Modern ML causal | Limited (no DML, no causal forest) | Fragmented (DoubleML, grf, SuperLearner separate) | **DML, Causal Forest, Meta-Learners, TMLE, DeepIV** |
 | Neural causal models | None | None | **TARNet, CFRNet, DragonNet** |
+| Accelerator-ready paths | CPU / Stata/MP multicore model | GPU support exists package-by-package | **Opt-in JAX/PyTorch backends under the same econometric API** |
 | Causal discovery | None | `pcalg` (complex API) | **`notears()`, `pc_algorithm()`, `lingam()`, `ges()`** |
 | Spatial econometrics | None | 5 packages (spdep+spatialreg+sphet+splm+GWmodel) | **38 functions: weights→ESDA→ML/GMM→GWR/MGWR→panel** |
 | Policy learning | None | `policytree` (standalone) | **`policy_tree()` + `policy_value()`** |
@@ -338,9 +339,10 @@ StatsPAI is **not** a wrapper for R. We independently re-implement every algorit
 - **One result object, one API surface.** Every estimator — from `regress()` to `callaway_santanna()` to `causal_forest()` to `notears()` — returns a `CausalResult` with the same `.summary()` / `.plot()` / `.to_latex()` / `.cite()` interface. R users juggle 20+ incompatible S3 classes; StatsPAI users juggle one.
 - **Scope no single R or Python package matches.** DID + RD + Synth + Matching + DML + Meta-learners + TMLE + Neural Causal + Causal Discovery + Policy Learning + Conformal + Bunching + Spillover + Matrix Completion — all consistent, all under `sp.*`.
 - **Agent-native by design.** Self-describing schemas (`list_functions()`, `describe_function()`, `function_schema()`) make StatsPAI the first econometrics toolkit built for LLM-driven research workflows. No other package — in any language — offers this.
+- **Accelerator-ready where it matters.** Selected workloads can opt into accelerator backends without changing the public API: neural causal estimators route through PyTorch CUDA/MPS via `STATSPAI_TORCH_DEVICE`, and the HDFE residualizer exposes `backend="jax"`. This is not a universal GPU-speed claim; GPU benchmarks are hardware-specific and should be reported separately.
 - **Publication pipeline out of the box.** Word + Excel + LaTeX + HTML + Markdown export from every estimator, not a separate `modelsummary`-style dance.
 
-If a method exists in R, we aim to match or exceed its feature set in Python — and then add what Python can uniquely offer (sklearn integration, JAX/PyTorch backends, agent-native schemas).
+If a method exists in R, we aim to match or exceed its feature set in Python — and then add what Python can uniquely offer: sklearn integration, opt-in JAX/PyTorch accelerator backends, and agent-native schemas.
 
 ---
 
@@ -760,7 +762,16 @@ With optional dependencies:
 ```bash
 pip install statspai[plotting]    # matplotlib, seaborn
 pip install statspai[fixest]      # pyfixest for high-dimensional FE
+pip install statspai[deepiv]      # PyTorch for DeepIV
+pip install statspai[neural]      # PyTorch for TARNet/CFRNet/DragonNet
+pip install statspai[performance] # JAX CPU backend for sp.fast.demean
 ```
+
+Accelerator use is opt-in. Neural estimators use CPU by default; set
+`STATSPAI_TORCH_DEVICE=auto`, `cuda`, or `mps` after installing a matching
+PyTorch build. The JAX HDFE backend is selected explicitly with
+`sp.fast.demean(..., backend="jax")`; CUDA JAX requires a CUDA-enabled JAX
+installation.
 
 **Requirements:** Python >= 3.9
 
@@ -825,6 +836,7 @@ sp.subgroup_analysis(card, formula="lwage ~ educ + exper",
 | --- | --- |
 | **Unified API** | One package, one `import`, consistent `.summary()` / `.plot()` / `.to_latex()` across all methods. Stata requires paid add-ons; R requires 20+ packages with different interfaces. |
 | **Modern ML causal methods** | DML, Causal Forest, Meta-Learners (S/T/X/R/DR), TMLE, DeepIV, TARNet/CFRNet/DragonNet, Policy Trees — all in one place. Stata has almost none of these. R has them scattered across incompatible packages. |
+| **Accelerator-ready selected workloads** | Neural causal estimators can route through PyTorch CUDA/MPS, and HDFE residualization exposes a JAX backend, while keeping the same result object, diagnostics, and export API. |
 | **Robustness automation** | `spec_curve()`, `robustness_report()`, `subgroup_analysis()` — no manual re-running. Neither Stata nor R offers this out-of-the-box. |
 | **Free & open source** | MIT license, \$0. Stata costs \$695–\$1,595/year. |
 | **Python ecosystem** | Integrates naturally with pandas, scikit-learn, PyTorch, Jupyter, cloud pipelines. |
@@ -836,7 +848,7 @@ sp.subgroup_analysis(card, formula="lwage ~ educ + exper",
 | Advantage | Detail |
 | --- | --- |
 | **Battle-tested at scale** | 40+ years of production use in economics. Edge cases are well-handled. |
-| **Speed on very large datasets** | Stata's compiled C backend is faster for simple OLS/FE on datasets with millions of rows. |
+| **Speed on many CPU tabular workloads** | Stata's compiled backend and mature Stata/MP parallelism remain very strong for simple OLS/FE on large datasets. StatsPAI does not claim universal speed superiority. |
 | **Survey data & complex designs** | `svy:` prefix, stratification, clustering — Stata's survey support is unmatched. |
 | **Mature documentation** | Every command has a PDF manual with worked examples. Community is massive. |
 | **Journal acceptance** | Referees in some fields trust Stata output by default. |
@@ -848,6 +860,7 @@ sp.subgroup_analysis(card, formula="lwage ~ educ + exper",
 | **Cutting-edge methods** | New econometric methods (e.g., `fixest`, `did2s`, `HonestDiD`) often appear in R first. |
 | **`ggplot2` visualization** | R's grammar of graphics is more flexible than matplotlib for complex figures. |
 | **`modelsummary`** | R's `modelsummary` is the gold standard for regression tables — StatsPAI's is close but not yet identical. |
+| **Mature GPU ecosystem** | R has established torch/tensorflow/OpenCL routes, but they are package-specific. StatsPAI's accelerator story is newer and currently limited to selected JAX/PyTorch-backed workloads. |
 | **CRAN quality control** | R packages go through peer review. Python packages vary in quality. |
 | **Spatial econometrics** | ~~`spdep`, `spatialreg`~~ — **As of v0.8.0, StatsPAI matches R's 5-package spatial stack** (spdep + spatialreg + sphet + splm + GWmodel) in a single unified API, with numerical parity to PySAL spreg at rtol<1e-7 on the Columbus benchmark. |
 
