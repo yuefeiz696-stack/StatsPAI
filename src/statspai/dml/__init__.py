@@ -41,7 +41,7 @@ __all__ = [
     'dml_model_averaging',
     'model_averaging_dml',
     'DMLAveragingResult',
-    # v1.7 long-panel DML (Semenova-Chernozhukov 2023)
+    # v1.7 long-panel DML (Clarke & Polselli 2025)
     'dml_panel',
     'DMLPanelResult',
     # v1.13 sensitivity + diagnostics (Chernozhukov-Cinelli-Newey 2022)

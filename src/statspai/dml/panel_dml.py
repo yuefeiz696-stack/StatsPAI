@@ -1,5 +1,6 @@
 """
-Long-panel Double/Debiased ML (Semenova-Chernozhukov 2023, simplified).
+Long-panel Double/Debiased ML for static panel models with fixed effects
+(Clarke & Polselli 2025, simplified).
 
 Estimates the causal effect of a (continuous or binary) treatment on an
 outcome from panel data while (i) absorbing unit and optional time
@@ -41,9 +42,10 @@ using the DML score residuals.
 
 References
 ----------
-Semenova, V. & Chernozhukov, V. (2023).
-"Debiased Machine Learning of Conditional Average Treatment Effects
-and Other Causal Functions." *Econometrics Journal*, 26(2).
+Clarke, P. S. & Polselli, A. (2025).
+"Double Machine Learning for Static Panel Models with Fixed Effects."
+*The Econometrics Journal*, 29(1), 69-86. DOI 10.1093/ectj/utaf011
+(arXiv:2312.08174). [@clarke2025double]
 
 Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
 Newey, W. & Robins, J. (2018).
@@ -426,7 +428,7 @@ def dml_panel(
     Y_tilde = _within_transform(Y, unit_ids, time_idx_for_within, sample_weight=w_full)
     D_tilde = _within_transform(D, unit_ids, time_idx_for_within, sample_weight=w_full)
     # Covariates demeaned the same way so the nuisance learners work on
-    # within-variation only — matches Semenova-Chernozhukov 2023 §4.
+    # within-variation only — matches Clarke & Polselli (2025) §3.
     if covariates:
         X_tilde = np.column_stack([
             _within_transform(

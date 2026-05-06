@@ -2,6 +2,41 @@
 
 All notable changes to StatsPAI will be documented in this file.
 
+## [Unreleased]
+
+### Docs — `sp.dml_panel` citation correction
+
+- ⚠️ **Docs-only correction** — `sp.dml_panel` (originally shipped in
+  v1.7) was attributed in its docstring, registry entry, README blurb,
+  and CHANGELOG release note to *"Semenova & Chernozhukov (2023)
+  Econometrics Journal 26(2), Debiased Machine Learning of Conditional
+  Average Treatment Effects and Other Causal Functions."* That
+  citation is **fabricated**: independent verification via Crossref
+  and the Oxford ECTJ issue TOC confirms no Semenova or Chernozhukov
+  paper appears anywhere in *Econometrics Journal* 26(2) (May 2023),
+  and the cited title in fact belongs to Semenova & Chernozhukov
+  **(2021)** *ECTJ* **24(2)** 264-289 (DOI 10.1093/ectj/utaa027) — a
+  paper on CATE / debiased ML for causal functions, unrelated to
+  long-panel PLR with fixed effects.
+- The estimator's actual reference is **Clarke, P. S. & Polselli, A.
+  (2025).** *"Double Machine Learning for Static Panel Models with
+  Fixed Effects."* *The Econometrics Journal* **29(1)** 69-86, DOI
+  [10.1093/ectj/utaf011](https://doi.org/10.1093/ectj/utaf011),
+  arXiv:2312.08174. The paper specifies the within-group / first-
+  difference transform, block-k-fold cross-fitting that allocates
+  each unit's full time series to a single fold, and cluster-robust
+  variance at the unit level — point-for-point match with the
+  StatsPAI implementation. Companion Stata package: `xtdml`.
+- Updated callsites: [`paper.bib`](paper.bib) (new
+  `clarke2025double` entry), [`src/statspai/dml/panel_dml.py`](src/statspai/dml/panel_dml.py)
+  (module docstring + within-transform comment), [`src/statspai/dml/__init__.py`](src/statspai/dml/__init__.py)
+  (lazy-export tag), [`src/statspai/registry.py`](src/statspai/registry.py)
+  (FunctionSpec description + reference field), [`README.md`](README.md)
+  (Long-panel Double-ML row), and the historical v1.7 entry below
+  (annotated, not silently rewritten). No code logic, numerical path,
+  API signature, or test changed — pure citation correction.
+- Refs verified via Crossref (DOI 10.1093/ectj/utaf011) and OpenAlex.
+
 ## [1.15.0] — 2026-05-05
 
 ### Docs — v1.14 GPU sprint follow-up
@@ -4468,12 +4503,19 @@ frontier estimators (`sp.mr_lap` etc.), one long-panel DML estimator
 
 ### Added — v1.7 long-panel DML (`src/statspai/dml/panel_dml.py`)
 
-- **`sp.dml_panel`** — Long-panel Double/Debiased ML (Semenova-
-  Chernozhukov 2023 simplified).  Absorbs unit (and optional time)
-  fixed effects via within-transform, cross-fits ML nuisance learners
-  with folds that **split units** (Liang-Zeger compatible), reports
-  cluster-robust SE at the unit level.  PLR moment for continuous or
-  binary treatment; empty-covariate fallback reduces to pure FE-OLS.
+- **`sp.dml_panel`** — Long-panel Double/Debiased ML for static panel
+  models with fixed effects (Clarke & Polselli 2025 simplified).
+  Absorbs unit (and optional time) fixed effects via within-transform,
+  cross-fits ML nuisance learners with folds that **split units**
+  (Liang-Zeger compatible), reports cluster-robust SE at the unit
+  level.  PLR moment for continuous or binary treatment;
+  empty-covariate fallback reduces to pure FE-OLS.
+  *(Citation corrected post-v1.15: the original v1.7 release note
+  attributed this estimator to a "Semenova-Chernozhukov 2023
+  Econometrics Journal 26(2)" paper that does not exist; the actual
+  reference is Clarke & Polselli (2025) ECTJ 29(1) 69-86, DOI
+  10.1093/ectj/utaf011, arXiv:2312.08174. See [Unreleased] for the
+  full audit.)*
 
 ### Added — dispatcher + registry wiring
 

@@ -4163,16 +4163,16 @@ def _build_registry():
         reference="Ahrens, Hansen, Schaffer & Wiemann (2025). JAE 40(3):249-269. DOI 10.1002/jae.3103.",
     ))
 
-    # -- v1.7 long-panel DML (Semenova-Chernozhukov 2023) -------------- #
+    # -- v1.7 long-panel DML (Clarke & Polselli 2025) ------------------ #
     register(FunctionSpec(
         name="dml_panel",
         category="causal",
         description=(
-            "Long-panel Double/Debiased ML (Semenova-Chernozhukov 2023 "
-            "simplified). Absorbs unit (and optional time) fixed "
-            "effects via within-transform, cross-fits ML nuisance "
-            "learners with folds that split units, and reports "
-            "cluster-robust SE at the unit level. PLR moment "
+            "Long-panel Double/Debiased ML for static panel models with "
+            "fixed effects (Clarke & Polselli 2025, simplified). Absorbs "
+            "unit (and optional time) fixed effects via within-transform, "
+            "cross-fits ML nuisance learners with folds that split units, "
+            "and reports cluster-robust SE at the unit level. PLR moment "
             "(continuous or binary treatment)."
         ),
         params=[
@@ -4204,7 +4204,8 @@ def _build_registry():
         tags=["dml", "causal", "panel", "fixed_effects",
               "cluster_robust_se", "long_panel"],
         reference=(
-            "Semenova & Chernozhukov (2023) Econometrics Journal 26(2); "
+            "Clarke & Polselli (2025) Econometrics Journal 29(1) 69-86, "
+            "DOI 10.1093/ectj/utaf011; "
             "Chernozhukov et al. (2018); Cameron & Miller (2015)."
         ),
         pre_conditions=[

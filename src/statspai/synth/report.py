@@ -210,7 +210,7 @@ _METHOD_CITATIONS: Dict[str, str] = {
         "[@sun2023multiple]"
     ),
     "cluster": (
-        "Rho, S., Yan, X. et al. (2025). "
+        "Rho, S., Tang, A. et al. (2025). "
         '"ClusterSC: Cluster-Aware Synthetic Control." '
         "arXiv:2503.21629. [@rho2025clustersc]"
     ),
