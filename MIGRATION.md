@@ -5,12 +5,19 @@ Internal version-to-version migrations are at the top; the long-form
 
 ---
 
-## v1.15 → v1.16 — `sp.rdrobust(bwselect='cct')` R-parity opt-in
+<a id="sp-rdrobust-bwselect-cct-r-parity-opt-in"></a>
+
+## v1.15.0 → v1.15.1 — `sp.rdrobust(bwselect='cct')` R-parity opt-in
 
 **No breaking change.** `sp.rdrobust` keeps `bwselect='mserd'` (StatsPAI's
 own MSE-optimal recipe) as the default — every existing call returns the
 same numbers. A new opt-in value `bwselect='cct'` is added for users who
 need bit-equal R `rdrobust::rdrobust` parity.
+
+`sp.nbreg`, `sp.xtnbreg`, and `sp.menbreg` also get clearer README /
+release-note documentation in v1.15.1. Their call signatures and
+numerical paths are unchanged, so there is no migration step for
+negative-binomial regression users.
 
 ### When to switch from `'mserd'` to `'cct'`
 

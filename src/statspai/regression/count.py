@@ -12,7 +12,7 @@ References
   high-dimensional fixed effects." Stata Journal. [@cameron2013regression]
 """
 
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, Sequence
 import pandas as pd
 import numpy as np
 from scipy import stats, optimize, special
@@ -65,6 +65,50 @@ def _parse_formula_or_xy(
         return y_arr, X_arr, var_names, dep_var, [], data
     else:
         raise ValueError("Must provide either (formula, data) or (y, x, data)")
+
+
+def _append_fixed_effect_dummies(
+    X: np.ndarray,
+    var_names: List[str],
+    data: pd.DataFrame,
+    fe_vars: Sequence[str],
+) -> tuple[np.ndarray, List[str], Dict[str, int]]:
+    """Append one-hot fixed-effect columns using a dropped baseline level.
+
+    ``nbreg`` is a nonlinear model, so we cannot absorb fixed effects with
+    the within transformation used by OLS. The explicit-dummy route is the
+    conservative implementation: transparent, correct for moderate panels,
+    and never silently ignores a ``| id`` formula component.
+    """
+    clean_fe = [str(v).strip() for v in fe_vars if str(v).strip()]
+    if not clean_fe:
+        return X, list(var_names), {}
+
+    blocks = [X]
+    names = list(var_names)
+    level_counts: Dict[str, int] = {}
+
+    for fe in clean_fe:
+        if fe not in data.columns:
+            raise ValueError(f"fixed-effect column {fe!r} not found in data")
+        if data[fe].isna().any():
+            raise ValueError(
+                f"fixed-effect column {fe!r} contains missing values; "
+                "drop or impute them before fitting a fixed-effects count model"
+            )
+
+        levels = int(data[fe].nunique(dropna=False))
+        level_counts[fe] = levels
+        if levels <= 1:
+            continue
+
+        dummies = pd.get_dummies(data[fe], drop_first=True, dtype=np.float64)
+        if dummies.shape[1] == 0:
+            continue
+        blocks.append(dummies.to_numpy(dtype=np.float64))
+        names.extend([f"C({fe})[{level}]" for level in dummies.columns])
+
+    return np.column_stack(blocks), names, level_counts
 
 
 def _safe_exp(eta, cap=700.0):
@@ -854,10 +898,14 @@ def nbreg(
     >>> res = sp.nbreg("days_absent ~ math + prog", data=df, irr=True)
     >>> print(res.summary())
     """
-    y_arr, X, var_names, dep_var, _, data = _parse_formula_or_xy(
+    y_arr, X, var_names, dep_var, formula_fe, data = _parse_formula_or_xy(
         formula, data, y, x
     )
+    X, var_names, fe_level_counts = _append_fixed_effect_dummies(
+        X, var_names, data, formula_fe
+    )
     n, k = X.shape
+    n_fe_params = sum(max(v - 1, 0) for v in fe_level_counts.values())
 
     # Offset / exposure
     offset_arr = np.zeros(n)
@@ -976,6 +1024,9 @@ def nbreg(
         'link': 'log',
         'method': 'MLE (IRLS + profile likelihood)',
         'dispersion_type': nb_label,
+        'fixed_effects': list(fe_level_counts) or None,
+        'n_fe_levels': fe_level_counts or None,
+        'n_fe_params': n_fe_params,
         'robust': robust,
         'cluster': cluster,
         'irr': irr,
@@ -1018,6 +1069,9 @@ def nbreg(
         'LR test vs Poisson (chi2)': lr_alpha,
         'LR test vs Poisson (p)': lr_alpha_pvalue,
     }
+    if fe_level_counts:
+        diagnostics['N fixed-effect parameters'] = n_fe_params
+        diagnostics['Fixed-effect levels'] = fe_level_counts
 
     return EconometricResults(
         params=params_series,
@@ -1026,6 +1080,190 @@ def nbreg(
         data_info=data_info,
         diagnostics=diagnostics,
     )
+
+
+def xtnbreg(
+    formula: str = None,
+    data: pd.DataFrame = None,
+    y: str = None,
+    x: Sequence[str] = None,
+    entity: str = None,
+    time: str = None,
+    model: str = "fe",
+    time_effects: bool = False,
+    robust: str = "nonrobust",
+    cluster: str = None,
+    weights: str = None,
+    offset: str = None,
+    exposure: str = None,
+    irr: bool = False,
+    dispersion: str = "mean",
+    maxiter: int = 100,
+    tol: float = 1e-8,
+    alpha: float = 0.05,
+) -> Any:
+    """
+    Panel negative-binomial regression with Stata-like ``xtnbreg`` ergonomics.
+
+    ``model="fe"`` fits an unconditional fixed-effects NB model by adding
+    explicit entity dummies through :func:`nbreg`. This is appropriate for
+    moderate panels and, most importantly, does not silently replace a count
+    model with OLS. ``model="re"`` dispatches to :func:`sp.menbreg`, the
+    random-intercept NB-2 GLMM.
+
+    Parameters
+    ----------
+    formula : str, optional
+        Count-model formula. For fixed effects you may pass
+        ``"y ~ x1 + x2 | id"`` directly, or pass ``entity=``.
+    data : DataFrame
+        Long-format panel data.
+    y, x : optional
+        Alternative to ``formula``.
+    entity : str, optional
+        Panel/unit identifier. Required when the formula does not contain a
+        ``| id`` fixed-effect part.
+    time : str, optional
+        Time column. Stored as metadata; included as a fixed effect only when
+        ``time_effects=True``.
+    model : {"fe", "re", "pooled"}, default "fe"
+        Fixed-effects, random-effects, or pooled negative binomial.
+
+    Returns
+    -------
+    EconometricResults or MEGLMResult
+        ``model="fe"`` / ``"pooled"`` return :class:`EconometricResults`;
+        ``model="re"`` returns the multilevel :class:`MEGLMResult`.
+    """
+    if data is None:
+        raise ValueError("xtnbreg requires `data=`")
+
+    x_list = list(x or [])
+    if formula is None:
+        if y is None:
+            raise ValueError("xtnbreg requires either `formula` or `y=`")
+        rhs = " + ".join(x_list) if x_list else "1"
+        formula = f"{y} ~ {rhs}"
+    else:
+        parsed = parse_formula(formula)
+        y = parsed["dependent"]
+        x_list = parsed["exogenous"]
+        if entity is None and parsed.get("fixed_effects"):
+            entity = parsed["fixed_effects"][0]
+
+    model_key = (model or "fe").lower().replace("-", "_")
+    if model_key in {"fixed", "fixed_effects"}:
+        model_key = "fe"
+    if model_key in {"random", "random_effects"}:
+        model_key = "re"
+
+    if model_key == "pooled":
+        pooled_formula = formula.split("|", 1)[0].strip()
+        result = nbreg(
+            formula=pooled_formula,
+            data=data,
+            robust=robust,
+            cluster=cluster,
+            weights=weights,
+            offset=offset,
+            exposure=exposure,
+            irr=irr,
+            dispersion=dispersion,
+            maxiter=maxiter,
+            tol=tol,
+            alpha=alpha,
+        )
+        result.model_info["panel_model"] = "pooled"
+        result.model_info["entity"] = entity
+        result.model_info["time"] = time
+        return result
+
+    if model_key == "fe":
+        fe_formula = formula
+        if "|" not in fe_formula:
+            if not entity:
+                raise ValueError(
+                    "fixed-effects xtnbreg requires `entity=` or a formula "
+                    "fixed-effect part such as 'y ~ x | id'"
+                )
+            fe_terms = [entity]
+            if time_effects:
+                if not time:
+                    raise ValueError("time_effects=True requires `time=`")
+                fe_terms.append(time)
+            fe_formula = f"{formula} | {' + '.join(fe_terms)}"
+        elif entity is None:
+            parsed = parse_formula(fe_formula)
+            if parsed.get("fixed_effects"):
+                entity = parsed["fixed_effects"][0]
+
+        cluster_arg = cluster or entity
+        result = nbreg(
+            formula=fe_formula,
+            data=data,
+            robust=robust,
+            cluster=cluster_arg,
+            weights=weights,
+            offset=offset,
+            exposure=exposure,
+            irr=irr,
+            dispersion=dispersion,
+            maxiter=maxiter,
+            tol=tol,
+            alpha=alpha,
+        )
+        result.model_info["panel_model"] = "fixed_effects"
+        result.model_info["entity"] = entity
+        result.model_info["time"] = time
+        result.model_info["time_effects"] = bool(time_effects)
+        result.model_info["stata_equivalent"] = "xtnbreg, fe"
+        return result
+
+    if model_key == "re":
+        if not entity:
+            raise ValueError(
+                "random-effects xtnbreg requires `entity=` or a formula "
+                "fixed-effect part whose first term is the panel id"
+            )
+        if weights is not None:
+            warnings.warn("xtnbreg(model='re') does not support weights; ignoring weights")
+        if cluster is not None or robust != "nonrobust":
+            warnings.warn(
+                "xtnbreg(model='re') uses GLMM model-based standard errors; "
+                "robust/cluster options are ignored"
+            )
+        if dispersion.lower() != "mean":
+            warnings.warn("xtnbreg(model='re') uses NB2 mean dispersion; ignoring dispersion")
+        if irr:
+            warnings.warn(
+                "xtnbreg(model='re') returns coefficients; call "
+                "result.incidence_rate_ratios() for IRRs"
+            )
+
+        re_data = data
+        offset_col = offset
+        if exposure is not None:
+            exposure_values = data[exposure].to_numpy(dtype=np.float64)
+            if np.any(exposure_values <= 0):
+                raise ValueError("exposure must be strictly positive")
+            offset_col = "__statspai_log_exposure__"
+            re_data = data.copy()
+            re_data[offset_col] = np.log(exposure_values)
+
+        from ..multilevel.glmm import menbreg
+
+        return menbreg(
+            re_data,
+            y,
+            x_list,
+            entity,
+            offset=offset_col,
+            maxiter=maxiter,
+            tol=tol,
+            alpha=alpha,
+        )
+
+    raise ValueError("model must be one of 'fe', 're', or 'pooled'")
 
 
 def ppmlhdfe(

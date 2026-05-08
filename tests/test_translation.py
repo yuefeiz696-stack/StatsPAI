@@ -300,6 +300,10 @@ TIER2_ROUND_TRIPS = [
      "poisson", {"formula": "visits ~ age", "robust": "hc1"}),
     ("nbreg counts x1 x2",
      "nbreg", {"formula": "counts ~ x1 + x2"}),
+    ("xtnbreg counts x1 x2, fe i(firm) vce(cluster firm) irr",
+     "xtnbreg",
+     {"formula": "counts ~ x1 + x2", "entity": "firm",
+      "model": "fe", "cluster": "firm", "irr": True}),
     # Censored regression
     ("tobit hours wage kids, ll(0) ul(80)",
      "tobit", {"formula": "hours ~ wage + kids",

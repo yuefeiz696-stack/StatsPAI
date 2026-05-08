@@ -72,6 +72,8 @@ def parse_formula(formula: str) -> Dict[str, Any]:
     result['exogenous'].extend(remaining_vars)
     
     # Check for constant term
+    if '1' in result['exogenous']:
+        result['exogenous'] = [var for var in result['exogenous'] if var != '1']
     if '-1' in result['exogenous'] or '0' in result['exogenous']:
         result['has_constant'] = False
         result['exogenous'] = [var for var in result['exogenous'] if var not in ['-1', '0']]

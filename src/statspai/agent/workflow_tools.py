@@ -242,7 +242,8 @@ WORKFLOW_TOOL_SPECS: List[Dict[str, Any]] = [
             "chat replies) AND ``arguments`` (ready-to-dispatch JSON-RPC "
             "for tools/call). Tier-1 commands: regress / xtreg / "
             "reghdfe / ivreg2 / csdid / did_imputation / synth / "
-            "rdrobust. Unrecognised commands return close-match "
+            "rdrobust; count-panel commands include nbreg / xtnbreg / "
+            "ppmlhdfe. Unrecognised commands return close-match "
             "suggestions instead of guessing."
         ),
         'input_schema': {

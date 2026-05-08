@@ -1,5 +1,9 @@
 [English](https://github.com/brycewang-stanford/statspai/blob/main/README.md) | [中文](https://github.com/brycewang-stanford/statspai/blob/main/README_CN.md)
 
+<p align="center">
+  <img src="docs/logo/readme-1.png" alt="StatsPAI — Agent-Native Causal Inference for Python" width="780">
+</p>
+
 # StatsPAI: The Agent-Native Causal Inference & Econometrics Toolkit for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/StatsPAI.svg)](https://pypi.org/project/StatsPAI/)
@@ -123,6 +127,30 @@ StatsPAI's focus is **causal inference** — and on this axis we aim to be the m
 **StatsPAI at a glance**: 950+ registered functions in the live agent registry · 80+ submodules · ~230k LOC (core) + ~70k LOC (tests). All four numbers are reproducible from the canonical generator (`python scripts/registry_stats.py`); the per-module table in [`docs/stats.md`](docs/stats.md) is regenerated from the same script. For the full coverage matrix (23 method families) and cross-ecosystem line-count comparison, see [`docs/stats.md`](docs/stats.md).
 
 ---
+
+**📦 v1.15.1 (2026-05-07) — R-parity RD opt-in + negative-binomial implementation notes**
+
+Patch release preparing the PyPI cut after v1.15.0. `sp.rdrobust`
+now accepts `bwselect='cct'`, an opt-in path that delegates bandwidth
+selection and robust bias-corrected inference to the official
+`rdrobust>=1.3` Python port for bit-equal R `rdrobust::rdrobust`
+replications. The default `bwselect='mserd'` remains unchanged, so
+existing RD pipelines keep their numbers unless they explicitly opt in.
+Install the exact-parity path with `pip install statspai[rd-cct]`.
+
+This release also documents the negative-binomial count-regression
+surface. `sp.nbreg` is a log-link MLE with NB2 by default
+(`Var[Y|X] = μ + αμ²`) and an NB1 option via `dispersion='constant'`
+(`Var[Y|X] = μ(1 + δ)`). The optimizer starts from Poisson IRLS, then
+alternates NB-weighted IRLS for the coefficients with scalar profile-
+likelihood optimization for the dispersion parameter. It supports
+offsets, exposure, weights, IRR reporting, HC/cluster SEs, a likelihood-
+ratio test against Poisson, and formula fixed effects such as
+`y ~ x | id` via explicit dummy expansion for moderate panels.
+`sp.xtnbreg(model='fe')` wraps that fixed-effect path and clusters by
+entity by default; `model='re'` dispatches to `sp.menbreg`, the
+random-intercept NB2 GLMM. Full notes in [`CHANGELOG.md`](CHANGELOG.md)
+under `[1.15.1]`.
 
 **📦 v1.15.0 (2026-05-06) — Five polish waves (IV / synth / decomposition / ML+causal / RDD)**
 
@@ -401,7 +429,8 @@ If a method exists in R, we aim to match or exceed its feature set in Python —
 | `mlogit()` | Multinomial logit | `mlogit` | `nnet::multinom()` |
 | `ologit()`, `oprobit()` | Ordered logit / probit | `ologit` / `oprobit` | `MASS::polr()` |
 | `clogit()` | Conditional logit (McFadden) | `clogit` | `survival::clogit()` |
-| `poisson()`, `nbreg()` | Count data (Poisson, Negative Binomial) | `poisson` / `nbreg` | `MASS::glm.nb()` |
+| `poisson()`, `nbreg()` | Count data; `nbreg` supports NB2/NB1, offsets/exposure, IRR, robust/cluster SE, and explicit formula FEs | `poisson` / `nbreg` | `MASS::glm.nb()` |
+| `xtnbreg()` | Panel negative-binomial regression (`fe` via explicit dummies, `re` via random-intercept NB2 GLMM) | `xtnbreg, fe` / `xtnbreg, re` | `glmmTMB` / `lme4`-style NB GLMM |
 | `ppmlhdfe()` | Pseudo-Poisson MLE for gravity models | `ppmlhdfe` | `fixest::fepois()` |
 | `zip_model()`, `zinb()` | Zero-inflated Poisson / NegBin | `zip` / `zinb` | `pscl::zeroinfl()` |
 | `hurdle()` | Hurdle (two-part) model | — | `pscl::hurdle()` |
@@ -1314,7 +1343,7 @@ resolves to the latest version):
   author       = {Wang, Biaoyue},
   title        = {StatsPAI: The Agent-Native Causal Inference \& Econometrics Toolkit for Python},
   year         = {2026},
-  version      = {1.15.0},
+  version      = {1.15.1},
   doi          = {10.5281/zenodo.19933900},
   url          = {https://doi.org/10.5281/zenodo.19933900},
   license      = {MIT},

@@ -447,6 +447,72 @@ def _build_registry():
         reference="Tobin (1958)",
     ))
 
+    register(FunctionSpec(
+        name="nbreg",
+        category="regression",
+        description=(
+            "Negative-binomial count regression for overdispersed "
+            "non-negative outcomes. Formula fixed effects such as "
+            "'y ~ x | id' are implemented with explicit dummies for "
+            "moderate panels."
+        ),
+        params=[
+            ParamSpec("formula", "str", True,
+                      description="Formula such as 'count ~ x1 + x2 | id'"),
+            ParamSpec("data", "DataFrame", True),
+            ParamSpec("robust", "str", False, "nonrobust",
+                      "Standard error type", ["nonrobust", "robust", "hc0", "hc1"]),
+            ParamSpec("cluster", "str", False,
+                      description="Column name for cluster-robust SEs"),
+            ParamSpec("offset", "str", False,
+                      description="Column containing a log offset"),
+            ParamSpec("exposure", "str", False,
+                      description="Positive exposure column"),
+            ParamSpec("irr", "bool", False, False,
+                      "Report incidence-rate ratios"),
+            ParamSpec("dispersion", "str", False, "mean",
+                      "Negative-binomial parameterisation",
+                      ["mean", "constant"]),
+        ],
+        returns="EconometricResults",
+        example='sp.nbreg("visits ~ age + income | person", data=df, cluster="person")',
+        tags=["count", "negative-binomial", "nbreg", "overdispersion"],
+        reference="Cameron & Trivedi (2013) Regression Analysis of Count Data",
+        alternatives=["poisson", "ppmlhdfe", "xtnbreg", "menbreg"],
+    ))
+
+    register(FunctionSpec(
+        name="xtnbreg",
+        category="panel",
+        description=(
+            "Panel negative-binomial regression. model='fe' uses explicit "
+            "entity fixed effects through nbreg; model='re' dispatches to "
+            "the random-intercept NB-2 GLMM menbreg."
+        ),
+        params=[
+            ParamSpec("formula", "str", True,
+                      description="Formula such as 'count ~ x1 + x2'"),
+            ParamSpec("data", "DataFrame", True),
+            ParamSpec("entity", "str", True,
+                      description="Panel/unit identifier"),
+            ParamSpec("time", "str", False,
+                      description="Optional time column"),
+            ParamSpec("model", "str", False, "fe",
+                      "Panel model", ["fe", "re", "pooled"]),
+            ParamSpec("time_effects", "bool", False, False,
+                      "Include time dummies for model='fe'"),
+            ParamSpec("cluster", "str", False,
+                      description="Cluster variable; defaults to entity for FE"),
+            ParamSpec("offset", "str", False),
+            ParamSpec("exposure", "str", False),
+            ParamSpec("irr", "bool", False, False),
+        ],
+        returns="EconometricResults or MEGLMResult",
+        example='sp.xtnbreg("visits ~ age + income", data=df, entity="person", model="fe")',
+        tags=["panel", "count", "negative-binomial", "xtnbreg"],
+        alternatives=["nbreg", "menbreg", "poisson", "ppmlhdfe"],
+    ))
+
     # -- Causal Inference ---------------------------------------------- #
     register(FunctionSpec(
         name="did",

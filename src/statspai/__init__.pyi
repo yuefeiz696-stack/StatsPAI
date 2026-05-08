@@ -710,6 +710,7 @@ from .regression.advanced_iv import liml as liml
 from .regression.count import nbreg as nbreg
 from .regression.count import poisson as poisson
 from .regression.count import ppmlhdfe as ppmlhdfe
+from .regression.count import xtnbreg as xtnbreg
 from .regression.fracreg import betareg as betareg
 from .regression.fracreg import fracreg as fracreg
 from .regression.glm import GLMEstimator as GLMEstimator

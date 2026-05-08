@@ -22,7 +22,7 @@ Unified API for causal inference and econometrics:
 >>> sp.outreg2(result, filename="results.xlsx")
 """
 
-__version__ = "1.15.0"
+__version__ = "1.15.1"
 __author__ = "Biaoyue Wang"
 __email__ = "brycew6m@stanford.edu"
 
@@ -247,7 +247,7 @@ from .regression.quantile import qreg, sqreg
 from .regression.tobit import tobit
 from .regression.logit_probit import logit, probit, cloglog
 from .regression.glm import glm, GLMRegression, GLMEstimator
-from .regression.count import poisson, nbreg, ppmlhdfe
+from .regression.count import poisson, nbreg, xtnbreg, ppmlhdfe
 # neural_causal — lazy-loaded (torch); see _LAZY_ATTRS below.
 from .causal_discovery import notears, NOTEARS, pc_algorithm, PCAlgorithm, lingam, LiNGAMResult, ges, GESResult, fci, FCIResult, icp, nonlinear_icp, ICPResult, pcmci, PCMCIResult, partial_corr_pvalue, lpcmci, LPCMCIResult, dynotears, DYNOTEARSResult
 # Eager: ``tmle`` collides (function + subpackage of same name).
@@ -426,7 +426,7 @@ from ._auto_estimators import (
 
 # === NEW MODULES (v0.6) ===
 # GLM & Discrete Choice — ``glm``/``logit``/``probit``/``cloglog``/
-# ``poisson``/``nbreg``/``ppmlhdfe`` are already imported above in the
+# ``poisson``/``nbreg``/``xtnbreg``/``ppmlhdfe`` are already imported above in the
 # core regression block; we only add what's new here.
 from .regression.multinomial import mlogit, ologit, oprobit, clogit
 from .regression.mixed_logit import mixlogit
@@ -820,6 +820,7 @@ __all__ = [
     "GLMEstimator",
     "poisson",
     "nbreg",
+    "xtnbreg",
     "ppmlhdfe",
     # Post-estimation
     "margins",
@@ -1093,7 +1094,7 @@ __all__ = [
     # GLM & Discrete Choice (glm/logit/probit/cloglog already in regression block above)
     "mlogit", "ologit", "oprobit", "clogit",
     "mixlogit", "ivqreg",
-    # Count Data (poisson/nbreg/ppmlhdfe already in regression block above)
+    # Count Data (poisson/nbreg/xtnbreg/ppmlhdfe already in regression block above)
     "zip_model", "zinb", "hurdle",
     # Advanced IV
     "liml", "jive", "lasso_iv",

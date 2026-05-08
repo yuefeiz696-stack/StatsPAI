@@ -10,7 +10,7 @@ from .tobit import tobit
 from .logit_probit import logit, probit, cloglog
 from .glm import glm, GLMRegression, GLMEstimator
 from .zeroinflated import zip_model, zinb, hurdle
-from .count import poisson, nbreg, ppmlhdfe
+from .count import poisson, nbreg, xtnbreg, ppmlhdfe
 from .multinomial import mlogit, ologit, oprobit, clogit
 
 __all__ = [
@@ -36,6 +36,7 @@ __all__ = [
     "hurdle",
     "poisson",
     "nbreg",
+    "xtnbreg",
     "ppmlhdfe",
     "mlogit",
     "ologit",

@@ -396,6 +396,68 @@ def _h_nbreg(cmd: StataCommand) -> Dict[str, Any]:
     return _h_glm_like(cmd, sp_fn="nbreg", display_name="nbreg")
 
 
+def _h_xtnbreg(cmd: StataCommand) -> Dict[str, Any]:
+    """``xtnbreg y x, fe i(id)`` → ``sp.xtnbreg``.
+
+    Stata's ``xtset`` declaration is not visible from one command line, so
+    the translator accepts explicit ``i(id)`` / ``id(id)`` and otherwise
+    emits a placeholder plus a note.
+    """
+    y, xs = _split_varlist_y_x(cmd.varlist)
+    if y is None:
+        return _emit_error("xtnbreg requires an outcome variable",
+                            command="xtnbreg")
+
+    panel_id = cmd.options.get("i") or cmd.options.get("id") or "<panel_id>"
+    model = "fe" if "fe" in cmd.options else "re" if "re" in cmd.options else "re"
+    formula = _build_formula(y, xs)
+    cluster = _vce_cluster(cmd)
+
+    args: Dict[str, Any] = {
+        "formula": formula,
+        "entity": panel_id if panel_id != "<panel_id>" else None,
+        "model": model,
+    }
+    if cluster:
+        args["cluster"] = cluster
+    if "irr" in cmd.options or "eform" in cmd.options:
+        args["irr"] = True
+    if cmd.options.get("offset"):
+        args["offset"] = cmd.options["offset"].split()[0]
+    if cmd.options.get("exposure"):
+        args["exposure"] = cmd.options["exposure"].split()[0]
+
+    notes: List[str] = []
+    if panel_id == "<panel_id>":
+        notes.append("Couldn't recover the panel-id from this command alone "
+                      "(Stata's `xtset id` lives in another line). Replace "
+                      "<panel_id> with the actual unit id column.")
+    if model == "fe":
+        notes.append("StatsPAI fits fixed-effects xtnbreg as an unconditional "
+                      "NB model with explicit panel dummies; this preserves "
+                      "the count likelihood and avoids routing through OLS.")
+    else:
+        notes.append("No `fe` option detected; StatsPAI maps xtnbreg to a "
+                      "random-intercept NB-2 GLMM (`sp.menbreg`) via "
+                      "`sp.xtnbreg(model='re')`.")
+
+    code_pairs = [
+        "data=df",
+        f"entity={panel_id!r}",
+        f"model={model!r}",
+    ]
+    if cluster:
+        code_pairs.append(f"cluster={cluster!r}")
+    if args.get("irr"):
+        code_pairs.append("irr=True")
+    if "offset" in args:
+        code_pairs.append(f"offset={args['offset']!r}")
+    if "exposure" in args:
+        code_pairs.append(f"exposure={args['exposure']!r}")
+    python = f"sp.xtnbreg({formula!r}, {', '.join(code_pairs)})"
+    return _emit("xtnbreg", args, python, notes)
+
+
 def _h_glm_like(cmd: StataCommand, *, sp_fn: str,
                   display_name: str) -> Dict[str, Any]:
     """Common scaffold for probit / logit / poisson / nbreg."""
@@ -839,11 +901,12 @@ STATA_COMMAND_MAP: Dict[str, Handler] = {
     "did_imputation": _h_did_imputation,
     "synth": _h_synth,
     "rdrobust": _h_rdrobust,
-    # Tier 2 — 12 follow-on commands (push coverage to ~85%)
+    # Tier 2 — follow-on commands (push coverage to ~85%)
     "probit": _h_probit,
     "logit": _h_logit,
     "poisson": _h_poisson,
     "nbreg": _h_nbreg,
+    "xtnbreg": _h_xtnbreg,
     "tobit": _h_tobit,
     "heckman": _h_heckman,
     "rdplot": _h_rdplot,

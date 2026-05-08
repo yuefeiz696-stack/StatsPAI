@@ -4,6 +4,54 @@ All notable changes to StatsPAI will be documented in this file.
 
 ## [Unreleased]
 
+## [1.15.1] — 2026-05-07
+
+### Headline
+
+Patch release on top of v1.15.0 preparing the public PyPI cut. Existing
+estimator defaults are preserved. The only new runtime path is opt-in:
+`sp.rdrobust(..., bwselect='cct')` delegates to the official
+`rdrobust>=1.3` Python package for bit-equal R `rdrobust::rdrobust`
+replications. The default `bwselect='mserd'` remains StatsPAI's
+internal MSE-optimal recipe.
+
+The release notes and README now also document the negative-binomial
+count-regression implementation that is already exposed through
+`sp.nbreg`, `sp.xtnbreg`, and `sp.menbreg`. This is documentation /
+release-packaging work plus the `1.15.0 → 1.15.1` version bump; it does
+not change the negative-binomial numerical path.
+
+### Docs — negative-binomial regression implementation note
+
+- `sp.nbreg` is a log-link MLE for overdispersed non-negative count
+  outcomes. The default `dispersion="mean"` path is NB2,
+  `Var(Y|X)=mu + alpha * mu^2`; `dispersion="constant"` switches to
+  NB1, `Var(Y|X)=mu * (1 + delta)`.
+- The optimizer starts from a Poisson IRLS fit. It then alternates
+  NB-weighted IRLS updates for the coefficient vector with scalar
+  profile-likelihood optimization for the dispersion parameter on the
+  log scale (`alpha` for NB2, `delta` for NB1).
+- Inference uses the NB working-weight bread. `robust="robust"` /
+  `"hc0"` / `"hc1"` select sandwich SEs, and `cluster=` selects
+  cluster-robust SEs. `irr=True` reports incidence-rate ratios by
+  exponentiating coefficients and delta-method SEs.
+- Offsets and exposure are supported (`offset=` supplies a log offset;
+  `exposure=` is logged internally). Diagnostics include log-likelihood,
+  AIC/BIC, pseudo-R2, fitted values / residuals, and a one-sided
+  likelihood-ratio test of the dispersion path against Poisson using
+  the standard 50:50 chi-bar-square mixture.
+- Formula fixed effects such as `y ~ x | id` are implemented by
+  explicit dummy expansion. That choice is transparent and compatible
+  with the MLE path, but it is intended for moderate-cardinality panels;
+  high-cardinality HDFE count models should use the Poisson/PPML
+  surface (`sp.fepois`, `sp.ppmlhdfe`) unless a full dummy NB fit is
+  really intended.
+- `sp.xtnbreg(model="fe")` wraps `sp.nbreg` with entity/time fixed
+  effects and defaults `cluster=` to the entity id. `model="pooled"`
+  strips the panel fixed-effect part. `model="re"` dispatches to
+  `sp.menbreg`, the random-intercept NB2 GLMM, and returns the
+  multilevel `MEGLMResult`.
+
 ### Added — R-parity opt-in for `sp.rdrobust`
 
 - **New `bwselect='cct'`** in [`sp.rdrobust`](src/statspai/rd/rdrobust.py)
