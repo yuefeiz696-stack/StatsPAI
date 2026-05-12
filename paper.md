@@ -22,7 +22,7 @@ affiliations:
     ror: 00f54p054
   - name: StatsPAI Inc., United States
     index: 2
-date: 9 May 2026
+date: 12 May 2026
 bibliography: paper.bib
 ---
 
@@ -34,21 +34,23 @@ for estimating, diagnosing, comparing, and reporting models that are
 usually spread across many specialized packages or proprietary
 statistical environments. The package currently exposes more than 950
 registered functions across more than 80 submodules, covering classical
-regression, instrumental variables, panel data, difference-in-differences,
+regression, instrumental variable analysis, panel data, difference-in-differences,
 regression discontinuity, synthetic control, matching,
 stochastic frontier analysis, mixed-effects models, decomposition
 methods, sensitivity analysis, and modern machine-learning estimators
 for heterogeneous treatment effects.
 
-The package is designed for policy evaluation, social science research,
-and other empirical workflows where researchers must move between
-research design, estimation, diagnostics, robustness checks, and
-publication tables. A common result contract gives users `.summary()`,
+The package is designed for policy evaluation, social science and
+public health research, and other empirical workflows where researchers
+must move between research design, estimation, diagnostics, robustness
+checks, and publication tables. A common result contract gives users `.summary()`,
 `.plot()`, `.to_latex()`, `.to_docx()`, and `.cite()` methods where
 appropriate. `StatsPAI` is also agent-native: registered functions
-expose machine-readable schemas and structured failure metadata so that
-LLM-driven research assistants can discover estimators, choose among
-alternatives, and surface assumptions without parsing free-form prose.
+expose machine-readable schemas (structured descriptions of each
+function's arguments and outputs that programs can parse directly) and
+structured failure metadata so that LLM-driven research assistants can
+discover estimators, choose among alternatives, and surface assumptions
+without parsing free-form prose.
 The source code is available at
 [https://github.com/brycewang-stanford/statspai](https://github.com/brycewang-stanford/statspai).
 
@@ -73,7 +75,7 @@ through estimation, robustness, and publication output.
 `StatsPAI` addresses this gap for graduate students, applied
 economists, policy researchers, and data scientists who want a
 Python-native workflow without giving up the breadth of Stata or the
-methodological depth of R. Its goal is not to replace every specialized
+methodological depth of R. The goal of StatsPAI is not to replace every specialized
 implementation. Instead, it provides a coherent empirical workspace:
 shared formula conventions, common result objects, consistent export
 methods, citations attached to estimators, and validation metadata that
@@ -124,8 +126,9 @@ across implementations.
 The package is implemented mainly in Python on top of NumPy, SciPy,
 Pandas, statsmodels, scikit-learn, and linearmodels. This keeps the
 installation path familiar for Python users and supports Python 3.9 and
-newer. Optional accelerator backends are used only where they materially
-change the computation: PyTorch for neural causal estimators, JAX for
+newer versions of Python. Optional accelerator backends are used only
+where they materially change the computation: PyTorch for neural causal
+estimators, JAX for
 selected bootstrap and linear algebra workloads, and a Rust/PyO3 kernel
 for high-dimensional fixed-effect and cluster-variance routines. This
 keeps the default package inspectable while allowing heavy workloads to
@@ -149,9 +152,10 @@ The near-term research impact is a more reproducible empirical workflow
 for applied policy evaluation. Because methods share one interface,
 researchers can compare estimators on the same data, export tables with
 the same metadata, and record the citations and assumptions attached to
-each analysis. Early use in Stanford REAP research workflows has shown
-the value of the package for rapid policy-evaluation prototyping, while
-the agent-native registry supports a second use case: AI-assisted
+each analysis. Early use in research workflows of the Rural Education
+Action Program at Stanford University has shown the value of the
+package for rapid policy-evaluation prototyping, while the agent-native
+registry supports a second use case: AI-assisted
 replication and robustness analysis in which statistical tools are
 discovered and invoked through explicit schemas rather than informal
 prompts.
@@ -161,9 +165,9 @@ prompts.
 Generative AI tools, including Claude and OpenAI/Codex, were used to
 draft portions of the documentation, assist with code generation, and
 revise this manuscript. The corresponding author reviewed AI-generated
-text, checked citations and software claims against repository evidence,
-and retained responsibility for the correctness of the package and this
-paper.
+text and checked citations and software claims against repository
+evidence. All of the authors take responsibility for the correctness of
+the package and this paper.
 
 # Acknowledgements
 

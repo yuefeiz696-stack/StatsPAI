@@ -188,8 +188,9 @@ audit_report.json
 # Ad-hoc citation-audit scratch (not from the tool)
 .citation_audit/
 
-# Paper JSS 
+# Paper JSS and JOSS submissions 
 Paper-JSS/
+Paper-JOSS/
 
 # Temp files
 MORNING_REPORT_2026-04-29.md
