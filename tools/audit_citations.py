@@ -262,6 +262,21 @@ class Verdict:
 
 _PUNCT_TO_SPACE = re.compile(r"[^\w\s'-]", re.UNICODE)
 
+# Apostrophe / hyphen variants that name fields use interchangeably across
+# sources. Crossref emits curly U+2019 in author names ("D’Haultfœuille"),
+# Python source typically uses straight U+0027 ("D'Haultfœuille"); without
+# this fold the same surname tokenises differently on each side.
+_APOSTROPHE_FOLD = str.maketrans({
+    "’": "'",  # right single quotation mark
+    "‘": "'",  # left single quotation mark
+    "ʼ": "'",  # modifier letter apostrophe
+    "′": "'",  # prime
+    "´": "'",  # acute accent (occasionally misused as apostrophe)
+    "‐": "-",  # hyphen
+    "‑": "-",  # non-breaking hyphen
+    "–": "-",  # en dash
+})
+
 
 def _strip_diacritics(s: str) -> str:
     """NFD + drop combining marks, preserve case and punctuation."""
@@ -274,8 +289,11 @@ def _normalise(s: str) -> str:
 
     Replacing punctuation with *spaces* (not deletion) is important: it
     keeps "(Imbens," from collapsing into one un-splittable token.
-    Apostrophe and hyphen are kept for names like O'Neill, Tabord-Meehan.
+    Apostrophe and hyphen are kept for names like O'Neill, Tabord-Meehan;
+    curly / typographic apostrophe variants are folded to the straight
+    ASCII form so D’Haultfœuille (Crossref) matches D'Haultfœuille (source).
     """
+    s = s.translate(_APOSTROPHE_FOLD)
     s = _strip_diacritics(s).lower()
     s = _PUNCT_TO_SPACE.sub(" ", s)
     return " ".join(s.split())  # collapse whitespace
