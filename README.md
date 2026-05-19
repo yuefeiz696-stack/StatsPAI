@@ -1391,6 +1391,10 @@ a "Cite this repository" button from it). A JOSS paper for StatsPAI is
 currently under review; once accepted, the journal article will become the
 preferred citation and `sp.citation()` will be updated to return it.
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=brycewang-stanford/StatsPAI&type=Date)](https://star-history.com/#brycewang-stanford/StatsPAI&Date)
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).

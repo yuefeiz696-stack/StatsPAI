@@ -607,6 +607,10 @@ sp.__citation__                 # 与 sp.citation("bibtex") 等价
 "Cite this repository" 按钮）。StatsPAI 的 JOSS 论文目前正在审稿中，录用
 后该论文将成为首选引用来源，`sp.citation()` 也会同步更新返回 JOSS 条目。
 
+## Star 历史
+
+[![Star History Chart](https://api.star-history.com/svg?repos=brycewang-stanford/StatsPAI&type=Date)](https://star-history.com/#brycewang-stanford/StatsPAI&Date)
+
 ## 许可证
 
 MIT 许可证。见 [LICENSE](LICENSE)。
