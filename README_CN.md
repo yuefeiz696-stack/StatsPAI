@@ -609,7 +609,7 @@ sp.__citation__                 # 与 sp.citation("bibtex") 等价
 
 ## Star 历史
 
-[![Stargazers over time](https://starchart.cc/brycewang-stanford/StatsPAI.svg)](https://starchart.cc/brycewang-stanford/StatsPAI)
+[![Star History Chart](https://api.star-history.com/svg?repos=brycewang-stanford/StatsPAI&type=Date)](https://star-history.com/#brycewang-stanford/StatsPAI&Date)
 
 ## 许可证
 
