@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "StatsPAI"
-version = "1.15.5"
+version = "1.15.6"
 description = "The Agent-Native Causal Inference & Econometrics Toolkit for Python"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
-    {name = "Biaoyue Wang", email = "brycew6m@stanford.edu"}
+    {name = "Biaoyue Wang", email = "brycew6m@stanford.edu"},
+    {name = "Scott Rozelle", email = "rozelle@stanford.edu"},
 ]
 maintainers = [
     {name = "Biaoyue Wang", email = "brycew6m@stanford.edu"}

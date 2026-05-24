@@ -1,6 +1,6 @@
 site_name: StatsPAI
 site_description: Python causal inference toolkit — econometrics, DiD, SDID, RD, IV, ML causal inference
-site_author: Biaoyue Wang
+site_author: Biaoyue Wang and Scott Rozelle
 repo_url: https://github.com/brycewang-stanford/StatsPAI
 repo_name: brycewang-stanford/StatsPAI
 edit_uri: edit/main/docs/
@@ -52,6 +52,8 @@ extra_javascript:
 nav:
   - Home: index.md
   - Ecosystem stats: stats.md
+  - JOSS reviewer guide: joss_reviewer_guide.md
+  - JOSS validation dossier: joss_validation_dossier.md
   - Guides:
       - "Staggered DiD (Callaway–Sant'Anna)": guides/callaway_santanna.md
       - "Report card: cs_report()": guides/cs_report.md

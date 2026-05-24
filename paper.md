@@ -52,7 +52,8 @@ structured failure metadata so that LLM-driven research assistants can
 discover estimators, choose among alternatives, and surface assumptions
 without parsing free-form prose.
 The source code is available at
-[https://github.com/brycewang-stanford/statspai](https://github.com/brycewang-stanford/statspai).
+[https://github.com/brycewang-stanford/StatsPAI](https://github.com/brycewang-stanford/StatsPAI)
+and archived on Zenodo [@wang2026statspai].
 
 # Statement of Need
 
@@ -147,32 +148,55 @@ difference-in-differences examples, and synthetic-control benchmarks.
 The validation suite also includes a 1000-replication coverage run for
 representative OLS, difference-in-differences, and strong-instrument IV
 designs, with empirical coverage close to the nominal 95 percent level.
+A reviewer-facing validation dossier and a short reviewer guide are
+included in the repository documentation.
 
 The near-term research impact is a more reproducible empirical workflow
 for applied policy evaluation. Because methods share one interface,
 researchers can compare estimators on the same data, export tables with
 the same metadata, and record the citations and assumptions attached to
-each analysis. Early use in research workflows of the Rural Education
-Action Program at Stanford University has shown the value of the
-package for rapid policy-evaluation prototyping, while the agent-native
-registry supports a second use case: AI-assisted
-replication and robustness analysis in which statistical tools are
-discovered and invoked through explicit schemas rather than informal
-prompts.
+each analysis. StatsPAI is currently being used in working-paper
+workflows connected to the Rural Education Action Program at Stanford
+University; no peer-reviewed research article using the package has yet
+been published. The current impact claim is therefore based on active
+working-paper use, public distribution, reproducible validation
+materials, and reviewer-verifiable examples. The agent-native registry
+also supports AI-assisted replication and robustness analysis in which
+statistical tools are discovered and invoked through explicit schemas
+rather than informal prompts.
 
 # AI Usage Disclosure
 
-Generative AI tools, including Claude and OpenAI/Codex, were used to
-draft portions of the documentation, assist with code generation, and
-revise this manuscript. The corresponding author reviewed AI-generated
-text and checked citations and software claims against repository
-evidence. All of the authors take responsibility for the correctness of
-the package and this paper.
+Generative AI tools, including Claude Code and OpenAI ChatGPT/Codex,
+were used for code-generation assistance, refactoring suggestions, test
+scaffolding, documentation drafting, and manuscript copy-editing. Exact
+model identifiers were not retained for all exploratory sessions. Human
+authors made the core design decisions; reviewed, edited, and validated
+AI-assisted code and prose; and checked citations and software claims
+against repository evidence. The authors will not use generative AI to
+produce substantive responses to JOSS editors or reviewers. All authors
+take responsibility for the correctness, originality, licensing, and
+compliance of the package and this paper.
+
+# Author Contributions
+
+**Biaoyue Wang** conceived and designed the package, implemented the
+estimators, registry, schema layer, and result objects, wrote the
+documentation, tests, and validation suites, and led the drafting of
+this paper. **Scott Rozelle** provided guidance on the package's design
+direction and target research workflows, and contributed to the
+writing, review, and revision of this paper. Both authors reviewed and
+approved the final manuscript and take responsibility for the
+correctness of the package and this paper.
 
 # Acknowledgements
 
-The authors thank the Stanford REAP research community and the
-CoPaper.AI team for feedback on early workflows. The authors are also
+The authors thank the Stanford Rural Education Action Program (REAP)
+research community and the CoPaper.AI team for feedback on early
+workflows. StatsPAI Inc. is the legal entity associated with the
+project, and CoPaper.AI is a commercial downstream product that may
+call the MIT-licensed StatsPAI package; the StatsPAI package itself is
+permanently open source under the MIT license. The authors are also
 grateful to the developers of NumPy, SciPy, Pandas, statsmodels,
 scikit-learn, linearmodels, PyTorch, JAX, and the broader open-source
 scientific Python ecosystem that `StatsPAI` builds upon.

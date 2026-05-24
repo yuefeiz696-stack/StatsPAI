@@ -1390,11 +1390,11 @@ A static example for the current release (the Zenodo *concept* DOI always
 resolves to the latest version):
 
 ```bibtex
-@software{wang_statspai_2026,
-  author       = {Wang, Biaoyue},
+@software{wang2026statspai,
+  author       = {Wang, Biaoyue and Rozelle, Scott},
   title        = {StatsPAI: The Agent-Native Causal Inference \& Econometrics Toolkit for Python},
   year         = {2026},
-  version      = {1.15.5},
+  version      = {1.15.6},
   doi          = {10.5281/zenodo.19933900},
   url          = {https://doi.org/10.5281/zenodo.19933900},
   license      = {MIT},

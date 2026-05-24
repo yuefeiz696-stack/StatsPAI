@@ -233,12 +233,12 @@ If you use this guide or StatsPAI in academic work, please cite both:
   url={https://mixtape.scunning.com/}
 }
 
-@software{statspai,
-  title={StatsPAI: The AI-powered Statistics & Econometrics Toolkit for Python},
-  author={Wang, Biaoyue},
+@software{wang2026statspai,
+  title={StatsPAI: The Agent-Native Causal Inference and Econometrics Toolkit for Python},
+  author={Wang, Biaoyue and Rozelle, Scott},
   year={2026},
   url={https://github.com/brycewang-stanford/StatsPAI},
-  version={0.9.10}
+  version={1.15.6}
 }
 ```
 

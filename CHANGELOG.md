@@ -4,6 +4,66 @@ All notable changes to StatsPAI will be documented in this file.
 
 ## [Unreleased]
 
+## [1.15.6] — 2026-05-24
+
+### Changed — Co-authorship, JOSS submission readiness
+
+- Added **Scott Rozelle** as co-author across all package metadata:
+  `pyproject.toml`, `src/statspai/__init__.py` (`__author__`), `CITATION.cff`,
+  `.zenodo.json`, `mkdocs.yml`, the package citation templates in
+  `src/statspai/_citation.py` (BibTeX / APA / plain), and the README BibTeX
+  snippets (English and Chinese).
+- ⚠️ **Downstream-facing rename**: unified the package BibTeX key to
+  **`wang2026statspai`** (CLAUDE.md §10 `lastnameYEARkeyword` convention).
+  Previous keys emitted or documented in earlier versions
+  (`wang_statspai_2026`, `wang_rozelle_statspai_2026`, `statspai2026software`,
+  bare `statspai`) are removed in favor of a single canonical key. Downstream
+  `.tex` files that cite the previous key need a one-line rename to
+  `\cite{wang2026statspai}`. The impact surface is small — only users who
+  literally copied the previous BibTeX entry into their own `.bib` are
+  affected; users who regenerate via `sp.citation("bibtex")` get the new key
+  automatically.
+- `sp.citation("bibtex")` now emits the unified key and the updated author
+  list. `sp.citation("apa")` and `sp.citation("plain")` already reflected the
+  co-author; both surfaces now also carry the 1.15.6 version string.
+- `CITATION.cff` `version` / `date-released` bumped to `1.15.6` / `2026-05-24`.
+
+### Added — JOSS reviewer-facing documentation
+
+- `docs/joss_reviewer_guide.md` — install, smoke test, representative offline
+  examples, targeted tests, and build check, intended as a short reviewer
+  path. All five smoke-test API calls are verified against the current
+  registry (`ivreg`, `callaway_santanna` + `aggte`, `rdrobust`, `synth`,
+  `describe_function` / `function_schema`).
+- `docs/joss_validation_dossier.md` — project status, registry counts,
+  validation tracks (R-parity / Stata-parity / reference-parity / Monte Carlo
+  coverage / snapshot tests / citation audits), parity anchors, research-use
+  statement (working-paper use; no published peer-reviewed article yet),
+  open-core / commercial-downstream disclosure (StatsPAI Inc. + CoPaper.AI),
+  and reproducible-check commands.
+- Both pages added to the MkDocs navigation.
+
+### Changed — `paper.md` (JOSS manuscript)
+
+- Repo URL casing corrected to canonical `StatsPAI`; added Zenodo archive
+  reference (`@wang2026statspai`).
+- Research-impact paragraph rephrased to match the actual current state:
+  StatsPAI is used in working-paper workflows connected to Stanford REAP; no
+  peer-reviewed research article using the package has yet been published.
+- AI Usage Disclosure rewritten to spell out exactly what generative AI was
+  used for (code generation, refactoring, test scaffolding, documentation
+  drafting, manuscript copy-editing), to note that exact model identifiers
+  were not retained for all exploratory sessions, and to confirm that
+  generative AI will not be used to produce substantive responses to JOSS
+  editors or reviewers.
+- Acknowledgements split: explicit **Author Contributions** subsection
+  attributing roles to each author, and an open-core / commercial-downstream
+  disclosure (StatsPAI Inc. is the legal entity; CoPaper.AI is a commercial
+  downstream product that may call the MIT-licensed StatsPAI package; the
+  package itself remains permanently open source under MIT).
+- `paper.bib` adds the `wang2026statspai` software entry pointing at the
+  Zenodo concept DOI.
+
 ## [1.15.5] — 2026-05-21
 
 ### Added — Agent-card coverage ratchet and baseline enrichment

@@ -26,8 +26,8 @@ _RELEASE_YEAR = "2026"
 _CONCEPT_DOI = "10.5281/zenodo.19933900"
 
 _BIBTEX_TEMPLATE = (
-    "@software{{wang_statspai_{year},\n"
-    "  author       = {{Wang, Biaoyue}},\n"
+    "@software{{wang{year}statspai,\n"
+    "  author       = {{Wang, Biaoyue and Rozelle, Scott}},\n"
     "  title        = {{StatsPAI: The Agent-Native Causal Inference \\&"
     " Econometrics Toolkit for Python}},\n"
     "  year         = {{{year}}},\n"
@@ -39,13 +39,13 @@ _BIBTEX_TEMPLATE = (
 )
 
 _APA_TEMPLATE = (
-    "Wang, B. ({year}). StatsPAI: The Agent-Native Causal Inference & "
+    "Wang, B., & Rozelle, S. ({year}). StatsPAI: The Agent-Native Causal Inference & "
     "Econometrics Toolkit for Python (Version {version}) [Computer software]. "
     "Zenodo. https://doi.org/{doi}"
 )
 
 _PLAIN_TEMPLATE = (
-    "Biaoyue Wang ({year}). StatsPAI: The Agent-Native Causal Inference & "
+    "Biaoyue Wang and Scott Rozelle ({year}). StatsPAI: The Agent-Native Causal Inference & "
     "Econometrics Toolkit for Python, version {version}. "
     "https://doi.org/{doi}"
 )

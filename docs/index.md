@@ -155,16 +155,17 @@ pip install 'statspai[text]'               # sentence-transformers for sbert
 ## Citation
 
 If you use StatsPAI in research, please cite the underlying papers
-implemented by each estimator (every result object carries a `.cite()`
-method that returns the correct BibTeX entry) and this package:
+implemented by each estimator — `sp.citation()` returns the package entry, and
+many result objects expose a `.cite()` method for the estimator-level
+reference — together with this package:
 
 ```bibtex
-@software{statspai,
-  author  = {Wang, Biaoyue},
+@software{wang2026statspai,
+  author  = {Wang, Biaoyue and Rozelle, Scott},
   title   = {StatsPAI: A Unified, Agent-Native Python Toolkit for
              Causal Inference and Applied Econometrics},
   year    = {2026},
-  version = {1.15.5},
+  version = {1.15.6},
   url     = {https://github.com/brycewang-stanford/StatsPAI}
 }
 ```
