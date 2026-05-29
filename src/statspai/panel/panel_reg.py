@@ -26,6 +26,7 @@ Arellano, M. and Bond, S. (1991). "Some Tests of Specification for Panel Data."
 Blundell, R. and Bond, S. (1998). "Initial Conditions and Moment Restrictions."
 """
 
+import warnings
 from typing import Optional, List, Dict, Any, Tuple, Union
 
 import numpy as np
@@ -825,8 +826,17 @@ def _fit_cre(
                     'Reject H0: use FE' if wald_p < 0.05
                     else 'Cannot reject H0: RE is efficient'
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                # The Mundlak/CRE Wald test IS the FE-vs-RE decision the
+                # user runs CRE for; don't drop it silently (CLAUDE.md §7).
+                result.diagnostics['CRE Wald error'] = f"{type(exc).__name__}: {exc}"
+                warnings.warn(
+                    f"CRE/Mundlak Wald test (FE-vs-RE diagnostic) could not "
+                    f"be computed ({type(exc).__name__}: {exc}); it is absent "
+                    f"from result.diagnostics. The coefficient estimates are "
+                    f"unaffected.",
+                    RuntimeWarning, stacklevel=2,
+                )
 
     return result
 

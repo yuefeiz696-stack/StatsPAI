@@ -24,6 +24,7 @@ McFadden, D. (1973).
 *Frontiers in Econometrics*, 105-142.
 """
 
+import warnings
 from typing import Optional, List, Dict, Any, Union
 
 import numpy as np
@@ -327,6 +328,7 @@ def mlogit(
 
     # --- IIA test (Hausman-McFadden) ---
     iia_tests = {}
+    iia_skipped = []
     for drop_j in non_base:
         # Estimate restricted model omitting category drop_j
         restricted_cats = [j for j in range(J) if j != drop_j]
@@ -388,8 +390,22 @@ def mlogit(
                 iia_tests[categories[drop_j]] = {
                     'chi2': chi2, 'df': df_test, 'pvalue': p_iia
                 }
+            else:
+                # Hausman regularity (V_r - V_f PSD) failed — common in
+                # finite samples. Record the skip instead of silently
+                # omitting the test row (CLAUDE.md §7).
+                iia_skipped.append(str(categories[drop_j]))
         except np.linalg.LinAlgError:
-            pass
+            iia_skipped.append(str(categories[drop_j]))
+
+    if iia_skipped:
+        warnings.warn(
+            f"Multinomial IIA (Hausman-McFadden) test could not be computed "
+            f"for category/categories {iia_skipped} (singular or non-PSD "
+            f"variance difference). These categories are absent from "
+            f"`iia_test`; see model_info['iia_skipped'].",
+            RuntimeWarning, stacklevel=2,
+        )
 
     model_info = {
         'model_type': 'Multinomial Logit',
@@ -405,6 +421,7 @@ def mlogit(
         'converged': res.success,
         'rrr': rrr,
         'robust': robust if cluster is None else f'cluster({cluster})',
+        'iia_skipped': iia_skipped,
     }
 
     data_info = {
@@ -681,6 +698,8 @@ def _ordered_model(
     # --- Brant test (parallel regression assumption) ---
     # Compare J-1 binary logits to the constrained ordered model
     brant_test = {}
+    brant_skipped = []
+    brant_error = None
     try:
         chi2_total = 0.0
         df_total = 0
@@ -723,6 +742,8 @@ def _ordered_model(
                 }
                 chi2_total += chi2_m
                 df_total += df_m
+            else:
+                brant_skipped.append(var_names[m])
 
         if df_total > 0:
             brant_test['_omnibus'] = {
@@ -730,8 +751,23 @@ def _ordered_model(
                 'df': df_total,
                 'pvalue': float(1 - stats.chi2.cdf(chi2_total, df_total)),
             }
-    except Exception:
-        pass
+    except Exception as exc:
+        # Don't silently drop the whole parallel-regression diagnostic.
+        brant_error = f"{type(exc).__name__}: {exc}"
+
+    if brant_error is not None:
+        warnings.warn(
+            f"Brant parallel-regression test failed and is omitted from the "
+            f"result ({brant_error}). See model_info['brant_error'].",
+            RuntimeWarning, stacklevel=2,
+        )
+    elif brant_skipped:
+        warnings.warn(
+            f"Brant parallel-regression test skipped for {brant_skipped} "
+            f"(non-finite binary-logit SE). These rows are absent from "
+            f"`brant_test`; see model_info['brant_skipped'].",
+            RuntimeWarning, stacklevel=2,
+        )
 
     # --- Build results ---
     # Params: beta coefficients + cutpoints
@@ -755,6 +791,8 @@ def _ordered_model(
         'bic': float(bic),
         'converged': res.success,
         'robust': robust if cluster is None else f'cluster({cluster})',
+        'brant_skipped': brant_skipped,
+        'brant_error': brant_error,
     }
 
     data_info = {
