@@ -392,12 +392,18 @@ def _cluster_robust_vcov(
     cluster_ids: np.ndarray,
 ) -> np.ndarray:
     """
-    Cluster-robust variance-covariance matrix (HC1-style with cluster correction).
+    Cluster-robust variance-covariance matrix.
 
-    V = (X'X)^{-1} B (X'X)^{-1}
-    where B = sum_g (X_g' e_g)(X_g' e_g)'
-    with small-sample correction: G/(G-1) * N/(N-K).
+    V = c * (X'X)^{-1} B (X'X)^{-1}, B = sum_g (X_g' e_g)(X_g' e_g)',
+    small-sample correction c = (G/(G-1)) * ((n-1)/(n-k)) (G>1 else 1).
+
+    Delegates to the canonical ``core._vcov.cluster_robust_vcov`` (CLAUDE.md
+    §4); keeps the k==0 guard and the inv->pinv bread fallback. Verified
+    byte-identical to the prior hand-rolled implementation (incl. the singular
+    pinv path).
     """
+    from ..core._vcov import cluster_robust_vcov
+
     n, k = X.shape
     if k == 0:
         return np.empty((0, 0))
@@ -408,27 +414,10 @@ def _cluster_robust_vcov(
     except np.linalg.LinAlgError:
         XtX_inv = np.linalg.pinv(XtX)
 
-    # Build cluster score matrix
-    unique_clusters = np.unique(cluster_ids)
-    G = len(unique_clusters)
-    B = np.zeros((k, k))
-
-    cluster_map = {}
-    for i, c in enumerate(cluster_ids):
-        cluster_map.setdefault(c, []).append(i)
-
-    for c in unique_clusters:
-        idx = np.array(cluster_map[c])
-        Xg = X[idx]
-        eg = residuals[idx]
-        score = Xg.T @ eg  # (k,)
-        B += np.outer(score, score)
-
-    # Small-sample correction
-    correction = (G / (G - 1)) * ((n - 1) / (n - k)) if G > 1 else 1.0
-    V = correction * XtX_inv @ B @ XtX_inv
-
-    return V
+    return cluster_robust_vcov(
+        X, residuals, cluster_ids,
+        correction="liang_zeger", XtX_inv=XtX_inv,
+    )
 
 
 def _cluster_robust_se(
