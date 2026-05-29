@@ -25,6 +25,7 @@ class ARIMAResult:
     order: Tuple[int, int, int]
     seasonal_order: Optional[Tuple[int, int, int, int]]
     params: pd.Series
+    se: pd.Series                    # asymptotic standard errors (param index)
     aic: float
     bic: float
     aicc: float
@@ -33,6 +34,44 @@ class ARIMAResult:
     fitted_values: np.ndarray
     n: int
     _model: object                   # statsmodels result (opaque)
+
+    # --- inference accessors -------------------------------------------------
+    @property
+    def std_errors(self) -> pd.Series:
+        """Alias for :attr:`se` (regression-style naming)."""
+        return self.se
+
+    @property
+    def tvalues(self) -> pd.Series:
+        """z-statistics ``params / se`` (SARIMAX uses a normal reference)."""
+        return self.params / self.se
+
+    @property
+    def pvalues(self) -> pd.Series:
+        """Two-sided p-values from the normal reference distribution."""
+        from scipy import stats
+        z = (self.params / self.se).to_numpy()
+        return pd.Series(2.0 * stats.norm.sf(np.abs(z)), index=self.params.index)
+
+    def conf_int(self, alpha: float = 0.05) -> pd.DataFrame:
+        """Confidence intervals for each parameter.
+
+        Parameters
+        ----------
+        alpha : float, default 0.05
+            ``1 - alpha`` is the coverage (0.05 → 95% CI).
+
+        Returns
+        -------
+        pd.DataFrame
+            Indexed by parameter name with ``lower`` / ``upper`` columns.
+        """
+        from scipy import stats
+        z = stats.norm.ppf(1.0 - alpha / 2.0)
+        lower = self.params - z * self.se
+        upper = self.params + z * self.se
+        return pd.DataFrame({"lower": lower, "upper": upper},
+                            index=self.params.index)
 
     def forecast(self, horizon: int = 10, alpha: float = 0.05) -> pd.DataFrame:
         fc = self._model.get_forecast(steps=horizon)
@@ -71,10 +110,16 @@ class ARIMAResult:
             f"AICc       : {self.aicc:.2f}",
             f"Log-Lik    : {self.log_likelihood:.2f}",
             "",
-            "Parameters:",
+            f"  {'':<15s}  {'coef':>10s}  {'std err':>10s}  {'z':>8s}  {'P>|z|':>8s}",
         ]
+        pvals = self.pvalues
         for nm, val in self.params.items():
-            lines.append(f"  {nm:<15s}  {val: .4f}")
+            s = float(self.se.get(nm, np.nan))
+            z = val / s if s and np.isfinite(s) else np.nan
+            p = float(pvals.get(nm, np.nan))
+            lines.append(
+                f"  {nm:<15s}  {val:>10.4f}  {s:>10.4f}  {z:>8.3f}  {p:>8.3f}"
+            )
         return "\n".join(lines)
 
     def __repr__(self) -> str:
@@ -104,6 +149,21 @@ def arima(
         If True, select (p, d, q) by AICc grid search (ignores ``order``).
     max_p, max_q, max_d : int
         Bounds for the auto search.
+
+    Returns
+    -------
+    ARIMAResult
+        Exposes ``params`` and the matching standard errors ``se`` (alias
+        ``std_errors``), plus ``tvalues``, ``pvalues``, and
+        ``conf_int(alpha)`` for inference, alongside ``aic`` / ``bic`` /
+        ``aicc`` / ``log_likelihood`` and ``forecast`` / ``plot``.
+
+    Examples
+    --------
+    >>> import statspai as sp
+    >>> res = sp.arima(df["gdp"], order=(2, 0, 0))
+    >>> res.se            # standard errors, indexed by parameter name
+    >>> res.conf_int()    # 95% confidence intervals
     """
     try:
         from statsmodels.tsa.statespace.sarimax import SARIMAX
@@ -148,10 +208,21 @@ def arima(
     k = sum(order) + 1
     aicc = res.aic + 2 * k * (k + 1) / max(n - k - 1, 1)
 
+    _param_index = res.param_names if hasattr(res, "param_names") else None
+    _params = pd.Series(res.params, index=_param_index)
+    # statsmodels computes the asymptotic SEs (sqrt of the diagonal of the
+    # covariance of the MLE) but we never surfaced them before; expose them.
+    _bse = getattr(res, "bse", None)
+    if _bse is not None:
+        _se = pd.Series(np.asarray(_bse, dtype=float), index=_param_index)
+    else:  # pragma: no cover - defensive; SARIMAX always populates bse
+        _se = pd.Series(np.full(len(_params), np.nan), index=_param_index)
+
     _result = ARIMAResult(
         order=order,
         seasonal_order=seasonal_order,
-        params=pd.Series(res.params, index=res.param_names) if hasattr(res, "param_names") else pd.Series(res.params),
+        params=_params,
+        se=_se,
         aic=float(res.aic),
         bic=float(res.bic),
         aicc=float(aicc),
