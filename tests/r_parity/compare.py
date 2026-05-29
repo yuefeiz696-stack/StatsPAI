@@ -6,7 +6,6 @@
   * parity_table.tex      -- LaTeX longtable, 4-col R-only baseline (legacy)
   * parity_table_3way.tex -- LaTeX longtable, 5-col with Stata column;
                              this is the version the JSS appendix \\input{}s.
-  * parity_summary.md     -- one-line-per-module headline + verdict
 
 Tolerance budget (pre-registered, NEXT-STEPS / JSS plan §5.2):
 
@@ -17,7 +16,9 @@ Tolerance budget (pre-registered, NEXT-STEPS / JSS plan §5.2):
 
 The same tolerance applies to the StatsPAI <-> Stata comparison: we
 do not register a separate budget for the Stata side; one budget per
-module is the single source of truth.
+module is the single source of truth. Stata-side implementation
+convention gaps that exceed that budget must be explicitly listed in
+``STATA_HEADLINE_GAP_EXCEPTIONS``.
 
 Verdict assignment is per-module, not per-row, because some rows
 (e.g. SE-with-documented-convention-gap, default-h selector) are
@@ -47,6 +48,21 @@ STATA_SKIP_REASON: dict[str, str] = {
     "31_dfl":           "no canonical Stata port",
     "32_rif":           "rifhdreg requires GitHub install",
     "38_drdid":         "Stata DRDID = Ferman (different DR formula)",
+}
+
+# Modules where the R headline is inside the registered tolerance but the
+# Stata headline deliberately records a known implementation convention gap.
+# Keeping this explicit prevents the 3-way PASS column from silently masking
+# Stata-side drift.
+STATA_HEADLINE_GAP_EXCEPTIONS: dict[str, str] = {
+    "16_bjs": (
+        "Stata did_imputation uses a different autosample/aggregation "
+        "convention on the mpdta replica than R didimputation and StatsPAI."
+    ),
+    "29_panel_sfa": (
+        "Stata xtfrontier uses a different Pitt-Lee intercept/inefficiency "
+        "parameterisation than frontier::sfa and StatsPAI."
+    ),
 }
 
 
@@ -704,6 +720,8 @@ def render_tex_3way(modules: list[str]) -> str:
                 primary_s = f"rel $\\le {worst_s:.2g}$"
             else:
                 primary_s = f"abs $\\le {worst_s:.3g}$"
+            if m in STATA_HEADLINE_GAP_EXCEPTIONS:
+                primary_s += " {\\footnotesize (Stata convention gap)}"
         else:
             reason = STATA_SKIP_REASON.get(m, "n/a")
             primary_s = f"\\emph{{{reason}}}"
@@ -792,6 +810,10 @@ def render_md_3way(modules: list[str]) -> str:
                     lines.append(f"- **{k}**: `{v}`")
         elif m in STATA_SKIP_REASON:
             lines.append(f"- **stata_status**: {STATA_SKIP_REASON[m]}")
+        if m in STATA_HEADLINE_GAP_EXCEPTIONS:
+            lines.append(
+                f"- **stata_gap_note**: {STATA_HEADLINE_GAP_EXCEPTIONS[m]}"
+            )
         lines.append("")
         lines.append(
             "| stat | py est | R est | Stata est | rel py-R | rel py-Stata | py SE | R SE | Stata SE | rel SE py-R | rel SE py-Stata |"

@@ -31,6 +31,7 @@ from ..core.results import CausalResult
 # Public API
 # ======================================================================
 
+
 def rdrobust(
     data: pd.DataFrame,
     y: str,
@@ -40,8 +41,8 @@ def rdrobust(
     deriv: int = 0,
     p: int = 1,
     q: Optional[int] = None,
-    kernel: str = 'triangular',
-    bwselect: str = 'mserd',
+    kernel: str = "triangular",
+    bwselect: str = "mserd",
     h: Optional[float] = None,
     b: Optional[float] = None,
     rho: Optional[float] = None,
@@ -170,17 +171,33 @@ def rdrobust(
     Regression Kink Design (estimate change in slope):
 
     >>> result = rdrobust(df, y='y', x='x', c=0, deriv=1)
+
+    References
+    ----------
+    Calonico, S., Cattaneo, M. D. and Titiunik, R. (2014). Robust
+    nonparametric confidence intervals for regression-discontinuity designs.
+    *Econometrica*. [@calonico2014robust]
     """
-    _VALID_BW = {'mserd', 'msetwo', 'cerrd', 'certwo',
-                 'msecomb1', 'msecomb2', 'cercomb1', 'cercomb2',
-                 # ``'cct'`` delegates the entire estimation to the official
-                 # rdrobust Python port (Calonico-Cattaneo-Titiunik 2014) for
-                 # bit-equal R `rdrobust::rdrobust` parity. Opt-in; requires
-                 # ``pip install statspai[rd-cct]``.  Added 2026-05-06.
-                 'cct'}
-    if kernel not in ('triangular', 'uniform', 'epanechnikov'):
-        raise ValueError(f"kernel must be 'triangular', 'uniform', or "
-                         f"'epanechnikov', got '{kernel}'")
+    _VALID_BW = {
+        "mserd",
+        "msetwo",
+        "cerrd",
+        "certwo",
+        "msecomb1",
+        "msecomb2",
+        "cercomb1",
+        "cercomb2",
+        # ``'cct'`` delegates the entire estimation to the official
+        # rdrobust Python port (Calonico-Cattaneo-Titiunik 2014) for
+        # bit-equal R `rdrobust::rdrobust` parity. Opt-in; requires
+        # ``pip install statspai[rd-cct]``.  Added 2026-05-06.
+        "cct",
+    }
+    if kernel not in ("triangular", "uniform", "epanechnikov"):
+        raise ValueError(
+            f"kernel must be 'triangular', 'uniform', or "
+            f"'epanechnikov', got '{kernel}'"
+        )
     if bwselect not in _VALID_BW:
         raise ValueError(f"bwselect must be one of {_VALID_BW}, got '{bwselect}'")
 
@@ -193,17 +210,30 @@ def rdrobust(
     # Senate data Conv ≈ 7.41, Robust ≈ 7.51). Our internal ``mserd``
     # path uses an independent MSE-optimal recipe that can drift from
     # R by 60-70% on certain datasets — see CHANGELOG v1.16 / MIGRATION.md.
-    if bwselect == 'cct':
+    if bwselect == "cct":
         return _delegate_to_cct_rdrobust(
-            data=data, y=y, x=x, c=c, fuzzy=fuzzy, deriv=deriv, p=p, q=q,
-            kernel=kernel, h=h, b=b, rho=rho, covs=covs, cluster=cluster,
-            donut=donut, alpha=alpha,
+            data=data,
+            y=y,
+            x=x,
+            c=c,
+            fuzzy=fuzzy,
+            deriv=deriv,
+            p=p,
+            q=q,
+            kernel=kernel,
+            h=h,
+            b=b,
+            rho=rho,
+            covs=covs,
+            cluster=cluster,
+            donut=donut,
+            alpha=alpha,
         )
     if deriv < 0:
         raise ValueError(f"deriv must be non-negative, got {deriv}")
     if donut < 0:
         raise ValueError(f"donut must be non-negative, got {donut}")
-    if bootstrap is not None and bootstrap not in ('rbc',):
+    if bootstrap is not None and bootstrap not in ("rbc",):
         raise ValueError(
             f"bootstrap must be None or 'rbc', got {bootstrap!r}. "
             "See Cavaliere, Gonçalves, Nielsen & Zanelli (arXiv:2512.00566, 2025)."
@@ -217,7 +247,9 @@ def rdrobust(
         q = p + 1
 
     if rho is not None and b is not None:
-        raise ValueError("Pass at most one of `b` or `rho` — they are mutually exclusive.")
+        raise ValueError(
+            "Pass at most one of `b` or `rho` — they are mutually exclusive."
+        )
     if rho is not None and rho <= 0:
         raise ValueError(f"rho must be strictly positive (got {rho}).")
 
@@ -294,29 +326,65 @@ def rdrobust(
 
     # --- Conventional estimate: order p, bandwidth h ---
     tau_conv, se_conv, n_eff_l, n_eff_r = _rd_estimate(
-        Y, X_c, left, right, h, p, kernel, cluster,
-        cl_vals_all, deriv=deriv, covs=Z,
+        Y,
+        X_c,
+        left,
+        right,
+        h,
+        p,
+        kernel,
+        cluster,
+        cl_vals_all,
+        deriv=deriv,
+        covs=Z,
     )
 
     # --- Bias-corrected estimate: order q, bandwidth b ---
     tau_bc, se_robust, _, _ = _rd_estimate(
-        Y, X_c, left, right, b, q, kernel, cluster,
-        cl_vals_all, deriv=deriv, covs=Z,
+        Y,
+        X_c,
+        left,
+        right,
+        b,
+        q,
+        kernel,
+        cluster,
+        cl_vals_all,
+        deriv=deriv,
+        covs=Z,
     )
 
     # --- Fuzzy RD: Wald / IV at cutoff ---
     fs_F = None
     if D is not None:
         fs_conv, fs_se, _, _ = _rd_estimate(
-            D, X_c, left, right, h, p, kernel, None, None,
-            deriv=deriv, covs=Z,
+            D,
+            X_c,
+            left,
+            right,
+            h,
+            p,
+            kernel,
+            None,
+            None,
+            deriv=deriv,
+            covs=Z,
         )
         fs_bc, _, _, _ = _rd_estimate(
-            D, X_c, left, right, b, q, kernel, None, None,
-            deriv=deriv, covs=Z,
+            D,
+            X_c,
+            left,
+            right,
+            b,
+            q,
+            kernel,
+            None,
+            None,
+            deriv=deriv,
+            covs=Z,
         )
         # First-stage F (for weak-IV diagnostic, KKN 2025)
-        fs_F = float((fs_conv / fs_se) ** 2) if fs_se and fs_se > 0 else float('inf')
+        fs_F = float((fs_conv / fs_se) ** 2) if fs_se and fs_se > 0 else float("inf")
         if warn_weak_first_stage and np.isfinite(fs_F) and fs_F < 10:
             warnings.warn(
                 f"rdrobust (fuzzy): first-stage F = {fs_F:.2f} < 10. "
@@ -346,22 +414,24 @@ def rdrobust(
     ci_robust = (tau_bc - z_crit * se_robust, tau_bc + z_crit * se_robust)
 
     # --- Detail table (matches rdrobust R output) ---
-    detail = pd.DataFrame({
-        'method': ['Conventional', 'Robust'],
-        'estimate': [tau_conv, tau_bc],
-        'se': [se_conv, se_robust],
-        'z': [z_conv, z_robust],
-        'pvalue': [pv_conv, pv_robust],
-        'ci_lower': [ci_conv[0], ci_robust[0]],
-        'ci_upper': [ci_conv[1], ci_robust[1]],
-    })
+    detail = pd.DataFrame(
+        {
+            "method": ["Conventional", "Robust"],
+            "estimate": [tau_conv, tau_bc],
+            "se": [se_conv, se_robust],
+            "z": [z_conv, z_robust],
+            "pvalue": [pv_conv, pv_robust],
+            "ci_lower": [ci_conv[0], ci_robust[0]],
+            "ci_upper": [ci_conv[1], ci_robust[1]],
+        }
+    )
 
     if deriv >= 1:
-        rd_type = 'Kink'
+        rd_type = "Kink"
     elif fuzzy:
-        rd_type = 'Fuzzy'
+        rd_type = "Fuzzy"
     else:
-        rd_type = 'Sharp'
+        rd_type = "Sharp"
 
     def _round_bw(bw):
         if isinstance(bw, tuple):
@@ -369,40 +439,52 @@ def rdrobust(
         return round(bw, 6)
 
     model_info: Dict[str, Any] = {
-        'rd_type': rd_type,
-        'deriv': deriv,
-        'donut': donut,
-        'polynomial_p': p,
-        'polynomial_q': q,
-        'kernel': kernel,
-        'bandwidth_h': _round_bw(h),
-        'bandwidth_b': _round_bw(b),
-        'bwselect': bwselect if h_auto else 'manual',
-        'cutoff': c,
-        'n_left': n_left_total,
-        'n_right': n_right_total,
-        'n_effective_left': n_eff_l,
-        'n_effective_right': n_eff_r,
-        'conventional': {
-            'estimate': tau_conv, 'se': se_conv,
-            'pvalue': pv_conv, 'ci': ci_conv,
+        "rd_type": rd_type,
+        "deriv": deriv,
+        "donut": donut,
+        "polynomial_p": p,
+        "polynomial_q": q,
+        "kernel": kernel,
+        "bandwidth_h": _round_bw(h),
+        "bandwidth_b": _round_bw(b),
+        "bwselect": bwselect if h_auto else "manual",
+        "cutoff": c,
+        "n_left": n_left_total,
+        "n_right": n_right_total,
+        "n_effective_left": n_eff_l,
+        "n_effective_right": n_eff_r,
+        "conventional": {
+            "estimate": tau_conv,
+            "se": se_conv,
+            "pvalue": pv_conv,
+            "ci": ci_conv,
         },
-        'robust': {
-            'estimate': tau_bc, 'se': se_robust,
-            'pvalue': pv_robust, 'ci': ci_robust,
+        "robust": {
+            "estimate": tau_bc,
+            "se": se_robust,
+            "pvalue": pv_robust,
+            "ci": ci_robust,
         },
-        'rho': float(rho) if rho is not None else None,
-        'first_stage_F': fs_F,
-        'n_unique_running': n_unique,
+        "rho": float(rho) if rho is not None else None,
+        "first_stage_F": fs_F,
+        "n_unique_running": n_unique,
     }
 
     # --- rbc bootstrap (Cattaneo-Jansson-Ma 2026) -----------------------
-    if bootstrap == 'rbc':
+    if bootstrap == "rbc":
         rbc = _rbc_bootstrap(
-            Y=Y, X_c=X_c, D=D, Z=Z,
-            left=left, right=right,
-            h=h, b=b, p=p, q=q,
-            kernel=kernel, deriv=deriv,
+            Y=Y,
+            X_c=X_c,
+            D=D,
+            Z=Z,
+            left=left,
+            right=right,
+            h=h,
+            b=b,
+            p=p,
+            q=q,
+            kernel=kernel,
+            deriv=deriv,
             cluster_vals=cl_vals_all,
             alpha=alpha,
             n_boot=n_boot,
@@ -411,26 +493,26 @@ def rdrobust(
             se_robust=se_robust,
         )
         ci_robust_len = ci_robust[1] - ci_robust[0]
-        rbc_len = rbc['ci'][1] - rbc['ci'][0]
-        rbc['length_ratio'] = (
-            float(rbc_len / ci_robust_len) if ci_robust_len > 0 else float('nan')
+        rbc_len = rbc["ci"][1] - rbc["ci"][0]
+        rbc["length_ratio"] = (
+            float(rbc_len / ci_robust_len) if ci_robust_len > 0 else float("nan")
         )
-        rbc['n_boot_effective'] = int(rbc.pop('_n_ok'))
+        rbc["n_boot_effective"] = int(rbc.pop("_n_ok"))
     else:
         rbc = None
 
     if deriv >= 1:
-        estimand_str = 'RKD Effect (change in slope)'
+        estimand_str = "RKD Effect (change in slope)"
     elif fuzzy:
-        estimand_str = 'LATE'
+        estimand_str = "LATE"
     else:
-        estimand_str = 'RD Effect'
+        estimand_str = "RD Effect"
 
     if rbc is not None:
-        model_info['rbc_bootstrap'] = rbc
+        model_info["rbc_bootstrap"] = rbc
 
     _result = CausalResult(
-        method=f'{rd_type} RD Estimation',
+        method=f"{rd_type} RD Estimation",
         estimand=estimand_str,
         estimate=tau_bc,
         se=se_robust,
@@ -440,23 +522,34 @@ def rdrobust(
         n_obs=n,
         detail=detail,
         model_info=model_info,
-        _citation_key='rdrobust',
+        _citation_key="rdrobust",
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             _result,
             function="sp.rd.rdrobust",
             params={
-                "y": y, "x": x, "c": c,
-                "fuzzy": fuzzy, "deriv": deriv,
-                "p": p, "q": q,
-                "kernel": kernel, "bwselect": bwselect,
-                "h": h, "b": b, "rho": rho,
-                "covs": covs, "cluster": cluster,
-                "donut": donut, "weights": weights,
+                "y": y,
+                "x": x,
+                "c": c,
+                "fuzzy": fuzzy,
+                "deriv": deriv,
+                "p": p,
+                "q": q,
+                "kernel": kernel,
+                "bwselect": bwselect,
+                "h": h,
+                "b": b,
+                "rho": rho,
+                "covs": covs,
+                "cluster": cluster,
+                "donut": donut,
+                "weights": weights,
                 "alpha": alpha,
-                "bootstrap": bootstrap, "n_boot": n_boot,
+                "bootstrap": bootstrap,
+                "n_boot": n_boot,
                 "random_state": random_state,
             },
             data=data,
@@ -470,6 +563,7 @@ def rdrobust(
 # ======================================================================
 # R-parity delegation for ``bwselect='cct'``
 # ======================================================================
+
 
 def _delegate_to_cct_rdrobust(
     data: pd.DataFrame,
@@ -558,22 +652,28 @@ def _delegate_to_cct_rdrobust(
 
     # --- Call official rdrobust ---
     kw: Dict[str, Any] = dict(
-        y=Y_arr, x=X_raw, c=c, p=p, q=q,
-        deriv=deriv, kernel=kernel, level=(1 - alpha) * 100,
+        y=Y_arr,
+        x=X_raw,
+        c=c,
+        p=p,
+        q=q,
+        deriv=deriv,
+        kernel=kernel,
+        level=(1 - alpha) * 100,
     )
     if fuzzy is not None:
-        kw['fuzzy'] = D
+        kw["fuzzy"] = D
     if covs is not None and Z is not None:
-        kw['covs'] = pd.DataFrame(Z, columns=list(covs))
+        kw["covs"] = pd.DataFrame(Z, columns=list(covs))
     if cluster_vals is not None:
-        kw['cluster'] = cluster_vals
+        kw["cluster"] = cluster_vals
     if h is not None:
         # rdrobust accepts scalar h (common) or two-element list (l/r)
-        kw['h'] = h
+        kw["h"] = h
     if b is not None:
-        kw['b'] = b
+        kw["b"] = b
     elif rho is not None:
-        kw['rho'] = float(rho)
+        kw["rho"] = float(rho)
 
     result = _r.rdrobust(**kw)
 
@@ -598,66 +698,72 @@ def _delegate_to_cct_rdrobust(
     b_r = float(bws.iloc[1, 1])
     h_used = h_l if h_l == h_r else (h_l, h_r)
     b_used = b_l if b_l == b_r else (b_l, b_r)
-    n_eff = result.N_h if hasattr(result, 'N_h') else (None, None)
+    n_eff = result.N_h if hasattr(result, "N_h") else (None, None)
 
-    detail = pd.DataFrame({
-        'method': ['Conventional', 'Robust'],
-        'estimate': [tau_conv, tau_bc],
-        'se': [se_conv, se_robust],
-        'z': [
-            tau_conv / se_conv if se_conv > 0 else 0.0,
-            tau_bc / se_robust if se_robust > 0 else 0.0,
-        ],
-        'pvalue': [pv_conv, pv_robust],
-        'ci_lower': [ci_conv[0], ci_robust[0]],
-        'ci_upper': [ci_conv[1], ci_robust[1]],
-    })
-
-    if deriv >= 1:
-        rd_type = 'Kink'
-    elif fuzzy:
-        rd_type = 'Fuzzy'
-    else:
-        rd_type = 'Sharp'
+    detail = pd.DataFrame(
+        {
+            "method": ["Conventional", "Robust"],
+            "estimate": [tau_conv, tau_bc],
+            "se": [se_conv, se_robust],
+            "z": [
+                tau_conv / se_conv if se_conv > 0 else 0.0,
+                tau_bc / se_robust if se_robust > 0 else 0.0,
+            ],
+            "pvalue": [pv_conv, pv_robust],
+            "ci_lower": [ci_conv[0], ci_robust[0]],
+            "ci_upper": [ci_conv[1], ci_robust[1]],
+        }
+    )
 
     if deriv >= 1:
-        estimand_str = 'RKD Effect (change in slope)'
+        rd_type = "Kink"
     elif fuzzy:
-        estimand_str = 'LATE'
+        rd_type = "Fuzzy"
     else:
-        estimand_str = 'RD Effect'
+        rd_type = "Sharp"
+
+    if deriv >= 1:
+        estimand_str = "RKD Effect (change in slope)"
+    elif fuzzy:
+        estimand_str = "LATE"
+    else:
+        estimand_str = "RD Effect"
 
     model_info: Dict[str, Any] = {
-        'rd_type': rd_type,
-        'deriv': deriv,
-        'donut': donut,
-        'polynomial_p': p,
-        'polynomial_q': q,
-        'kernel': kernel,
-        'bandwidth_h': round(h_l, 6) if h_l == h_r else (round(h_l, 6), round(h_r, 6)),
-        'bandwidth_b': round(b_l, 6) if b_l == b_r else (round(b_l, 6), round(b_r, 6)),
-        'bwselect': 'cct' if h is None else 'manual',
-        'cutoff': c,
-        'n_left': n_left_total,
-        'n_right': n_right_total,
-        'n_effective_left': int(n_eff[0]) if n_eff[0] is not None else None,
-        'n_effective_right': int(n_eff[1]) if n_eff[1] is not None else None,
-        'conventional': {
-            'estimate': tau_conv, 'se': se_conv,
-            'pvalue': pv_conv, 'ci': ci_conv,
+        "rd_type": rd_type,
+        "deriv": deriv,
+        "donut": donut,
+        "polynomial_p": p,
+        "polynomial_q": q,
+        "kernel": kernel,
+        "bandwidth_h": round(h_l, 6) if h_l == h_r else (round(h_l, 6), round(h_r, 6)),
+        "bandwidth_b": round(b_l, 6) if b_l == b_r else (round(b_l, 6), round(b_r, 6)),
+        "bwselect": "cct" if h is None else "manual",
+        "cutoff": c,
+        "n_left": n_left_total,
+        "n_right": n_right_total,
+        "n_effective_left": int(n_eff[0]) if n_eff[0] is not None else None,
+        "n_effective_right": int(n_eff[1]) if n_eff[1] is not None else None,
+        "conventional": {
+            "estimate": tau_conv,
+            "se": se_conv,
+            "pvalue": pv_conv,
+            "ci": ci_conv,
         },
-        'robust': {
-            'estimate': tau_bc, 'se': se_robust,
-            'pvalue': pv_robust, 'ci': ci_robust,
+        "robust": {
+            "estimate": tau_bc,
+            "se": se_robust,
+            "pvalue": pv_robust,
+            "ci": ci_robust,
         },
-        'rho': float(rho) if rho is not None else None,
-        'first_stage_F': None,
-        'n_unique_running': int(np.unique(X_c).size),
-        'cct_delegation': True,
+        "rho": float(rho) if rho is not None else None,
+        "first_stage_F": None,
+        "n_unique_running": int(np.unique(X_c).size),
+        "cct_delegation": True,
     }
 
     res = CausalResult(
-        method=f'{rd_type} RD Estimation (CCT delegation)',
+        method=f"{rd_type} RD Estimation (CCT delegation)",
         estimand=estimand_str,
         estimate=tau_bc,
         se=se_robust,
@@ -667,21 +773,31 @@ def _delegate_to_cct_rdrobust(
         n_obs=n_obs,
         detail=detail,
         model_info=model_info,
-        _citation_key='rdrobust',
+        _citation_key="rdrobust",
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             res,
             function="sp.rd.rdrobust",
             params={
-                "y": y, "x": x, "c": c,
-                "fuzzy": fuzzy, "deriv": deriv,
-                "p": p, "q": q, "kernel": kernel,
+                "y": y,
+                "x": x,
+                "c": c,
+                "fuzzy": fuzzy,
+                "deriv": deriv,
+                "p": p,
+                "q": q,
+                "kernel": kernel,
                 "bwselect": "cct",
-                "h": h, "b": b, "rho": rho,
-                "covs": covs, "cluster": cluster,
-                "donut": donut, "alpha": alpha,
+                "h": h,
+                "b": b,
+                "rho": rho,
+                "covs": covs,
+                "cluster": cluster,
+                "donut": donut,
+                "alpha": alpha,
             },
             data=data,
             overwrite=False,
@@ -697,9 +813,9 @@ def rdplot(
     x: str,
     c: float = 0,
     nbins: Optional[int] = None,
-    binselect: str = 'esmv',
+    binselect: str = "esmv",
     p: int = 4,
-    kernel: str = 'triangular',
+    kernel: str = "triangular",
     ci_level: float = 0.95,
     shade_ci: bool = True,
     donut: float = 0,
@@ -792,7 +908,8 @@ def rdplot(
                 "rdplot: covariate partial-out failed (singular covariate "
                 "design); the plot shows the *unadjusted* outcome. The point "
                 "estimate from sp.rdrobust(...) is unaffected.",
-                RuntimeWarning, stacklevel=2,
+                RuntimeWarning,
+                stacklevel=2,
             )
 
     # Observation weights
@@ -815,17 +932,15 @@ def rdplot(
         nbins_l = nbins_r = nbins
 
     # ---- Bin means ----
-    use_quantile = binselect.startswith('q') if nbins is None else False
+    use_quantile = binselect.startswith("q") if nbins is None else False
     bx_l, by_l, bse_l = _bin_means(x_l, y_l, nbins_l, use_quantile)
     bx_r, by_r, bse_r = _bin_means(x_r, y_r, nbins_r, use_quantile)
 
     # ---- Weighted global polynomial fit with pointwise CI ----
     grid_l = np.linspace(x_l.min(), c, 200)
     grid_r = np.linspace(c, x_r.max(), 200)
-    fit_l, ci_lo_l, ci_hi_l = _weighted_poly_fit_ci(
-        x_l, y_l, p, grid_l, ci_level, w_l)
-    fit_r, ci_lo_r, ci_hi_r = _weighted_poly_fit_ci(
-        x_r, y_r, p, grid_r, ci_level, w_r)
+    fit_l, ci_lo_l, ci_hi_l = _weighted_poly_fit_ci(x_l, y_l, p, grid_l, ci_level, w_l)
+    fit_r, ci_lo_r, ci_hi_r = _weighted_poly_fit_ci(x_r, y_r, p, grid_r, ci_level, w_r)
 
     # ---- Plot ----
     if ax is None:
@@ -838,51 +953,78 @@ def rdplot(
         if h is None:
             try:
                 r = rdrobust(data, y=y, x=x, c=c, p=1)
-                h = r.model_info['bandwidth_h']
+                h = r.model_info["bandwidth_h"]
             except Exception:
                 h = None
         if h is not None:
             bw_h = h[0] if isinstance(h, tuple) else h
-            ax.axvspan(c - bw_h, c + bw_h, alpha=0.06, color='#3498DB',
-                       label=f'Bandwidth h = {bw_h:.3f}')
+            ax.axvspan(
+                c - bw_h,
+                c + bw_h,
+                alpha=0.06,
+                color="#3498DB",
+                label=f"Bandwidth h = {bw_h:.3f}",
+            )
 
     # Donut hole shading
     if donut > 0:
-        ax.axvspan(c - donut, c + donut, alpha=0.12, color='#E74C3C',
-                   label=f'Donut ±{donut}', zorder=1)
+        ax.axvspan(
+            c - donut,
+            c + donut,
+            alpha=0.12,
+            color="#E74C3C",
+            label=f"Donut ±{donut}",
+            zorder=1,
+        )
 
     # Pointwise CI bands
     if shade_ci and not hide_ci:
-        ax.fill_between(grid_l, ci_lo_l, ci_hi_l,
-                        color='#E74C3C', alpha=0.12, zorder=2)
-        ax.fill_between(grid_r, ci_lo_r, ci_hi_r,
-                        color='#3498DB', alpha=0.12, zorder=2)
+        ax.fill_between(grid_l, ci_lo_l, ci_hi_l, color="#E74C3C", alpha=0.12, zorder=2)
+        ax.fill_between(grid_r, ci_lo_r, ci_hi_r, color="#3498DB", alpha=0.12, zorder=2)
 
     # Binned scatter with SE bars
     if scatter:
         if bse_l is not None and len(bse_l) == len(bx_l):
-            ax.errorbar(bx_l, by_l, yerr=1.96 * bse_l, fmt='o',
-                        color='#2C3E50', markersize=4, capsize=2,
-                        alpha=0.7, linewidth=0.8, zorder=3)
-            ax.errorbar(bx_r, by_r, yerr=1.96 * bse_r, fmt='o',
-                        color='#2C3E50', markersize=4, capsize=2,
-                        alpha=0.7, linewidth=0.8, zorder=3)
+            ax.errorbar(
+                bx_l,
+                by_l,
+                yerr=1.96 * bse_l,
+                fmt="o",
+                color="#2C3E50",
+                markersize=4,
+                capsize=2,
+                alpha=0.7,
+                linewidth=0.8,
+                zorder=3,
+            )
+            ax.errorbar(
+                bx_r,
+                by_r,
+                yerr=1.96 * bse_r,
+                fmt="o",
+                color="#2C3E50",
+                markersize=4,
+                capsize=2,
+                alpha=0.7,
+                linewidth=0.8,
+                zorder=3,
+            )
         else:
-            ax.scatter(bx_l, by_l, color='#2C3E50', s=30, alpha=0.8, zorder=3)
-            ax.scatter(bx_r, by_r, color='#2C3E50', s=30, alpha=0.8, zorder=3)
+            ax.scatter(bx_l, by_l, color="#2C3E50", s=30, alpha=0.8, zorder=3)
+            ax.scatter(bx_r, by_r, color="#2C3E50", s=30, alpha=0.8, zorder=3)
 
-    ax.plot(grid_l, fit_l, color='#E74C3C', linewidth=1.5, zorder=4)
-    ax.plot(grid_r, fit_r, color='#3498DB', linewidth=1.5, zorder=4)
-    ax.axvline(x=c, color='gray', linestyle='--', linewidth=0.8, alpha=0.7)
+    ax.plot(grid_l, fit_l, color="#E74C3C", linewidth=1.5, zorder=4)
+    ax.plot(grid_r, fit_r, color="#3498DB", linewidth=1.5, zorder=4)
+    ax.axvline(x=c, color="gray", linestyle="--", linewidth=0.8, alpha=0.7)
 
     ax.set_xlabel(x_label or x, fontsize=11)
     ax.set_ylabel(y_label or y, fontsize=11)
-    ax.set_title(title or 'RD Plot', fontsize=13)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.set_title(title or "RD Plot", fontsize=13)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     ax.tick_params(labelsize=10)
     if donut > 0 or show_bw:
-        ax.legend(fontsize=9, loc='best')
+        ax.legend(fontsize=9, loc="best")
     fig.tight_layout()
 
     return fig, ax
@@ -909,8 +1051,10 @@ def _cjm_local_poly_density(
     """
     n_side = len(x_side)
     if n_side < max(p + 2, 5):
-        return (np.full_like(grid, np.nan, dtype=float),
-                np.full_like(grid, np.nan, dtype=float))
+        return (
+            np.full_like(grid, np.nan, dtype=float),
+            np.full_like(grid, np.nan, dtype=float),
+        )
 
     # Empirical CDF on the side
     order = np.argsort(x_side)
@@ -929,7 +1073,7 @@ def _cjm_local_poly_density(
         Fb = F[in_bw]
         wb = np.maximum(1 - np.abs(u[in_bw]), 0.0)
         # Design [1, x, x^2, ..., x^p]
-        Xd = np.column_stack([xb ** j for j in range(p + 1)])
+        Xd = np.column_stack([xb**j for j in range(p + 1)])
         sqw = np.sqrt(wb)
         Xw = Xd * sqw[:, None]
         yw = Fb * sqw
@@ -942,7 +1086,7 @@ def _cjm_local_poly_density(
         densities[i] = float(max(beta[1], 0.0))
         # Sandwich variance for slope estimator
         resid = Fb - Xd @ beta
-        meat = Xw.T @ np.diag((resid ** 2) * wb) @ Xw
+        meat = Xw.T @ np.diag((resid**2) * wb) @ Xw
         v = XtX_inv @ meat @ XtX_inv
         # Heuristic finite-sample inflation: divide by n_side to obtain
         # density-scale variance
@@ -950,8 +1094,7 @@ def _cjm_local_poly_density(
     return densities, ses
 
 
-def _imse_optimal_bins(x: np.ndarray, y: np.ndarray,
-                       binselect: str) -> int:
+def _imse_optimal_bins(x: np.ndarray, y: np.ndarray, binselect: str) -> int:
     """IMSE-optimal number of bins for RD plots (CCT 2015).
 
     The IMSE-optimal number of bins is approximately:
@@ -974,7 +1117,7 @@ def _imse_optimal_bins(x: np.ndarray, y: np.ndarray,
         coeffs = np.polyfit(x, y, min(3, n - 1))
         y_hat = np.polyval(coeffs, x)
         resid = y - y_hat
-        sigma2 = np.mean(resid ** 2)
+        sigma2 = np.mean(resid**2)
         # Second derivative at midpoint
         if len(coeffs) >= 3:
             m2 = 2 * coeffs[-3]  # coefficient of x^2
@@ -992,11 +1135,11 @@ def _imse_optimal_bins(x: np.ndarray, y: np.ndarray,
     if x_range < 1e-10:
         return J_base
 
-    ratio = (sigma2 / (m2 ** 2 * x_range)) ** (1 / 3)
+    ratio = (sigma2 / (m2**2 * x_range)) ** (1 / 3)
     J_imse = max(3, int(np.ceil(n ** (1 / 3) * ratio * 0.7)))
 
     # Variance-mimicking: inflate bins to capture local variation
-    if binselect.endswith('mv'):
+    if binselect.endswith("mv"):
         J_imse = max(J_imse, int(np.ceil(n ** (2 / 5))))
 
     # Cap at reasonable range
@@ -1005,8 +1148,7 @@ def _imse_optimal_bins(x: np.ndarray, y: np.ndarray,
     return J_imse
 
 
-def _bin_means(xv: np.ndarray, yv: np.ndarray, nb: int,
-               quantile: bool = False):
+def _bin_means(xv: np.ndarray, yv: np.ndarray, nb: int, quantile: bool = False):
     """Compute bin means with standard errors.
 
     Returns (bin_x, bin_y, bin_se).
@@ -1048,8 +1190,8 @@ def _weighted_poly_fit_ci(xv, yv, order, x_grid, level, weights=None):
         return nan_arr, nan_arr, nan_arr
 
     # Design matrix
-    V_data = np.column_stack([xv ** j for j in range(order, -1, -1)])
-    V_grid = np.column_stack([x_grid ** j for j in range(order, -1, -1)])
+    V_data = np.column_stack([xv**j for j in range(order, -1, -1)])
+    V_grid = np.column_stack([x_grid**j for j in range(order, -1, -1)])
 
     if weights is not None:
         w = np.maximum(weights, 0)
@@ -1065,9 +1207,9 @@ def _weighted_poly_fit_ci(xv, yv, order, x_grid, level, weights=None):
         fit = V_grid @ beta
         resid = yv - V_data @ beta
         if weights is not None:
-            sigma2 = np.sum(w * resid ** 2) / max(len(xv) - order - 1, 1)
+            sigma2 = np.sum(w * resid**2) / max(len(xv) - order - 1, 1)
         else:
-            sigma2 = np.sum(resid ** 2) / max(len(xv) - order - 1, 1)
+            sigma2 = np.sum(resid**2) / max(len(xv) - order - 1, 1)
         cov_beta = sigma2 * np.linalg.pinv(Vw.T @ Vw)
         se = np.sqrt(np.maximum(np.sum((V_grid @ cov_beta) * V_grid, axis=1), 0))
     except (np.linalg.LinAlgError, ValueError):
@@ -1175,37 +1317,67 @@ def rdplotdensity(
     # Histogram
     if hist:
         all_range = (X.min(), X.max())
-        ax.hist(x_left, bins=nbins, density=True, alpha=0.2,
-                color='#E74C3C', range=(all_range[0], c), label=None)
-        ax.hist(x_right, bins=nbins, density=True, alpha=0.2,
-                color='#3498DB', range=(c, all_range[1]), label=None)
+        ax.hist(
+            x_left,
+            bins=nbins,
+            density=True,
+            alpha=0.2,
+            color="#E74C3C",
+            range=(all_range[0], c),
+            label=None,
+        )
+        ax.hist(
+            x_right,
+            bins=nbins,
+            density=True,
+            alpha=0.2,
+            color="#3498DB",
+            range=(c, all_range[1]),
+            label=None,
+        )
 
     # Density curves with CI
     valid_l = np.isfinite(f_l)
     valid_r = np.isfinite(f_r)
 
-    ax.plot(grid_l[valid_l], f_l[valid_l], color='#E74C3C',
-            linewidth=2, label='Left of cutoff')
-    ax.fill_between(grid_l[valid_l],
-                     (f_l - z * se_l)[valid_l],
-                     (f_l + z * se_l)[valid_l],
-                     color='#E74C3C', alpha=0.15)
+    ax.plot(
+        grid_l[valid_l],
+        f_l[valid_l],
+        color="#E74C3C",
+        linewidth=2,
+        label="Left of cutoff",
+    )
+    ax.fill_between(
+        grid_l[valid_l],
+        (f_l - z * se_l)[valid_l],
+        (f_l + z * se_l)[valid_l],
+        color="#E74C3C",
+        alpha=0.15,
+    )
 
-    ax.plot(grid_r[valid_r], f_r[valid_r], color='#3498DB',
-            linewidth=2, label='Right of cutoff')
-    ax.fill_between(grid_r[valid_r],
-                     (f_r - z * se_r)[valid_r],
-                     (f_r + z * se_r)[valid_r],
-                     color='#3498DB', alpha=0.15)
+    ax.plot(
+        grid_r[valid_r],
+        f_r[valid_r],
+        color="#3498DB",
+        linewidth=2,
+        label="Right of cutoff",
+    )
+    ax.fill_between(
+        grid_r[valid_r],
+        (f_r - z * se_r)[valid_r],
+        (f_r + z * se_r)[valid_r],
+        color="#3498DB",
+        alpha=0.15,
+    )
 
-    ax.axvline(x=c, color='gray', linestyle='--', linewidth=1, alpha=0.7)
+    ax.axvline(x=c, color="gray", linestyle="--", linewidth=1, alpha=0.7)
 
     ax.set_xlabel(x, fontsize=11)
-    ax.set_ylabel('Density', fontsize=11)
-    ax.set_title(title or 'Density Discontinuity at Cutoff', fontsize=13)
+    ax.set_ylabel("Density", fontsize=11)
+    ax.set_title(title or "Density Discontinuity at Cutoff", fontsize=13)
     ax.legend(fontsize=10)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     ax.tick_params(labelsize=10)
     fig.tight_layout()
 
@@ -1216,9 +1388,12 @@ def rdplotdensity(
 # Data preparation
 # ======================================================================
 
+
 def _parse_data(
     data: pd.DataFrame,
-    y: str, x: str, c: float,
+    y: str,
+    x: str,
+    c: float,
     fuzzy: Optional[str],
     covs: Optional[List[str]],
 ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
@@ -1256,8 +1431,7 @@ def _parse_data(
     # Return covariates as matrix for inclusion in local polynomial
     Z = None
     if covs:
-        Z = np.column_stack([data.loc[valid, col].values.astype(float)
-                             for col in covs])
+        Z = np.column_stack([data.loc[valid, col].values.astype(float) for col in covs])
         # Demean covariates for numerical stability
         Z = Z - Z.mean(axis=0)
 
@@ -1267,6 +1441,7 @@ def _parse_data(
 # ======================================================================
 # Core local polynomial estimator
 # ======================================================================
+
 
 def _rd_estimate(
     Y: np.ndarray,
@@ -1303,12 +1478,20 @@ def _rd_estimate(
         h_l = h_r = h
 
     beta_l, vcov_l, n_l = _local_poly_wls(
-        Y[left], X_c[left], h_l, p, kernel,
+        Y[left],
+        X_c[left],
+        h_l,
+        p,
+        kernel,
         cluster_vals[left] if cluster_vals is not None else None,
         covs=covs[left] if covs is not None else None,
     )
     beta_r, vcov_r, n_r = _local_poly_wls(
-        Y[right], X_c[right], h_r, p, kernel,
+        Y[right],
+        X_c[right],
+        h_r,
+        p,
+        kernel,
         cluster_vals[right] if cluster_vals is not None else None,
         covs=covs[right] if covs is not None else None,
     )
@@ -1325,6 +1508,7 @@ def _rd_estimate(
 # ======================================================================
 # Bandwidth selection
 # ======================================================================
+
 
 def _cer_factor(n: int, p: int = 1) -> float:
     """CER shrinkage factor: h_CER = h_MSE * n^{-1/((2p+3)(2p+5))}.
@@ -1349,9 +1533,9 @@ def _select_bandwidth(
     right: np.ndarray,
     p: int,
     kernel: str,
-    bwselect: str = 'mserd',
+    bwselect: str = "mserd",
     n_total: Optional[int] = None,
-) -> 'float | Tuple[float, float]':
+) -> "float | Tuple[float, float]":
     """
     Bandwidth selection for local polynomial RD.
 
@@ -1401,42 +1585,39 @@ def _select_bandwidth(
     if bias_sq_common < 1e-12:
         h_mserd = h_pilot
     else:
-        h_mserd = (C_K * (sigma2_l + sigma2_r) /
-                   (f_c * bias_sq_common * n)) ** (1 / 5)
+        h_mserd = (C_K * (sigma2_l + sigma2_r) / (f_c * bias_sq_common * n)) ** (1 / 5)
     h_mserd = float(np.clip(h_mserd, 0.02 * x_range, 0.98 * x_range))
 
     # Separate (msetwo)
-    h_mse_l = _side_optimal_bw(
-        sigma2_l, m2_l, f_c, len(x_l), C_K, h_pilot, x_range)
-    h_mse_r = _side_optimal_bw(
-        sigma2_r, m2_r, f_c, len(x_r), C_K, h_pilot, x_range)
+    h_mse_l = _side_optimal_bw(sigma2_l, m2_l, f_c, len(x_l), C_K, h_pilot, x_range)
+    h_mse_r = _side_optimal_bw(sigma2_r, m2_r, f_c, len(x_r), C_K, h_pilot, x_range)
 
     # CER shrinkage factor
     cer = _cer_factor(n, p)
 
     # --- Route to requested method ---
-    if bwselect == 'mserd':
+    if bwselect == "mserd":
         return h_mserd
-    elif bwselect == 'msetwo':
+    elif bwselect == "msetwo":
         return (h_mse_l, h_mse_r)
-    elif bwselect == 'msecomb1':
+    elif bwselect == "msecomb1":
         # min of common and each separate
         h_min = min(h_mserd, h_mse_l, h_mse_r)
         return float(h_min)
-    elif bwselect == 'msecomb2':
+    elif bwselect == "msecomb2":
         # median of common, left, right
         h_med = float(np.median([h_mserd, h_mse_l, h_mse_r]))
         return h_med
-    elif bwselect == 'cerrd':
+    elif bwselect == "cerrd":
         return float(h_mserd * cer)
-    elif bwselect == 'certwo':
+    elif bwselect == "certwo":
         return (h_mse_l * cer, h_mse_r * cer)
-    elif bwselect == 'cercomb1':
+    elif bwselect == "cercomb1":
         h_cerrd = h_mserd * cer
         h_cer_l = h_mse_l * cer
         h_cer_r = h_mse_r * cer
         return float(min(h_cerrd, h_cer_l, h_cer_r))
-    elif bwselect == 'cercomb2':
+    elif bwselect == "cercomb2":
         h_cerrd = h_mserd * cer
         h_cer_l = h_mse_l * cer
         h_cer_r = h_mse_r * cer
@@ -1446,11 +1627,16 @@ def _select_bandwidth(
 
 
 def _side_optimal_bw(
-    sigma2: float, m2: float, f_c: float, n_side: int,
-    C_K: float, h_pilot: float, x_range: float,
+    sigma2: float,
+    m2: float,
+    f_c: float,
+    n_side: int,
+    C_K: float,
+    h_pilot: float,
+    x_range: float,
 ) -> float:
     """MSE-optimal bandwidth for one side of the cutoff."""
-    bias_sq = m2 ** 2
+    bias_sq = m2**2
     if bias_sq < 1e-12 or n_side < 5:
         h_opt = h_pilot
     else:
@@ -1459,7 +1645,10 @@ def _side_optimal_bw(
 
 
 def _local_residual_var(
-    y: np.ndarray, x: np.ndarray, h: float, kernel: str,
+    y: np.ndarray,
+    x: np.ndarray,
+    h: float,
+    kernel: str,
 ) -> float:
     """Conditional variance at x = 0 from local linear residuals."""
     u = x / h
@@ -1478,13 +1667,16 @@ def _local_residual_var(
     try:
         beta = np.linalg.lstsq(Xw, yw, rcond=None)[0]
         resid = y_bw - X @ beta
-        return float(np.average(resid ** 2, weights=w_bw))
+        return float(np.average(resid**2, weights=w_bw))
     except Exception:
         return float(np.var(y_bw))
 
 
 def _estimate_second_deriv(
-    y: np.ndarray, x: np.ndarray, h: float, kernel: str,
+    y: np.ndarray,
+    x: np.ndarray,
+    h: float,
+    kernel: str,
 ) -> float:
     """Estimate m''(0) using local cubic regression."""
     u = x / h
@@ -1496,7 +1688,7 @@ def _estimate_second_deriv(
     w_bw = _kernel_fn(u[in_bw], kernel)
 
     # Local cubic: y = β0 + β1*x + β2*x² + β3*x³
-    X = np.column_stack([x_bw ** j for j in range(4)])
+    X = np.column_stack([x_bw**j for j in range(4)])
     sqw = np.sqrt(w_bw)
     Xw = X * sqw[:, np.newaxis]
     yw = y_bw * sqw
@@ -1518,6 +1710,7 @@ from ._core import _kernel_fn, _kernel_mse_constant, _local_poly_wls  # noqa: F4
 # ======================================================================
 # rbc bootstrap (Cattaneo, Jansson & Ma, arXiv:2512.00566, 2026)
 # ======================================================================
+
 
 def _rbc_bootstrap(
     *,
@@ -1611,24 +1804,58 @@ def _rbc_bootstrap(
 
         try:
             tb_conv, _, _, _ = _rd_estimate(
-                Yb, Xb, lb, rb, h, p, kernel,
-                'cluster' if have_cluster else None,
-                cl_b, deriv=deriv, covs=Zb,
+                Yb,
+                Xb,
+                lb,
+                rb,
+                h,
+                p,
+                kernel,
+                "cluster" if have_cluster else None,
+                cl_b,
+                deriv=deriv,
+                covs=Zb,
             )
             tb_bc, sb_bc, _, _ = _rd_estimate(
-                Yb, Xb, lb, rb, b, q, kernel,
-                'cluster' if have_cluster else None,
-                cl_b, deriv=deriv, covs=Zb,
+                Yb,
+                Xb,
+                lb,
+                rb,
+                b,
+                q,
+                kernel,
+                "cluster" if have_cluster else None,
+                cl_b,
+                deriv=deriv,
+                covs=Zb,
             )
             if D is not None:
                 Db = D[draw]
                 fs_conv, _, _, _ = _rd_estimate(
-                    Db, Xb, lb, rb, h, p, kernel, None, None,
-                    deriv=deriv, covs=Zb,
+                    Db,
+                    Xb,
+                    lb,
+                    rb,
+                    h,
+                    p,
+                    kernel,
+                    None,
+                    None,
+                    deriv=deriv,
+                    covs=Zb,
                 )
                 fs_bc, _, _, _ = _rd_estimate(
-                    Db, Xb, lb, rb, b, q, kernel, None, None,
-                    deriv=deriv, covs=Zb,
+                    Db,
+                    Xb,
+                    lb,
+                    rb,
+                    b,
+                    q,
+                    kernel,
+                    None,
+                    None,
+                    deriv=deriv,
+                    covs=Zb,
                 )
                 if abs(fs_bc) < 1e-10:
                     continue
@@ -1656,10 +1883,10 @@ def _rbc_bootstrap(
         float((t_star >= abs(tau_bc / se_robust)).mean()) + 0.5 / n_ok,
     )
     return {
-        'ci': ci,
-        'pvalue': float(pval),
-        'quantiles': (q_lo, q_hi),
-        'n_boot': int(n_boot),
-        '_n_ok': n_ok,
-        'reference': 'Cattaneo-Jansson-Ma 2026 (arXiv:2512.00566)',
+        "ci": ci,
+        "pvalue": float(pval),
+        "quantiles": (q_lo, q_hi),
+        "n_boot": int(n_boot),
+        "_n_ok": n_ok,
+        "reference": "Cattaneo-Jansson-Ma 2026 (arXiv:2512.00566)",
     }

@@ -27,9 +27,11 @@ __author__ = "Biaoyue Wang and Scott Rozelle"
 __email__ = "brycew6m@stanford.edu"
 
 from ._citation import citation
+
 __citation__ = citation("bibtex")
 
 from .core.results import EconometricResults, CausalResult
+
 # Agent-native exception taxonomy (load early so every estimator can raise)
 from . import exceptions as exceptions  # noqa: F401
 from .exceptions import (
@@ -45,12 +47,14 @@ from .exceptions import (
     AssumptionWarning,
 )
 from .regression.ols import regress
+
 # NB: ``iv`` is intentionally NOT imported here.  ``sp.iv`` resolves to the
 # callable :mod:`statspai.iv` subpackage (loaded via ``from .iv.* import``
 # below), which dispatches ``method=``/2sls/liml/fuller/gmm/jive/kernel/...
 # Importing the function at the top level would shadow the subpackage and
 # break ``sp.iv("y ~ (d ~ z)", data=df)``.
 from .regression.iv import ivreg, IVRegression
+
 # (lazy) forest: see _LAZY_SUBMODULES / _LAZY_ATTRS below.  Eagerly
 # importing ``forest.causal_forest`` etc. pulled ~245 sklearn submodules
 # into every ``import statspai`` (~270 ms cumulative on cold cache),
@@ -58,56 +62,156 @@ from .regression.iv import ivreg, IVRegression
 # ``forest`` name does *not* collide with a top-level function (no
 # ``sp.forest`` callable export), so the standard lazy path is safe.
 from .did import (
-    did, did_2x2, overlap_weighted_did, dl_propensity_score,
-    ddd, callaway_santanna, sun_abraham,
-    bacon_decomposition, honest_did, breakdown_m, event_study,
-    did_analysis, DIDAnalysis, did_multiplegt, did_imputation,
-    bjs, borusyak_jaravel_spiess, stacked_did, cic,
-    gardner_did, did_2stage,
-    harvest_did, HarvestDIDResult,
-    wooldridge_did, etwfe, etwfe_emfx, drdid, twfe_decomposition,
-    did_bcf, cohort_anchored_event_study, design_robust_event_study,
+    did,
+    did_2x2,
+    overlap_weighted_did,
+    dl_propensity_score,
+    ddd,
+    callaway_santanna,
+    sun_abraham,
+    bacon_decomposition,
+    honest_did,
+    breakdown_m,
+    event_study,
+    did_analysis,
+    DIDAnalysis,
+    did_multiplegt,
+    did_imputation,
+    bjs,
+    borusyak_jaravel_spiess,
+    stacked_did,
+    cic,
+    gardner_did,
+    did_2stage,
+    harvest_did,
+    HarvestDIDResult,
+    wooldridge_did,
+    etwfe,
+    etwfe_emfx,
+    drdid,
+    twfe_decomposition,
+    did_bcf,
+    cohort_anchored_event_study,
+    design_robust_event_study,
     did_misclassified,
-    did_summary, did_summary_to_markdown, did_summary_to_latex, did_report,
-    pretrends_test, pretrends_power, sensitivity_rr, SensitivityResult, pretrends_summary,
-    parallel_trends_plot, bacon_plot, group_time_plot, did_plot,
-    enhanced_event_study_plot, treatment_rollout_plot,
-    sensitivity_plot, cohort_event_study_plot, did_summary_plot,
-    aggte, cs_report, CSReport, ggdid,
+    did_summary,
+    did_summary_to_markdown,
+    did_summary_to_latex,
+    did_report,
+    pretrends_test,
+    pretrends_power,
+    sensitivity_rr,
+    SensitivityResult,
+    pretrends_summary,
+    parallel_trends_plot,
+    bacon_plot,
+    group_time_plot,
+    did_plot,
+    enhanced_event_study_plot,
+    treatment_rollout_plot,
+    sensitivity_plot,
+    cohort_event_study_plot,
+    did_summary_plot,
+    aggte,
+    cs_report,
+    CSReport,
+    ggdid,
     bjs_pretrend_joint,
 )
 from .rd import (
-    rdrobust, rdplot, rdplotdensity, rdbwselect,
-    rdbwsensitivity, rdbalance, rdplacebo, rdsummary,
-    rkd, rd_honest, rdit, rdpower, rdsampsi,
-    rdrandinf, rdwinselect, rdsensitivity, rdrbounds,
-    rdhte, rdbwhte, rdhte_lincom,
-    rd_forest, rd_boost, rd_lasso, rd_cate_summary,
-    rd_extrapolate, rd_multi_extrapolate, rd_external_validity,
-    rd_interference, RDInterferenceResult,
-    rd_multi_score, MultiScoreRDResult,
-    rd_distribution, DistRDResult,
-    rd_bayes_hte, BayesRDHTEResult,
-    rd_distributional_design, DDDResult,
+    rdrobust,
+    rdplot,
+    rdplotdensity,
+    rdbwselect,
+    rdbwsensitivity,
+    rdbalance,
+    rdplacebo,
+    rdsummary,
+    rkd,
+    rd_honest,
+    rdit,
+    rdpower,
+    rdsampsi,
+    rdrandinf,
+    rdwinselect,
+    rdsensitivity,
+    rdrbounds,
+    rdhte,
+    rdbwhte,
+    rdhte_lincom,
+    rd_forest,
+    rd_boost,
+    rd_lasso,
+    rd_cate_summary,
+    rd_extrapolate,
+    rd_multi_extrapolate,
+    rd_external_validity,
+    rd_interference,
+    RDInterferenceResult,
+    rd_multi_score,
+    MultiScoreRDResult,
+    rd_distribution,
+    DistRDResult,
+    rd_bayes_hte,
+    BayesRDHTEResult,
+    rd_distributional_design,
+    DDDResult,
     # v1.15 polish
-    rd_flex, rd_bias_aware_fuzzy, rd_discrete,
-    rd_dashboard, rd_compare, rd_robustness_table,
+    rd_flex,
+    rd_bias_aware_fuzzy,
+    rd_discrete,
+    rd_dashboard,
+    rd_compare,
+    rd_robustness_table,
 )
 from .synth import (
-    synth, SyntheticControl, synthplot, sdid, augsynth,
-    demeaned_synth, robust_synth, gsynth, staggered_synth, conformal_synth, mc_synth,
+    synth,
+    SyntheticControl,
+    synthplot,
+    sdid,
+    augsynth,
+    demeaned_synth,
+    robust_synth,
+    gsynth,
+    staggered_synth,
+    conformal_synth,
+    mc_synth,
     multi_outcome_synth,
-    scpi, scest, scdata,
-    discos, qqsynth, discos_test, discos_plot, stochastic_dominance,
-    synth_loo, synth_time_placebo, synth_donor_sensitivity,
-    synth_rmspe_filter, synth_sensitivity, synth_sensitivity_plot,
-    synth_power, synth_mde, synth_power_plot,
-    synth_compare, synth_recommend, SynthComparison,
-    synth_report, synth_report_to_file,
-    synth_to_latex, synth_to_markdown, synth_to_excel,
-    german_reunification, basque_terrorism, california_tobacco,
-    synthdid_estimate, sc_estimate, did_estimate,
-    synthdid_placebo, synthdid_plot, synthdid_units_plot, synthdid_rmse_plot,
+    scpi,
+    scest,
+    scdata,
+    discos,
+    qqsynth,
+    discos_test,
+    discos_plot,
+    stochastic_dominance,
+    synth_loo,
+    synth_time_placebo,
+    synth_donor_sensitivity,
+    synth_rmspe_filter,
+    synth_sensitivity,
+    synth_sensitivity_plot,
+    synth_power,
+    synth_mde,
+    synth_power_plot,
+    synth_compare,
+    synth_recommend,
+    SynthComparison,
+    synth_report,
+    synth_report_to_file,
+    synth_to_latex,
+    synth_to_markdown,
+    synth_to_excel,
+    german_reunification,
+    basque_terrorism,
+    california_tobacco,
+    synthdid_estimate,
+    sc_estimate,
+    did_estimate,
+    synthdid_placebo,
+    synthdid_plot,
+    synthdid_units_plot,
+    synthdid_rmse_plot,
     california_prop99,
 )
 from .synth.sequential_sdid import sequential_sdid, SequentialSDIDResult
@@ -117,49 +221,106 @@ from .synth.experimental_design import (
     SynthExperimentalDesignResult,
 )
 from .matching import (
-    match, MatchEstimator, ebalance, balanceplot, psplot,
-    propensity_score, overlap_plot, trimming, love_plot,
-    ps_balance, PSBalanceResult,
-    balance_diagnostics, BalanceDiagnosticsResult,
-    optimal_match, cardinality_match,
-    OptimalMatchResult, CardinalityMatchResult,
-    overlap_weights, cbps,
-    genmatch, GenMatchResult,
-    sbw, SBWResult,
+    match,
+    MatchEstimator,
+    ebalance,
+    balanceplot,
+    psplot,
+    propensity_score,
+    overlap_plot,
+    trimming,
+    love_plot,
+    ps_balance,
+    PSBalanceResult,
+    balance_diagnostics,
+    BalanceDiagnosticsResult,
+    optimal_match,
+    cardinality_match,
+    OptimalMatchResult,
+    CardinalityMatchResult,
+    overlap_weights,
+    cbps,
+    genmatch,
+    GenMatchResult,
+    sbw,
+    SBWResult,
 )
 from .dml import (
-    dml, DoubleML, DoubleMLPLR, DoubleMLIRM, DoubleMLPLIV, DoubleMLIIVM,
-    dml_model_averaging, model_averaging_dml, DMLAveragingResult,
+    dml,
+    DoubleML,
+    DoubleMLPLR,
+    DoubleMLIRM,
+    DoubleMLPLIV,
+    DoubleMLIIVM,
+    dml_model_averaging,
+    model_averaging_dml,
+    DMLAveragingResult,
     # v1.7 long-panel DML
-    dml_panel, DMLPanelResult,
+    dml_panel,
+    DMLPanelResult,
     # v1.13 DML-OVB sensitivity + diagnostics
-    dml_sensitivity, DMLSensitivityResult,
-    dml_diagnostics, DMLDiagnostics,
+    dml_sensitivity,
+    DMLSensitivityResult,
+    dml_diagnostics,
+    DMLDiagnostics,
 )
+
 # Eager: ``deepiv`` is both a function (sp.deepiv(...)) and a subpackage.
 # Lazy-loading collides with the subpackage attachment — see the
 # "PEP 562 collision" note at the bottom of this file.
 from .deepiv import deepiv, DeepIV
 from .panel import (
-    panel, panel_compare, balance_panel, PanelResults, PanelCompareResults, PanelRegression,
-    Absorber, demean, absorb_ols, hdfe_ols, FEOLSResult,
+    panel,
+    panel_compare,
+    balance_panel,
+    PanelResults,
+    PanelCompareResults,
+    PanelRegression,
+    Absorber,
+    demean,
+    absorb_ols,
+    hdfe_ols,
+    FEOLSResult,
 )
+
 # Eager: ``causal_impact`` collides (function + subpackage of same name).
 from .causal_impact import causal_impact, CausalImpactEstimator, impactplot
-from .mediation import mediate, MediationAnalysis, mediate_sensitivity, mediate_interventional, four_way_decomposition, FourWayResult
+from .mediation import (
+    mediate,
+    MediationAnalysis,
+    mediate_sensitivity,
+    mediate_interventional,
+    four_way_decomposition,
+    FourWayResult,
+)
+
 # Eager: ``bartik`` collides (function + subpackage of same name).
 from .bartik import (
-    bartik, BartikIV, ssaggregate, shift_share_se,
-    shift_share_political, ShiftSharePoliticalResult,
-    shift_share_political_panel, ShiftSharePoliticalPanelResult,
+    bartik,
+    BartikIV,
+    ssaggregate,
+    shift_share_se,
+    shift_share_political,
+    ShiftSharePoliticalResult,
+    shift_share_political_panel,
+    ShiftSharePoliticalPanelResult,
 )
 from .output.outreg2 import OutReg2, outreg2
 from .output.modelsummary import modelsummary, coefplot
 from .output.sumstats import sumstats, balance_table
 from .output.tab import tab
 from .output.estimates import eststo, estclear, esttab
-from .output.regression_table import regtable, RegtableResult, mean_comparison, MeanComparisonResult
-from .output.paper_tables import paper_tables, PaperTables, TEMPLATES as PAPER_TABLE_TEMPLATES
+from .output.regression_table import (
+    regtable,
+    RegtableResult,
+    mean_comparison,
+    MeanComparisonResult,
+)
+from .output.paper_tables import (
+    paper_tables,
+    PaperTables,
+    TEMPLATES as PAPER_TABLE_TEMPLATES,
+)
 from .output.collection import Collection, CollectionItem, collect
 from .output._inline import cite
 from .output._journals import (
@@ -186,61 +347,167 @@ from .output._bibliography import (
     citations_to_bib_entries,
     write_bib,
 )
-from .postestimation import margins, margins_table, event_study_table, marginsplot, margins_at, margins_at_plot, contrast, pwcompare, test, lincom, postestimation_contract, postestimation_report
-from .diagnostics import oster_bounds, mccrary_test, diagnose, het_test, reset_test, vif, sensemakr, rddensity, hausman_test, anderson_rubin_test, effective_f_test, tF_critical_value, evalue, evalue_from_result, diagnose_result, estat, kitagawa_test, KitagawaResult, rosenbaum_bounds, rosenbaum_gamma, RosenbaumResult, weakrobust, WeakRobustResult
-from .inference import (
-    wild_cluster_bootstrap, aipw, ri_test, ipw, bootstrap, BootstrapResult,
-    twoway_cluster, conley, pate, PATEEstimator, fisher_exact, FisherResult,
-    jackknife_se, cr2_se, wild_cluster_boot,
-    subcluster_wild_bootstrap, wild_cluster_ci_inv,
-    multiway_cluster_vcov, cluster_robust_se, cr3_jackknife_vcov,
-    g_computation, front_door,
+from .postestimation import (
+    margins,
+    margins_table,
+    event_study_table,
+    marginsplot,
+    margins_at,
+    margins_at_plot,
+    contrast,
+    pwcompare,
+    test,
+    lincom,
+    postestimation_contract,
+    postestimation_report,
 )
+from .diagnostics import (
+    oster_bounds,
+    mccrary_test,
+    diagnose,
+    het_test,
+    reset_test,
+    vif,
+    sensemakr,
+    rddensity,
+    hausman_test,
+    anderson_rubin_test,
+    effective_f_test,
+    tF_critical_value,
+    evalue,
+    evalue_from_result,
+    diagnose_result,
+    estat,
+    kitagawa_test,
+    KitagawaResult,
+    rosenbaum_bounds,
+    rosenbaum_gamma,
+    RosenbaumResult,
+    weakrobust,
+    WeakRobustResult,
+)
+from .inference import (
+    wild_cluster_bootstrap,
+    aipw,
+    ri_test,
+    ipw,
+    bootstrap,
+    BootstrapResult,
+    twoway_cluster,
+    conley,
+    pate,
+    PATEEstimator,
+    fisher_exact,
+    FisherResult,
+    jackknife_se,
+    cr2_se,
+    wild_cluster_boot,
+    subcluster_wild_bootstrap,
+    wild_cluster_ci_inv,
+    multiway_cluster_vcov,
+    cluster_robust_se,
+    cr3_jackknife_vcov,
+    g_computation,
+    front_door,
+)
+
 # Eager: ``msm`` collides (function + subpackage of same name).
 from .msm import msm, MarginalStructuralModel, stabilized_weights
+
 # Eager: ``proximal`` collides (function + subpackage of same name).
 from .proximal import (
-    proximal, ProximalCausalInference,
-    negative_control_outcome, negative_control_exposure,
-    double_negative_control, NegativeControlResult,
-    proximal_regression, ProximalRegResult,
-    fortified_pci, bidirectional_pci, pci_mtp,
-    select_pci_proxies, ProxyScoreResult,
+    proximal,
+    ProximalCausalInference,
+    negative_control_outcome,
+    negative_control_exposure,
+    double_negative_control,
+    NegativeControlResult,
+    proximal_regression,
+    ProximalRegResult,
+    fortified_pci,
+    bidirectional_pci,
+    pci_mtp,
+    select_pci_proxies,
+    ProxyScoreResult,
 )
+
 # Eager: ``principal_strat`` collides (function + subpackage of same name).
 from .principal_strat import (
-    principal_strat, PrincipalStratResult, survivor_average_causal_effect,
+    principal_strat,
+    PrincipalStratResult,
+    survivor_average_causal_effect,
 )
+
 # (lazy) spatial: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # NOTE: `from . import iv` would be shadowed by the `iv` function imported
 # on line 31 from `.regression.iv`, so we load the subpackage explicitly.
 import importlib as _importlib
+
 iv = _importlib.import_module(".iv", __name__)
 del _importlib
 # Expose Kernel IV / Continuous-LATE at top level for agent discoverability.
 from .iv.kernel_iv import kernel_iv, KernelIVResult
 from .iv.continuous_late import continuous_iv_late, ContinuousLATEResult
+
 # Modern IV reporting bundle (post-2022 standard) — top-level for ergonomics.
 from .iv.iv_diag import iv_diag, iv_compare, IVDiagResult
 from .plots import binscatter, set_theme, list_themes, use_chinese
 from .utils import (
-    label_var, label_vars, get_label, get_labels, describe, pwcorr, winsor, read_data,
-    rowmean, rowtotal, rowmax, rowmin, rowsd, rowcount, rank, outlier_indicator,
+    label_var,
+    label_vars,
+    get_label,
+    get_labels,
+    describe,
+    pwcorr,
+    winsor,
+    read_data,
+    rowmean,
+    rowtotal,
+    rowmax,
+    rowmin,
+    rowsd,
+    rowcount,
+    rank,
+    outlier_indicator,
     scalar_iv_projection,
-    dgp_did, dgp_rd, dgp_rd_kink, dgp_rd_multi, dgp_rd_hte, dgp_rd_2d, dgp_rdit,
-    dgp_iv, dgp_rct, dgp_panel, dgp_observational,
-    dgp_cluster_rct, dgp_bunching, dgp_synth, dgp_bartik,
+    dgp_did,
+    dgp_rd,
+    dgp_rd_kink,
+    dgp_rd_multi,
+    dgp_rd_hte,
+    dgp_rd_2d,
+    dgp_rdit,
+    dgp_iv,
+    dgp_rct,
+    dgp_panel,
+    dgp_observational,
+    dgp_cluster_rct,
+    dgp_bunching,
+    dgp_synth,
+    dgp_bartik,
 )
 from .gmm import xtabond
 from .metalearners import metalearner, SLearner, TLearner, XLearner, RLearner, DRLearner
-from .metalearners import cate_summary, cate_by_group, cate_plot, cate_group_plot, predict_cate, compare_metalearners, gate_test, blp_test
+from .metalearners import (
+    cate_summary,
+    cate_by_group,
+    cate_plot,
+    cate_group_plot,
+    predict_cate,
+    compare_metalearners,
+    gate_test,
+    blp_test,
+)
 from .metalearners import auto_cate, AutoCATEResult
 from .metalearners import auto_cate_tuned
 from .metalearners import (
-    focal_cate, FunctionalCATEResult,
-    cluster_cate, ClusterCATEResult,
+    focal_cate,
+    FunctionalCATEResult,
+    cluster_cate,
+    ClusterCATEResult,
 )
 from .metalearners import cate_eval, CATEEvalResult
+
 # bayes — lazy-loaded (PyMC pulls heavy deps); see _LAZY_ATTRS below.
 from .regression.heckman import heckman
 from .regression.quantile import qreg, sqreg
@@ -248,15 +515,56 @@ from .regression.tobit import tobit
 from .regression.logit_probit import logit, probit, cloglog
 from .regression.glm import glm, GLMRegression, GLMEstimator
 from .regression.count import poisson, nbreg, xtnbreg, ppmlhdfe
+
 # neural_causal — lazy-loaded (torch); see _LAZY_ATTRS below.
-from .causal_discovery import notears, NOTEARS, pc_algorithm, PCAlgorithm, lingam, LiNGAMResult, ges, GESResult, fci, FCIResult, icp, nonlinear_icp, ICPResult, pcmci, PCMCIResult, partial_corr_pvalue, lpcmci, LPCMCIResult, dynotears, DYNOTEARSResult
+from .causal_discovery import (
+    notears,
+    NOTEARS,
+    pc_algorithm,
+    PCAlgorithm,
+    lingam,
+    LiNGAMResult,
+    ges,
+    GESResult,
+    fci,
+    FCIResult,
+    icp,
+    nonlinear_icp,
+    ICPResult,
+    pcmci,
+    PCMCIResult,
+    partial_corr_pvalue,
+    lpcmci,
+    LPCMCIResult,
+    dynotears,
+    DYNOTEARSResult,
+)
+
 # Eager: ``tmle`` collides (function + subpackage of same name).
 from .tmle import (
-    tmle, TMLE, super_learner, SuperLearner,
-    ltmle, LTMLEResult, ltmle_survival, LTMLESurvivalResult,
-    hal_tmle, HALRegressor, HALClassifier,
+    tmle,
+    TMLE,
+    super_learner,
+    SuperLearner,
+    ltmle,
+    LTMLEResult,
+    ltmle_survival,
+    LTMLESurvivalResult,
+    hal_tmle,
+    HALRegressor,
+    HALClassifier,
 )
-from .policy_learning import policy_tree, PolicyTree, PolicyTreeResult, policy_value, direct_method, ips, snips, doubly_robust
+from .policy_learning import (
+    policy_tree,
+    PolicyTree,
+    PolicyTreeResult,
+    policy_value,
+    direct_method,
+    ips,
+    snips,
+    doubly_robust,
+)
+
 # ``OPEResult`` is intentionally *not* eagerly imported from
 # ``.policy_learning`` here: the canonical class lives in
 # ``statspai.ope.estimators`` and is what ``sp.ope.ips(...)`` returns.
@@ -266,43 +574,85 @@ from .policy_learning import policy_tree, PolicyTree, PolicyTreeResult, policy_v
 # (lazy) conformal_causal: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # Eager: ``bcf`` collides (function + subpackage of same name).
 from .bcf import (
-    bcf, BayesianCausalForest, bcf_longitudinal, BCFLongResult,
-    bcf_ordinal, BCFOrdinalResult,
-    bcf_factor_exposure, BCFFactorExposureResult,
+    bcf,
+    BayesianCausalForest,
+    bcf_longitudinal,
+    BCFLongResult,
+    bcf_ordinal,
+    BCFOrdinalResult,
+    bcf_factor_exposure,
+    BCFFactorExposureResult,
 )
+
 # Eager: ``bunching`` collides (function + subpackage of same name).
 from .bunching import bunching, BunchingEstimator, notch, NotchResult
 from .bunching import (
-    general_bunching, GeneralBunchingResult,
-    kink_unified, KinkUnifiedResult,
+    general_bunching,
+    GeneralBunchingResult,
+    kink_unified,
+    KinkUnifiedResult,
 )
 from .matrix_completion import mc_panel, MCPanel
+
 # Eager: ``dose_response`` collides (function + subpackage of same name).
 from .dose_response import dose_response, DoseResponse, vcnet, scigan, VCNetResult
+
 # (lazy) bounds: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # Eager: ``interference`` collides (function + subpackage of same name).
-from .interference import spillover, SpilloverEstimator, network_exposure, NetworkExposureResult, peer_effects, PeerEffectsResult, network_hte, inward_outward_spillover, NetworkHTEResult, InwardOutwardResult
 from .interference import (
-    cluster_matched_pair, MatchedPairResult,
-    cluster_cross_interference, CrossClusterRCTResult,
-    cluster_staggered_rollout, StaggeredClusterRCTResult,
-    dnc_gnn_did, DNCGNNDiDResult,
-    interference, interference_available_designs,
+    spillover,
+    SpilloverEstimator,
+    network_exposure,
+    NetworkExposureResult,
+    peer_effects,
+    PeerEffectsResult,
+    network_hte,
+    inward_outward_spillover,
+    NetworkHTEResult,
+    InwardOutwardResult,
 )
+from .interference import (
+    cluster_matched_pair,
+    MatchedPairResult,
+    cluster_cross_interference,
+    CrossClusterRCTResult,
+    cluster_staggered_rollout,
+    StaggeredClusterRCTResult,
+    dnc_gnn_did,
+    DNCGNNDiDResult,
+    interference,
+    interference_available_designs,
+)
+
 # (lazy) dtr: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # Eager: ``multi_treatment`` collides (function + subpackage of same name).
 from .multi_treatment import multi_treatment, MultiTreatment
+
 # (lazy) robustness_a: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # (lazy) survey: see _LAZY_SUBMODULES / _LAZY_ATTRS
 from .dag import (
-    dag, DAG, dag_example, dag_examples, dag_example_positions, dag_simulate,
-    identify, IdentificationResult,
-    rule1 as do_rule1, rule2 as do_rule2, rule3 as do_rule3,
-    apply_rules as do_calculus_apply, RuleCheck,
-    swig, SWIGGraph, SCM,
-    llm_dag, LLMDAGResult,
-    llm_causal_assess, pairwise_causal_benchmark,
-    LLMCausalAssessResult, PairwiseBenchmarkResult,
+    dag,
+    DAG,
+    dag_example,
+    dag_examples,
+    dag_example_positions,
+    dag_simulate,
+    identify,
+    IdentificationResult,
+    rule1 as do_rule1,
+    rule2 as do_rule2,
+    rule3 as do_rule3,
+    apply_rules as do_calculus_apply,
+    RuleCheck,
+    swig,
+    SWIGGraph,
+    SCM,
+    llm_dag,
+    LLMDAGResult,
+    llm_causal_assess,
+    pairwise_causal_benchmark,
+    LLMCausalAssessResult,
+    PairwiseBenchmarkResult,
 )
 
 # === Bridging theorems (DiD≡SC, EWM≡CATE, CB≡IPW, Kink≡RDD,
@@ -341,9 +691,12 @@ from .bridge import bridge, BridgeResult
 # === Causal-question DSL (estimand-first workflow) ===
 from . import question
 from .question import (
-    causal_question, CausalQuestion,
-    IdentificationPlan, EstimationResult,
-    preregister, load_preregister,
+    causal_question,
+    CausalQuestion,
+    IdentificationPlan,
+    EstimationResult,
+    preregister,
+    load_preregister,
 )
 
 # === Unified sensitivity dashboard ===
@@ -363,26 +716,60 @@ from .workflow import causal, CausalWorkflow, paper, PaperDraft
 # === LLM agent tool-definition surface ===
 from . import agent
 
-from .power import power, PowerResult, power_rct, power_did, power_rd, power_iv, power_cluster_rct, power_ols, mde
+from .power import (
+    power,
+    PowerResult,
+    power_rct,
+    power_did,
+    power_rd,
+    power_iv,
+    power_cluster_rct,
+    power_ols,
+    mde,
+)
 from .decomposition import (
-    oaxaca, gelbach, OaxacaResult, GelbachResult, rifreg, rif_decomposition,
+    oaxaca,
+    gelbach,
+    OaxacaResult,
+    GelbachResult,
+    rifreg,
+    rif_decomposition,
     # Tier C additions
-    dfl_decompose, ffl_decompose, machado_mata, melly_decompose, cfm_decompose,
-    fairlie, bauer_sinning, yun_nonlinear,
-    inequality_index, subgroup_decompose, source_decompose, shapley_inequality,
-    kitagawa_decompose, das_gupta,
-    gap_closing, mediation_decompose, disparity_decompose,
-    yu_elwert_decompose, YuElwertResult,
-    decompose, available_methods,
-    cps_wage, chilean_households, mincer_wage_panel, disparity_panel,
+    dfl_decompose,
+    ffl_decompose,
+    machado_mata,
+    melly_decompose,
+    cfm_decompose,
+    fairlie,
+    bauer_sinning,
+    yun_nonlinear,
+    inequality_index,
+    subgroup_decompose,
+    source_decompose,
+    shapley_inequality,
+    kitagawa_decompose,
+    das_gupta,
+    gap_closing,
+    mediation_decompose,
+    disparity_decompose,
+    yu_elwert_decompose,
+    YuElwertResult,
+    decompose,
+    available_methods,
+    cps_wage,
+    chilean_households,
+    mincer_wage_panel,
+    disparity_panel,
 )
 from .selection import stepwise, lasso_select, SelectionResult
 from .qte import qdid, qte, QTEResult
+
 # (lazy) mht: see _LAZY_SUBMODULES / _LAZY_ATTRS
 from .registry import (
     list_functions,
     describe_function,
     function_schema,
+    agent_schema,
     search_functions,
     all_schemas,
     agent_card,
@@ -401,6 +788,7 @@ from .validation import (
     reproduce_jss_tables,
     validation_report,
 )
+
 # Unified help entry point (aggregates registry + docstring + category + search)
 from .help import help, HelpResult
 
@@ -418,10 +806,13 @@ from ._article_aliases import (
     tF_adjustment,
     evalue_rr,
 )
+
 # === Auto-race estimators (CS/SA/BJS DiD + 2SLS/LIML/JIVE IV) ===
 from ._auto_estimators import (
-    auto_did, AutoDIDResult,
-    auto_iv, AutoIVResult,
+    auto_did,
+    AutoDIDResult,
+    auto_iv,
+    AutoIVResult,
 )
 
 # === NEW MODULES (v0.6) ===
@@ -431,28 +822,43 @@ from ._auto_estimators import (
 from .regression.multinomial import mlogit, ologit, oprobit, clogit
 from .regression.mixed_logit import mixlogit
 from .regression.iv_quantile import ivqreg
+
 # Count Data
 from .regression.zeroinflated import zip_model, zinb, hurdle
+
 # Advanced IV
 from .regression.advanced_iv import liml, jive, lasso_iv
+
 # High-dimensional fixed effects (pyfixest backend)
 # These are thin wrappers; actual import of pyfixest is deferred to call time
 # via fixest.wrapper._check_pyfixest, so top-level import never fails.
 from .fixest import feols, fepois, feglm, etable
+
 # Survival / Duration
 # (lazy) survival: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # Nonparametric
 # (lazy) nonparametric: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # Time Series (for causal inference)
 from .timeseries import (
-    var, VARResult, granger_causality, irf,
-    structural_break, StructuralBreakResult, cusum_test,
-    local_projections, LocalProjectionsResult,
-    garch, GARCHResult,
-    arima, ARIMAResult,
-    bvar, BVARResult,
-    its, ITSResult,
+    var,
+    VARResult,
+    granger_causality,
+    irf,
+    structural_break,
+    StructuralBreakResult,
+    cusum_test,
+    local_projections,
+    LocalProjectionsResult,
+    garch,
+    GARCHResult,
+    arima,
+    ARIMAResult,
+    bvar,
+    BVARResult,
+    its,
+    ITSResult,
 )
+
 # Experimental Design
 # (lazy) experimental: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # Missing Data / Imputation
@@ -464,13 +870,19 @@ from .timeseries import (
 # (lazy) mendelian: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # Expose recommend_estimator at top level too
 from .dag import recommend_estimator as dag_recommend_estimator
+
 # Multi-cutoff / Geographic RD
 from .rd import rdmc, rdms, RDMultiResult
 from .rd import (
-    multi_cutoff_rd, geographic_rd, boundary_rd, multi_score_rd,
+    multi_cutoff_rd,
+    geographic_rd,
+    boundary_rd,
+    multi_score_rd,
 )
+
 # 2D Boundary RD (Cattaneo, Titiunik, Yu 2025)
 from .rd import rd2d, rd2d_bw, rd2d_plot
+
 # Continuous Treatment DID
 from .did import continuous_did
 from .did.lp_did import lp_did
@@ -481,30 +893,43 @@ from .did.did_multiplegt_dyn import did_multiplegt_dyn
 # === NEW v0.6 Round 2 ===
 # Interactive Fixed Effects
 from .panel.interactive_fe import interactive_fe
+
 # Panel Unit Root Tests
 from .panel.unit_root import panel_unitroot, PanelUnitRootResult
+
 # Cointegration
 from .timeseries import engle_granger, johansen, CointegrationResult
+
 # Fractional Response & Beta Regression
 from .regression.fracreg import fracreg, betareg
+
 # Sample Selection Models
 from .regression.selection import biprobit, etregress
+
 # Distributional Treatment Effects
 from .qte import distributional_te, DTEResult
 from .qte import (
-    dist_iv, kan_dlate, DistIVResult,
-    qte_hd_panel, HDPanelQTEResult,
-    beyond_average_late, BeyondAverageResult,
+    dist_iv,
+    kan_dlate,
+    DistIVResult,
+    qte_hd_panel,
+    HDPanelQTEResult,
+    beyond_average_late,
+    BeyondAverageResult,
 )
+
 # Structural Estimation (BLP, production functions)
 # (lazy) structural_a: see _LAZY_SUBMODULES / _LAZY_ATTRS
 # (lazy) structural_b: see _LAZY_SUBMODULES / _LAZY_ATTRS
 
 # === Smart Workflow Engine (unique to StatsPAI) ===
 from .smart import (
-    recommend, RecommendationResult,
-    compare_estimators, ComparisonResult,
-    assumption_audit, AssumptionResult,
+    recommend,
+    RecommendationResult,
+    compare_estimators,
+    ComparisonResult,
+    assumption_audit,
+    AssumptionResult,
     audit,
     bib_for,
     brief,
@@ -512,10 +937,15 @@ from .smart import (
     examples,
     preflight,
     session,
-    sensitivity_dashboard, SensitivityDashboard,
-    pub_ready, PubReadyResult,
-    replicate, list_replications,
-    check_identification, IdentificationReport, DiagnosticFinding,
+    sensitivity_dashboard,
+    SensitivityDashboard,
+    pub_ready,
+    PubReadyResult,
+    replicate,
+    list_replications,
+    check_identification,
+    IdentificationReport,
+    DiagnosticFinding,
     IdentificationError,
 )
 
@@ -528,12 +958,16 @@ from .smart import (
 # === NEW v0.6 Round 3 ===
 # Truncated Regression
 from .regression.truncreg import truncreg
+
 # SUR & 3SLS
 from .regression.sur import sureg, SURResult, three_sls
+
 # Panel Binary (Logit/Probit FE/RE)
 from .panel.panel_binary import panel_logit, panel_probit
+
 # Panel FGLS
 from .panel.panel_fgls import panel_fgls
+
 # Interactive Fixed Effects
 # (already imported in round 2)
 # Mixed Effects / Multilevel
@@ -541,12 +975,20 @@ from .panel.panel_fgls import panel_fgls
 # Stochastic Frontier
 # Eager: ``frontier`` collides (function + subpackage of same name).
 from .frontier import (
-    frontier, xtfrontier, FrontierResult,
-    metafrontier, MetafrontierResult,
-    malmquist, MalmquistResult, translog_design,
-    zisf, lcsf,
-    te_summary, te_rank,
+    frontier,
+    xtfrontier,
+    FrontierResult,
+    metafrontier,
+    MetafrontierResult,
+    malmquist,
+    MalmquistResult,
+    translog_design,
+    zisf,
+    lcsf,
+    te_summary,
+    te_rank,
 )
+
 # General GMM
 from .gmm import gmm
 
@@ -1061,6 +1503,7 @@ __all__ = [
     "list_functions",
     "describe_function",
     "function_schema",
+    "agent_schema",
     "search_functions",
     "all_schemas",
     "agent_card",
@@ -1092,32 +1535,73 @@ __all__ = [
     "dgp_bartik",
     # === NEW v0.6 ===
     # GLM & Discrete Choice (glm/logit/probit/cloglog already in regression block above)
-    "mlogit", "ologit", "oprobit", "clogit",
-    "mixlogit", "ivqreg",
+    "mlogit",
+    "ologit",
+    "oprobit",
+    "clogit",
+    "mixlogit",
+    "ivqreg",
     # Count Data (poisson/nbreg/xtnbreg/ppmlhdfe already in regression block above)
-    "zip_model", "zinb", "hurdle",
+    "zip_model",
+    "zinb",
+    "hurdle",
     # Advanced IV
-    "liml", "jive", "lasso_iv",
+    "liml",
+    "jive",
+    "lasso_iv",
     # High-dimensional FE (pyfixest backend, optional)
-    "feols", "fepois", "feglm", "etable",
+    "feols",
+    "fepois",
+    "feglm",
+    "etable",
     # Survival
-    "cox", "kaplan_meier", "survreg", "CoxResult", "KMResult", "logrank_test",
+    "cox",
+    "kaplan_meier",
+    "survreg",
+    "CoxResult",
+    "KMResult",
+    "logrank_test",
     # Nonparametric
-    "lpoly", "LPolyResult", "kdensity", "KDensityResult",
+    "lpoly",
+    "LPolyResult",
+    "kdensity",
+    "KDensityResult",
     # Time Series
-    "var", "VARResult", "granger_causality", "irf",
-    "structural_break", "StructuralBreakResult", "cusum_test",
+    "var",
+    "VARResult",
+    "granger_causality",
+    "irf",
+    "structural_break",
+    "StructuralBreakResult",
+    "cusum_test",
     # Experimental Design
-    "randomize", "RandomizationResult", "balance_check", "BalanceResult",
-    "attrition_test", "attrition_bounds", "AttritionResult",
-    "optimal_design", "OptimalDesignResult",
+    "randomize",
+    "RandomizationResult",
+    "balance_check",
+    "BalanceResult",
+    "attrition_test",
+    "attrition_bounds",
+    "AttritionResult",
+    "optimal_design",
+    "OptimalDesignResult",
     # Missing Data
-    "mice", "MICEResult", "mi_estimate",
+    "mice",
+    "MICEResult",
+    "mi_estimate",
     # Mendelian Randomization
-    "mendelian_randomization", "MRResult", "mr_egger", "mr_ivw", "mr_median",
+    "mendelian_randomization",
+    "MRResult",
+    "mr_egger",
+    "mr_ivw",
+    "mr_median",
     # Multi-Cutoff / Geographic RD
-    "rdmc", "rdms", "RDMultiResult",
-    "multi_cutoff_rd", "geographic_rd", "boundary_rd", "multi_score_rd",
+    "rdmc",
+    "rdms",
+    "RDMultiResult",
+    "multi_cutoff_rd",
+    "geographic_rd",
+    "boundary_rd",
+    "multi_score_rd",
     # Continuous DID
     "continuous_did",
     # LP-DiD (Dube-Girardi-Jordà-Taylor 2023)
@@ -1130,27 +1614,42 @@ __all__ = [
     "did_multiplegt_dyn",
     # === v0.6 Round 2 ===
     "interactive_fe",
-    "panel_unitroot", "PanelUnitRootResult",
-    "engle_granger", "johansen", "CointegrationResult",
-    "fracreg", "betareg",
-    "biprobit", "etregress",
-    "distributional_te", "DTEResult",
+    "panel_unitroot",
+    "PanelUnitRootResult",
+    "engle_granger",
+    "johansen",
+    "CointegrationResult",
+    "fracreg",
+    "betareg",
+    "biprobit",
+    "etregress",
+    "distributional_te",
+    "DTEResult",
     # Structural Estimation
-    "blp", "BLPResult",
+    "blp",
+    "BLPResult",
     # Production functions (proxy-variable estimators)
     "prod_fn",
-    "olley_pakes", "opreg",
-    "levinsohn_petrin", "levpet",
-    "ackerberg_caves_frazer", "acf",
+    "olley_pakes",
+    "opreg",
+    "levinsohn_petrin",
+    "levpet",
+    "ackerberg_caves_frazer",
+    "acf",
     "wooldridge_prod",
     "markup",
     "ProductionResult",
     # === Smart Workflow Engine (unique to StatsPAI) ===
-    "recommend", "RecommendationResult",
-    "check_identification", "IdentificationReport", "DiagnosticFinding",
+    "recommend",
+    "RecommendationResult",
+    "check_identification",
+    "IdentificationReport",
+    "DiagnosticFinding",
     "IdentificationError",
-    "compare_estimators", "ComparisonResult",
-    "assumption_audit", "AssumptionResult",
+    "compare_estimators",
+    "ComparisonResult",
+    "assumption_audit",
+    "AssumptionResult",
     "audit",
     "bib_for",
     "brief",
@@ -1158,88 +1657,191 @@ __all__ = [
     "examples",
     "preflight",
     "session",
-    "sensitivity_dashboard", "SensitivityDashboard",
-    "pub_ready", "PubReadyResult",
-    "replicate", "list_replications",
-    "verify", "verify_recommendation", "verify_benchmark",
+    "sensitivity_dashboard",
+    "SensitivityDashboard",
+    "pub_ready",
+    "PubReadyResult",
+    "replicate",
+    "list_replications",
+    "verify",
+    "verify_recommendation",
+    "verify_benchmark",
     # === v0.6 Round 3 ===
     "truncreg",
-    "sureg", "SURResult", "three_sls",
-    "panel_logit", "panel_probit",
+    "sureg",
+    "SURResult",
+    "three_sls",
+    "panel_logit",
+    "panel_probit",
     "panel_fgls",
-    "mixed", "MixedResult",
-    "meglm", "melogit", "mepoisson", "menbreg", "megamma", "meologit", "MEGLMResult",
-    "icc", "lrtest",
-    "frontier", "xtfrontier", "FrontierResult",
-    "metafrontier", "MetafrontierResult",
-    "malmquist", "MalmquistResult", "translog_design",
-    "zisf", "lcsf",
-    "te_summary", "te_rank",
+    "mixed",
+    "MixedResult",
+    "meglm",
+    "melogit",
+    "mepoisson",
+    "menbreg",
+    "megamma",
+    "meologit",
+    "MEGLMResult",
+    "icc",
+    "lrtest",
+    "frontier",
+    "xtfrontier",
+    "FrontierResult",
+    "metafrontier",
+    "MetafrontierResult",
+    "malmquist",
+    "MalmquistResult",
+    "translog_design",
+    "zisf",
+    "lcsf",
+    "te_summary",
+    "te_rank",
     "gmm",
     # ---- v0.9.3 __all__ completeness pass ----
     # Items below were imported at the top of the file but previously
     # missing from __all__, breaking `from statspai import *` and some
     # IDE autocompleters. Grouped by subsystem for readability.
     # Causal impact / mediation
-    "impactplot", "mediate_sensitivity",
+    "impactplot",
+    "mediate_sensitivity",
     # Synth suite
     "synthplot",
-    "multi_outcome_synth", "scpi", "scest", "scdata",
-    "discos", "discos_test", "discos_plot", "qqsynth",
+    "multi_outcome_synth",
+    "scpi",
+    "scest",
+    "scdata",
+    "discos",
+    "discos_test",
+    "discos_plot",
+    "qqsynth",
     "stochastic_dominance",
-    "synth_loo", "synth_time_placebo", "synth_donor_sensitivity",
-    "synth_rmspe_filter", "synth_sensitivity", "synth_sensitivity_plot",
-    "synth_power", "synth_mde", "synth_power_plot",
-    "synth_compare", "synth_recommend", "SynthComparison",
-    "synth_report", "synth_report_to_file",
-    "synth_to_latex", "synth_to_markdown", "synth_to_excel",
-    "german_reunification", "basque_terrorism", "california_tobacco",
+    "synth_loo",
+    "synth_time_placebo",
+    "synth_donor_sensitivity",
+    "synth_rmspe_filter",
+    "synth_sensitivity",
+    "synth_sensitivity_plot",
+    "synth_power",
+    "synth_mde",
+    "synth_power_plot",
+    "synth_compare",
+    "synth_recommend",
+    "SynthComparison",
+    "synth_report",
+    "synth_report_to_file",
+    "synth_to_latex",
+    "synth_to_markdown",
+    "synth_to_excel",
+    "german_reunification",
+    "basque_terrorism",
+    "california_tobacco",
     # Spatial
     "W",
-    "moran", "moran_local", "moran_plot", "moran_residuals",
-    "geary", "getis_ord_g", "getis_ord_local", "join_counts",
-    "lisa_cluster_map", "lm_tests", "impacts",
-    "queen_weights", "rook_weights", "knn_weights",
-    "distance_band", "kernel_weights", "block_weights",
-    "gwr", "mgwr", "gwr_bandwidth",
-    "sac", "slx", "sar_gmm", "sarar_gmm", "sem_gmm",
+    "moran",
+    "moran_local",
+    "moran_plot",
+    "moran_residuals",
+    "geary",
+    "getis_ord_g",
+    "getis_ord_local",
+    "join_counts",
+    "lisa_cluster_map",
+    "lm_tests",
+    "impacts",
+    "queen_weights",
+    "rook_weights",
+    "knn_weights",
+    "distance_band",
+    "kernel_weights",
+    "block_weights",
+    "gwr",
+    "mgwr",
+    "gwr_bandwidth",
+    "sac",
+    "slx",
+    "sar_gmm",
+    "sarar_gmm",
+    "sem_gmm",
     "spatial_panel",
     # RD
-    "rd2d", "rd2d_bw", "rd2d_plot", "rdpower", "rdsampsi",
-    "dgp_rd_2d", "dgp_rd_hte", "dgp_rd_kink", "dgp_rd_multi", "dgp_rdit",
+    "rd2d",
+    "rd2d_bw",
+    "rd2d_plot",
+    "rdpower",
+    "rdsampsi",
+    "dgp_rd_2d",
+    "dgp_rd_hte",
+    "dgp_rd_kink",
+    "dgp_rd_multi",
+    "dgp_rdit",
     # Decomposition
-    "decompose", "dfl_decompose",
-    "machado_mata", "melly_decompose",
-    "rifreg", "rif_decomposition", "ffl_decompose",
-    "fairlie", "yun_nonlinear", "cfm_decompose",
-    "bauer_sinning", "das_gupta",
-    "gap_closing", "kitagawa_decompose",
-    "source_decompose", "subgroup_decompose",
-    "disparity_decompose", "disparity_panel",
+    "decompose",
+    "dfl_decompose",
+    "machado_mata",
+    "melly_decompose",
+    "rifreg",
+    "rif_decomposition",
+    "ffl_decompose",
+    "fairlie",
+    "yun_nonlinear",
+    "cfm_decompose",
+    "bauer_sinning",
+    "das_gupta",
+    "gap_closing",
+    "kitagawa_decompose",
+    "source_decompose",
+    "subgroup_decompose",
+    "disparity_decompose",
+    "disparity_panel",
     "mediation_decompose",
-    "yu_elwert_decompose", "YuElwertResult",
-    "inequality_index", "shapley_inequality",
+    "yu_elwert_decompose",
+    "YuElwertResult",
+    "inequality_index",
+    "shapley_inequality",
     # Panel / DID extras
-    "aggte", "ggdid", "bjs_pretrend_joint", "cs_report", "CSReport",
-    "local_projections", "LocalProjectionsResult",
+    "aggte",
+    "ggdid",
+    "bjs_pretrend_joint",
+    "cs_report",
+    "CSReport",
+    "local_projections",
+    "LocalProjectionsResult",
     # Matching / survey / survival
-    "cardinality_match", "CardinalityMatchResult",
-    "optimal_match", "OptimalMatchResult",
-    "linear_calibration", "rake",
-    "aft", "cox_frailty",
+    "cardinality_match",
+    "CardinalityMatchResult",
+    "optimal_match",
+    "OptimalMatchResult",
+    "linear_calibration",
+    "rake",
+    "aft",
+    "cox_frailty",
     # Causal discovery (notears/NOTEARS/pc_algorithm/PCAlgorithm already listed above)
-    "lingam", "LiNGAMResult", "ges", "GESResult",
-    "fci", "FCIResult",
+    "lingam",
+    "LiNGAMResult",
+    "ges",
+    "GESResult",
+    "fci",
+    "FCIResult",
     # Time series
-    "arima", "ARIMAResult",
-    "bvar", "BVARResult",
-    "garch", "GARCHResult",
+    "arima",
+    "ARIMAResult",
+    "bvar",
+    "BVARResult",
+    "garch",
+    "GARCHResult",
     # Datasets
-    "cps_wage", "mincer_wage_panel", "chilean_households",
+    "cps_wage",
+    "mincer_wage_panel",
+    "chilean_households",
     # IV frontier (v1.1)
-    "kernel_iv", "KernelIVResult",
-    "continuous_iv_late", "ContinuousLATEResult",
-    "iv_diag", "iv_compare", "IVDiagResult",
+    "kernel_iv",
+    "KernelIVResult",
+    "continuous_iv_late",
+    "ContinuousLATEResult",
+    "iv_diag",
+    "iv_compare",
+    "IVDiagResult",
     # Recommendations metadata
     "available_methods",
     # === Article-facing aliases (blog API sugar) ===
@@ -1265,137 +1867,260 @@ __all__ = [
     "mediation",
     "evalue_rr",
     # === v0.9.16 breadth-expansion API (Sprint 1-6) ===
-    "ipcw", "IPCWResult",
-    "icp", "nonlinear_icp", "ICPResult",
-    "identify", "IdentificationResult",
-    "do_rule1", "do_rule2", "do_rule3", "do_calculus_apply", "RuleCheck",
-    "swig", "SWIGGraph", "SCM",
-    "cevae", "CEVAE", "CEVAEResult",
-    "TargetTrialProtocol", "TargetTrialResult", "CloneCensorWeightResult",
-    "target_trial_protocol", "target_trial_emulate", "target_trial_report",
-    "clone_censor_weight", "immortal_time_check", "tte",
-    "TransportWeightResult", "TransportIdentificationResult",
-    "transport_generalize", "transport_weights_fn", "identify_transport",
+    "ipcw",
+    "IPCWResult",
+    "icp",
+    "nonlinear_icp",
+    "ICPResult",
+    "identify",
+    "IdentificationResult",
+    "do_rule1",
+    "do_rule2",
+    "do_rule3",
+    "do_calculus_apply",
+    "RuleCheck",
+    "swig",
+    "SWIGGraph",
+    "SCM",
+    "cevae",
+    "CEVAE",
+    "CEVAEResult",
+    "TargetTrialProtocol",
+    "TargetTrialResult",
+    "CloneCensorWeightResult",
+    "target_trial_protocol",
+    "target_trial_emulate",
+    "target_trial_report",
+    "clone_censor_weight",
+    "immortal_time_check",
+    "tte",
+    "TransportWeightResult",
+    "TransportIdentificationResult",
+    "transport_generalize",
+    "transport_weights_fn",
+    "identify_transport",
     "OPEResult",
-    "gformula_ice_fn", "ICEResult",
-    "gformula_mc", "MCGFormulaResult",
+    "gformula_ice_fn",
+    "ICEResult",
+    "gformula_mc",
+    "MCGFormulaResult",
     # v0.9.17 additions (epi primitives)
-    "epi", "odds_ratio", "relative_risk", "risk_difference",
-    "attributable_risk", "incidence_rate_ratio",
-    "number_needed_to_treat", "prevalence_ratio",
-    "mantel_haenszel", "breslow_day_test",
-    "direct_standardize", "indirect_standardize", "bradford_hill",
+    "epi",
+    "odds_ratio",
+    "relative_risk",
+    "risk_difference",
+    "attributable_risk",
+    "incidence_rate_ratio",
+    "number_needed_to_treat",
+    "prevalence_ratio",
+    "mantel_haenszel",
+    "breslow_day_test",
+    "direct_standardize",
+    "indirect_standardize",
+    "bradford_hill",
     # v0.9.17 additions (epi clinical diagnostics)
-    "diagnostic_test", "sensitivity_specificity",
-    "roc_curve", "auc", "cohen_kappa",
-    "DiagnosticTestResult", "ROCResult", "KappaResult",
+    "diagnostic_test",
+    "sensitivity_specificity",
+    "roc_curve",
+    "auc",
+    "cohen_kappa",
+    "DiagnosticTestResult",
+    "ROCResult",
+    "KappaResult",
     # v0.9.17 additions (MR full suite)
-    "mr", "mendelian",
-    "mr_heterogeneity", "mr_pleiotropy_egger", "mr_leave_one_out",
-    "mr_steiger", "mr_presso", "mr_radial",
-    "HeterogeneityResult", "PleiotropyResult", "LeaveOneOutResult",
-    "SteigerResult", "MRPressoResult", "RadialResult",
+    "mr",
+    "mendelian",
+    "mr_heterogeneity",
+    "mr_pleiotropy_egger",
+    "mr_leave_one_out",
+    "mr_steiger",
+    "mr_presso",
+    "mr_radial",
+    "HeterogeneityResult",
+    "PleiotropyResult",
+    "LeaveOneOutResult",
+    "SteigerResult",
+    "MRPressoResult",
+    "RadialResult",
     # v0.9.17 additions (MR deepening)
-    "mr_mode", "mr_f_statistic", "mr_funnel_plot", "mr_scatter_plot",
-    "ModeBasedResult", "FStatisticResult",
+    "mr_mode",
+    "mr_f_statistic",
+    "mr_funnel_plot",
+    "mr_scatter_plot",
+    "ModeBasedResult",
+    "FStatisticResult",
     # v0.9.17 additions (longitudinal unified)
-    "longitudinal", "longitudinal_analyze", "longitudinal_contrast",
-    "regime", "always_treat", "never_treat",
-    "LongitudinalResult", "Regime",
+    "longitudinal",
+    "longitudinal_analyze",
+    "longitudinal_contrast",
+    "regime",
+    "always_treat",
+    "never_treat",
+    "LongitudinalResult",
+    "Regime",
     # v0.9.17 additions (causal-question DSL + pre-registration)
-    "question", "causal_question", "CausalQuestion",
-    "IdentificationPlan", "EstimationResult",
-    "preregister", "load_preregister",
+    "question",
+    "causal_question",
+    "CausalQuestion",
+    "IdentificationPlan",
+    "EstimationResult",
+    "preregister",
+    "load_preregister",
     "paper",
     # v0.9.17 additions (unified sensitivity; SensitivityDashboard already exported)
     "unified_sensitivity",
     # v0.9.17 additions (DAG UX)
     "dag_recommend_estimator",
     # v1.0 — bridging theorems
-    "bridge", "BridgeResult",
+    "bridge",
+    "BridgeResult",
     # v1.0 — DiD frontiers (scaffolded)
-    "did_bcf", "cohort_anchored_event_study",
-    "design_robust_event_study", "did_misclassified",
+    "did_bcf",
+    "cohort_anchored_event_study",
+    "design_robust_event_study",
+    "did_misclassified",
     # v1.0 — conformal frontiers
-    "conformal_debiased_ml", "DebiasedConformalResult",
-    "conformal_density_ite", "ConformalDensityResult",
-    "conformal_fair_ite", "FairConformalResult",
-    "conformal_ite_multidp", "MultiDPConformalResult",
+    "conformal_debiased_ml",
+    "DebiasedConformalResult",
+    "conformal_density_ite",
+    "ConformalDensityResult",
+    "conformal_fair_ite",
+    "FairConformalResult",
+    "conformal_ite_multidp",
+    "MultiDPConformalResult",
     # v1.0 — proximal frontiers
-    "fortified_pci", "bidirectional_pci", "pci_mtp",
-    "select_pci_proxies", "ProxyScoreResult",
+    "fortified_pci",
+    "bidirectional_pci",
+    "pci_mtp",
+    "select_pci_proxies",
+    "ProxyScoreResult",
     # v1.0 — QTE / RD frontiers
-    "beyond_average_late", "BeyondAverageResult",
-    "qte_hd_panel", "HDPanelQTEResult",
-    "rd_distribution", "DistRDResult",
-    "rd_interference", "RDInterferenceResult",
-    "rd_multi_score", "MultiScoreRDResult",
+    "beyond_average_late",
+    "BeyondAverageResult",
+    "qte_hd_panel",
+    "HDPanelQTEResult",
+    "rd_distribution",
+    "DistRDResult",
+    "rd_interference",
+    "RDInterferenceResult",
+    "rd_multi_score",
+    "MultiScoreRDResult",
     # v1.0 — time-series causal discovery
-    "pcmci", "PCMCIResult", "lpcmci", "LPCMCIResult",
-    "dynotears", "DYNOTEARSResult", "partial_corr_pvalue",
+    "pcmci",
+    "PCMCIResult",
+    "lpcmci",
+    "LPCMCIResult",
+    "dynotears",
+    "DYNOTEARSResult",
+    "partial_corr_pvalue",
     # v1.0 — LTMLE survival + BCF longitudinal
-    "ltmle_survival", "LTMLESurvivalResult",
+    "ltmle_survival",
+    "LTMLESurvivalResult",
     # v1.0 — sequential SDID
-    "sequential_sdid", "SequentialSDIDResult",
-    "synth_survival", "SyntheticSurvivalResult",
+    "sequential_sdid",
+    "SequentialSDIDResult",
+    "synth_survival",
+    "SyntheticSurvivalResult",
     # v1.0 — ML bounds
     "ml_bounds",
     # v1.0 — TARGET Statement 2025
     "target_trial_checklist",
     # v1.0 — frontier sensitivity
-    "copula_sensitivity", "survival_sensitivity",
-    "calibrate_confounding_strength", "FrontierSensitivityResult",
+    "copula_sensitivity",
+    "survival_sensitivity",
+    "calibrate_confounding_strength",
+    "FrontierSensitivityResult",
     # === v0.10 / v1.0 frontier additions (most are already exported above) ===
     # Distributional / panel QTE — only the new dist_iv/kan_dlate/DistIVResult here
-    "dist_iv", "kan_dlate", "DistIVResult",
+    "dist_iv",
+    "kan_dlate",
+    "DistIVResult",
     # RDD frontier — only the new rd_bayes_hte / rd_distributional_design here
-    "rd_bayes_hte", "BayesRDHTEResult",
-    "rd_distributional_design", "DDDResult",
+    "rd_bayes_hte",
+    "BayesRDHTEResult",
+    "rd_distributional_design",
+    "DDDResult",
     # v1.15 RDD polish (recent literature)
-    "rd_flex", "rd_bias_aware_fuzzy", "rd_discrete",
-    "rd_dashboard", "rd_compare", "rd_robustness_table",
+    "rd_flex",
+    "rd_bias_aware_fuzzy",
+    "rd_discrete",
+    "rd_dashboard",
+    "rd_compare",
+    "rd_robustness_table",
     # Causal × LLM
-    "llm_dag_propose", "LLMDAGProposal",
-    "llm_unobserved_confounders", "UnobservedConfounderProposal",
-    "llm_sensitivity_priors", "SensitivityPriorProposal",
-    "llm_dag_constrained", "llm_dag_validate",
-    "LLMConstrainedDAGResult", "DAGValidationResult",
+    "llm_dag_propose",
+    "LLMDAGProposal",
+    "llm_unobserved_confounders",
+    "UnobservedConfounderProposal",
+    "llm_sensitivity_priors",
+    "SensitivityPriorProposal",
+    "llm_dag_constrained",
+    "llm_dag_validate",
+    "LLMConstrainedDAGResult",
+    "DAGValidationResult",
     # Causal × Text (P1-B v1.6 experimental)
-    "text_treatment_effect", "TextTreatmentResult",
-    "llm_annotator_correct", "LLMAnnotatorResult",
+    "text_treatment_effect",
+    "TextTreatmentResult",
+    "llm_annotator_correct",
+    "LLMAnnotatorResult",
     # Causal RL
-    "causal_dqn", "CausalDQNResult",
-    "causal_rl_benchmark", "BanditBenchmarkResult",
-    "offline_safe_policy", "OfflineSafeResult",
+    "causal_dqn",
+    "CausalDQNResult",
+    "causal_rl_benchmark",
+    "BanditBenchmarkResult",
+    "offline_safe_policy",
+    "OfflineSafeResult",
     "structural_mdp",
     # Cluster RCT × interference
-    "cluster_matched_pair", "MatchedPairResult",
-    "cluster_cross_interference", "CrossClusterRCTResult",
-    "cluster_staggered_rollout", "StaggeredClusterRCTResult",
-    "dnc_gnn_did", "DNCGNNDiDResult",
+    "cluster_matched_pair",
+    "MatchedPairResult",
+    "cluster_cross_interference",
+    "CrossClusterRCTResult",
+    "cluster_staggered_rollout",
+    "StaggeredClusterRCTResult",
+    "dnc_gnn_did",
+    "DNCGNNDiDResult",
     # Meta-learner frontier
-    "focal_cate", "FunctionalCATEResult",
-    "cluster_cate", "ClusterCATEResult",
+    "focal_cate",
+    "FunctionalCATEResult",
+    "cluster_cate",
+    "ClusterCATEResult",
     # v1.13 backbone-agnostic CATE evaluation (RATE / AUTOC / Qini)
-    "cate_eval", "CATEEvalResult",
+    "cate_eval",
+    "CATEEvalResult",
     # Bunching frontier
-    "general_bunching", "GeneralBunchingResult",
-    "kink_unified", "KinkUnifiedResult",
+    "general_bunching",
+    "GeneralBunchingResult",
+    "kink_unified",
+    "KinkUnifiedResult",
     # v1.6 MR frontier: sample-overlap / clusters / profile-LL / cML / RAPS
-    "mr_lap", "mr_clust", "grapple", "mr_cml", "mr_raps",
-    "MRLapResult", "MRClustResult", "GrappleResult",
-    "MRcMLResult", "MRRapsResult",
+    "mr_lap",
+    "mr_clust",
+    "grapple",
+    "mr_cml",
+    "mr_raps",
+    "MRLapResult",
+    "MRClustResult",
+    "GrappleResult",
+    "MRcMLResult",
+    "MRRapsResult",
     # v1.5 unified family dispatchers (mr already exported above as the dispatcher)
     "mr_available_methods",
-    "conformal", "conformal_available_kinds",
-    "interference", "interference_available_designs",
+    "conformal",
+    "conformal_available_kinds",
+    "interference",
+    "interference_available_designs",
     # v1.5 registry coverage fixes for previously-exposed-but-unregistered
     # single-family functions (now reachable via sp.describe_function too)
-    "network_exposure", "NetworkExposureResult",
-    "peer_effects", "PeerEffectsResult",
+    "network_exposure",
+    "NetworkExposureResult",
+    "peer_effects",
+    "PeerEffectsResult",
     "weighted_conformal_prediction",
-    "conformal_counterfactual", "ConformalCounterfactualResult",
-    "conformal_ite_interval", "ConformalITEResult",
+    "conformal_counterfactual",
+    "ConformalCounterfactualResult",
+    "conformal_ite_interval",
+    "ConformalITEResult",
     # Registry/API surface consistency guards
     "mr_mediation",
     "orthogonal_to_bias",
@@ -1445,7 +2170,6 @@ from ._article_aliases import (
     dml,
 )
 
-
 # ---------------------------------------------------------------------
 # Lazy submodule registry (Step 1 — cold-start budget)
 # ---------------------------------------------------------------------
@@ -1484,37 +2208,37 @@ from ._article_aliases import (
 # ---------------------------------------------------------------------
 _LAZY_SUBMODULES: dict = {
     # name on sp -> dotted submodule path (relative to statspai)
-    "bayes":             "bayes",
-    "neural_causal":     "neural_causal",
-    "causal_text":       "causal_text",
-    "causal_rl":         "causal_rl",
-    "fairness":          "fairness",
-    "assimilation":      "assimilation",
-    "surrogate":         "surrogate",
-    "bounds":            "bounds",
-    "dtr":               "dtr",
-    "spatial":           "spatial",
-    "forest":            "forest",
-    "conformal_causal":  "conformal_causal",
-    "ope":               "ope",
-    "censoring":         "censoring",
-    "epi":               "epi",
-    "longitudinal":      "longitudinal",
-    "gformula":          "gformula",
-    "target_trial":      "target_trial",
-    "tte":               "target_trial",  # short alias
-    "transport":         "transport",
-    "mendelian":         "mendelian",
-    "experimental":      "experimental",
-    "imputation":        "imputation",
-    "survey":            "survey",
-    "survival":          "survival",
-    "nonparametric":     "nonparametric",
-    "multilevel":        "multilevel",
-    "structural":        "structural",
-    "causal_llm":        "causal_llm",
-    "mht":               "mht",
-    "robustness":        "robustness",
+    "bayes": "bayes",
+    "neural_causal": "neural_causal",
+    "causal_text": "causal_text",
+    "causal_rl": "causal_rl",
+    "fairness": "fairness",
+    "assimilation": "assimilation",
+    "surrogate": "surrogate",
+    "bounds": "bounds",
+    "dtr": "dtr",
+    "spatial": "spatial",
+    "forest": "forest",
+    "conformal_causal": "conformal_causal",
+    "ope": "ope",
+    "censoring": "censoring",
+    "epi": "epi",
+    "longitudinal": "longitudinal",
+    "gformula": "gformula",
+    "target_trial": "target_trial",
+    "tte": "target_trial",  # short alias
+    "transport": "transport",
+    "mendelian": "mendelian",
+    "experimental": "experimental",
+    "imputation": "imputation",
+    "survey": "survey",
+    "survival": "survival",
+    "nonparametric": "nonparametric",
+    "multilevel": "multilevel",
+    "structural": "structural",
+    "causal_llm": "causal_llm",
+    "mht": "mht",
+    "robustness": "robustness",
 }
 
 
@@ -1536,140 +2260,282 @@ def _register_lazy(modname, *names):
 
 _LAZY_ATTRS: dict = {}
 
-_register_lazy("plots.interactive",
-    "interactive", "get_code",
+_register_lazy(
+    "plots.interactive",
+    "interactive",
+    "get_code",
 )
-_register_lazy("bayes",
-    "bayes_did", "bayes_rd", "bayes_iv", "bayes_fuzzy_rd", "bayes_hte_iv",
-    "bayes_mte", "bayes_dml", "BayesianDMLResult",
-    "BayesianCausalResult", "BayesianDIDResult", "BayesianHTEIVResult",
-    "BayesianIVResult", "BayesianMTEResult",
-    "policy_weight_ate", "policy_weight_subsidy",
-    "policy_weight_prte", "policy_weight_marginal",
+_register_lazy(
+    "bayes",
+    "bayes_did",
+    "bayes_rd",
+    "bayes_iv",
+    "bayes_fuzzy_rd",
+    "bayes_hte_iv",
+    "bayes_mte",
+    "bayes_dml",
+    "BayesianDMLResult",
+    "BayesianCausalResult",
+    "BayesianDIDResult",
+    "BayesianHTEIVResult",
+    "BayesianIVResult",
+    "BayesianMTEResult",
+    "policy_weight_ate",
+    "policy_weight_subsidy",
+    "policy_weight_prte",
+    "policy_weight_marginal",
     "policy_weight_observed_prte",
 )
-_register_lazy("neural_causal.models",
-    "tarnet", "cfrnet", "dragonnet", "TARNet", "CFRNet", "DragonNet",
+_register_lazy(
+    "neural_causal.models",
+    "tarnet",
+    "cfrnet",
+    "dragonnet",
+    "TARNet",
+    "CFRNet",
+    "DragonNet",
 )
-_register_lazy("neural_causal.gnn_causal",
-    "gnn_causal", "GNNCausalResult",
+_register_lazy(
+    "neural_causal.gnn_causal",
+    "gnn_causal",
+    "GNNCausalResult",
 )
-_register_lazy("neural_causal.exports",
-    "neural_effects_frame", "neural_summary_frame", "neural_training_frame",
-    "neural_causal_to_markdown", "neural_causal_to_html",
+_register_lazy(
+    "neural_causal.exports",
+    "neural_effects_frame",
+    "neural_summary_frame",
+    "neural_training_frame",
+    "neural_causal_to_markdown",
+    "neural_causal_to_html",
     "neural_causal_to_excel",
 )
-_register_lazy("neural_causal.plots",
+_register_lazy(
+    "neural_causal.plots",
     "neural_causal_plot",
 )
-_register_lazy("neural_causal.cevae",
-    "cevae", "CEVAE", "CEVAEResult",
+_register_lazy(
+    "neural_causal.cevae",
+    "cevae",
+    "CEVAE",
+    "CEVAEResult",
 )
-_register_lazy("causal_text",
-    "text_treatment_effect", "TextTreatmentResult",
-    "llm_annotator_correct", "LLMAnnotatorResult",
+_register_lazy(
+    "causal_text",
+    "text_treatment_effect",
+    "TextTreatmentResult",
+    "llm_annotator_correct",
+    "LLMAnnotatorResult",
 )
-_register_lazy("causal_rl",
-    "causal_dqn", "CausalDQNResult",
-    "causal_rl_benchmark", "BanditBenchmarkResult",
-    "offline_safe_policy", "OfflineSafeResult",
-    "causal_bandit", "counterfactual_policy_optimization", "structural_mdp",
-    "CausalBanditResult", "CFPolicyResult", "StructuralMDPResult",
+_register_lazy(
+    "causal_rl",
+    "causal_dqn",
+    "CausalDQNResult",
+    "causal_rl_benchmark",
+    "BanditBenchmarkResult",
+    "offline_safe_policy",
+    "OfflineSafeResult",
+    "causal_bandit",
+    "counterfactual_policy_optimization",
+    "structural_mdp",
+    "CausalBanditResult",
+    "CFPolicyResult",
+    "StructuralMDPResult",
 )
-_register_lazy("fairness",
-    "counterfactual_fairness", "orthogonal_to_bias",
-    "demographic_parity", "equalized_odds", "fairness_audit",
-    "FairnessResult", "FairnessAudit",
-    "evidence_without_injustice", "EvidenceWithoutInjusticeResult",
+_register_lazy(
+    "fairness",
+    "counterfactual_fairness",
+    "orthogonal_to_bias",
+    "demographic_parity",
+    "equalized_odds",
+    "fairness_audit",
+    "FairnessResult",
+    "FairnessAudit",
+    "evidence_without_injustice",
+    "EvidenceWithoutInjusticeResult",
 )
-_register_lazy("assimilation",
-    "assimilative_causal", "causal_kalman", "AssimilationResult",
+_register_lazy(
+    "assimilation",
+    "assimilative_causal",
+    "causal_kalman",
+    "AssimilationResult",
 )
-_register_lazy("surrogate",
-    "surrogate_index", "long_term_from_short", "proximal_surrogate_index",
+_register_lazy(
+    "surrogate",
+    "surrogate_index",
+    "long_term_from_short",
+    "proximal_surrogate_index",
     "SurrogateResult",
 )
-_register_lazy("bounds",
-    "lee_bounds", "manski_bounds", "BoundsResult", "horowitz_manski",
-    "iv_bounds", "oster_delta", "selection_bounds", "breakdown_frontier",
-    "balke_pearl", "BalkePearlResult", "ml_bounds", "MLBoundsResult",
+_register_lazy(
+    "bounds",
+    "lee_bounds",
+    "manski_bounds",
+    "BoundsResult",
+    "horowitz_manski",
+    "iv_bounds",
+    "oster_delta",
+    "selection_bounds",
+    "breakdown_frontier",
+    "balke_pearl",
+    "BalkePearlResult",
+    "ml_bounds",
+    "MLBoundsResult",
 )
-_register_lazy("dtr",
-    "g_estimation", "GEstimation", "q_learning", "QLearningResult",
-    "a_learning", "ALearningResult", "snmm", "SNMMResult",
+_register_lazy(
+    "dtr",
+    "g_estimation",
+    "GEstimation",
+    "q_learning",
+    "QLearningResult",
+    "a_learning",
+    "ALearningResult",
+    "snmm",
+    "SNMMResult",
 )
-_register_lazy("spatial",
-    "sar", "sem", "sdm", "slx", "sac", "SpatialModel",
-    "sar_gmm", "sem_gmm", "sarar_gmm",
-    "gwr", "mgwr", "gwr_bandwidth",
+_register_lazy(
+    "spatial",
+    "sar",
+    "sem",
+    "sdm",
+    "slx",
+    "sac",
+    "SpatialModel",
+    "sar_gmm",
+    "sem_gmm",
+    "sarar_gmm",
+    "gwr",
+    "mgwr",
+    "gwr_bandwidth",
     "spatial_panel",
-    "W", "queen_weights", "rook_weights", "knn_weights",
-    "distance_band", "kernel_weights", "block_weights",
-    "moran", "moran_local", "geary", "getis_ord_g", "getis_ord_local", "join_counts",
-    "moran_plot", "lisa_cluster_map",
-    "lm_tests", "moran_residuals", "impacts",
-    "spatial_did", "SpatialDiDResult", "spatial_iv", "SpatialIVResult",
+    "W",
+    "queen_weights",
+    "rook_weights",
+    "knn_weights",
+    "distance_band",
+    "kernel_weights",
+    "block_weights",
+    "moran",
+    "moran_local",
+    "geary",
+    "getis_ord_g",
+    "getis_ord_local",
+    "join_counts",
+    "moran_plot",
+    "lisa_cluster_map",
+    "lm_tests",
+    "moran_residuals",
+    "impacts",
+    "spatial_did",
+    "SpatialDiDResult",
+    "spatial_iv",
+    "SpatialIVResult",
 )
-_register_lazy("forest.causal_forest",
-    "CausalForest", "causal_forest",
+_register_lazy(
+    "forest.causal_forest",
+    "CausalForest",
+    "causal_forest",
 )
-_register_lazy("forest.forest_inference",
+_register_lazy(
+    "forest.forest_inference",
     "calibration_test",
     ("test_calibration", "calibration_test"),
-    "rate", "honest_variance",
-    "average_treatment_effect", "forest_diagnostics",
+    "rate",
+    "honest_variance",
+    "average_treatment_effect",
+    "forest_diagnostics",
 )
-_register_lazy("forest.multi_arm_forest",
-    "multi_arm_forest", "MultiArmForestResult",
+_register_lazy(
+    "forest.multi_arm_forest",
+    "multi_arm_forest",
+    "MultiArmForestResult",
 )
-_register_lazy("forest.iv_forest",
-    "iv_forest", "IVForestResult",
+_register_lazy(
+    "forest.iv_forest",
+    "iv_forest",
+    "IVForestResult",
 )
-_register_lazy("conformal_causal",
-    "conformal_cate", "ConformalCATE",
+_register_lazy(
+    "conformal_causal",
+    "conformal_cate",
+    "ConformalCATE",
     "weighted_conformal_prediction",
-    "conformal_counterfactual", "ConformalCounterfactualResult",
-    "conformal_ite_interval", "ConformalITEResult",
-    "conformal_density_ite", "ConformalDensityResult",
-    "conformal_ite_multidp", "MultiDPConformalResult",
-    "conformal_debiased_ml", "DebiasedConformalResult",
-    "conformal_fair_ite", "FairConformalResult",
-    "conformal_continuous", "conformal_interference",
-    "ContinuousConformalResult", "InterferenceConformalResult",
-    "conformal", "conformal_available_kinds",
+    "conformal_counterfactual",
+    "ConformalCounterfactualResult",
+    "conformal_ite_interval",
+    "ConformalITEResult",
+    "conformal_density_ite",
+    "ConformalDensityResult",
+    "conformal_ite_multidp",
+    "MultiDPConformalResult",
+    "conformal_debiased_ml",
+    "DebiasedConformalResult",
+    "conformal_fair_ite",
+    "FairConformalResult",
+    "conformal_continuous",
+    "conformal_interference",
+    "ContinuousConformalResult",
+    "InterferenceConformalResult",
+    "conformal",
+    "conformal_available_kinds",
 )
-_register_lazy("ope",
-    "OPEResult", "sharp_ope_unobserved", "causal_policy_forest",
-    "SharpOPEResult", "CausalPolicyForestResult",
+_register_lazy(
+    "ope",
+    "OPEResult",
+    "sharp_ope_unobserved",
+    "causal_policy_forest",
+    "SharpOPEResult",
+    "CausalPolicyForestResult",
 )
-_register_lazy("censoring",
-    "ipcw", "IPCWResult",
+_register_lazy(
+    "censoring",
+    "ipcw",
+    "IPCWResult",
 )
-_register_lazy("epi",
-    "odds_ratio", "relative_risk", "risk_difference", "attributable_risk",
-    "incidence_rate_ratio", "number_needed_to_treat", "prevalence_ratio",
-    "mantel_haenszel", "breslow_day_test",
-    "direct_standardize", "indirect_standardize",
+_register_lazy(
+    "epi",
+    "odds_ratio",
+    "relative_risk",
+    "risk_difference",
+    "attributable_risk",
+    "incidence_rate_ratio",
+    "number_needed_to_treat",
+    "prevalence_ratio",
+    "mantel_haenszel",
+    "breslow_day_test",
+    "direct_standardize",
+    "indirect_standardize",
     "bradford_hill",
-    "diagnostic_test", "sensitivity_specificity",
-    "roc_curve", "auc", "cohen_kappa",
-    "DiagnosticTestResult", "ROCResult", "KappaResult",
+    "diagnostic_test",
+    "sensitivity_specificity",
+    "roc_curve",
+    "auc",
+    "cohen_kappa",
+    "DiagnosticTestResult",
+    "ROCResult",
+    "KappaResult",
 )
-_register_lazy("longitudinal",
-    ("longitudinal_analyze",  "analyze"),
+_register_lazy(
+    "longitudinal",
+    ("longitudinal_analyze", "analyze"),
     ("longitudinal_contrast", "contrast"),
-    "regime", "always_treat", "never_treat",
-    "LongitudinalResult", "Regime",
+    "regime",
+    "always_treat",
+    "never_treat",
+    "LongitudinalResult",
+    "Regime",
 )
-_register_lazy("gformula",
+_register_lazy(
+    "gformula",
     ("gformula_ice_fn", "ice"),
     "ICEResult",
-    "gformula_mc", "MCGFormulaResult",
+    "gformula_mc",
+    "MCGFormulaResult",
 )
-_register_lazy("target_trial",
-    ("target_trial_protocol",  "protocol"),
-    ("target_trial_emulate",   "emulate"),
-    ("target_trial_report",    "to_paper"),
+_register_lazy(
+    "target_trial",
+    ("target_trial_protocol", "protocol"),
+    ("target_trial_emulate", "emulate"),
+    ("target_trial_report", "to_paper"),
     ("target_trial_checklist", "target_checklist"),
     "TARGET_ITEMS",
     "clone_censor_weight",
@@ -1678,86 +2544,180 @@ _register_lazy("target_trial",
     "TargetTrialResult",
     "CloneCensorWeightResult",
 )
-_register_lazy("transport",
-    ("transport_weights_fn",   "weights"),
-    ("transport_generalize",   "generalize"),
+_register_lazy(
+    "transport",
+    ("transport_weights_fn", "weights"),
+    ("transport_generalize", "generalize"),
     "TransportWeightResult",
-    "identify_transport", "TransportIdentificationResult",
-    "synthesise_evidence", "heterogeneity_of_effect", "rwd_rct_concordance",
-    "EvidenceSynthesisResult", "HeterogeneityResult", "ConcordanceResult",
+    "identify_transport",
+    "TransportIdentificationResult",
+    "synthesise_evidence",
+    "heterogeneity_of_effect",
+    "rwd_rct_concordance",
+    "EvidenceSynthesisResult",
+    "HeterogeneityResult",
+    "ConcordanceResult",
 )
-_register_lazy("mendelian",
-    "mendelian_randomization", "MRResult",
-    "mr_egger", "mr_ivw", "mr_median",
-    "mr_heterogeneity", "mr_pleiotropy_egger", "mr_leave_one_out",
-    "mr_steiger", "mr_presso", "mr_radial",
-    "HeterogeneityResult", "PleiotropyResult", "LeaveOneOutResult",
-    "SteigerResult", "MRPressoResult", "RadialResult",
-    "mr_mode", "mr_f_statistic", "mr_funnel_plot", "mr_scatter_plot",
-    "ModeBasedResult", "FStatisticResult",
-    "mr_multivariable", "mr_mediation", "mr_bma",
-    "MVMRResult", "MediationMRResult", "MRBMAResult",
-    "mr_lap", "mr_clust", "grapple", "mr_cml", "mr_raps",
-    "MRLapResult", "MRClustResult", "GrappleResult", "MRcMLResult", "MRRapsResult",
-    "mr", "mr_available_methods",
+_register_lazy(
+    "mendelian",
+    "mendelian_randomization",
+    "MRResult",
+    "mr_egger",
+    "mr_ivw",
+    "mr_median",
+    "mr_heterogeneity",
+    "mr_pleiotropy_egger",
+    "mr_leave_one_out",
+    "mr_steiger",
+    "mr_presso",
+    "mr_radial",
+    "HeterogeneityResult",
+    "PleiotropyResult",
+    "LeaveOneOutResult",
+    "SteigerResult",
+    "MRPressoResult",
+    "RadialResult",
+    "mr_mode",
+    "mr_f_statistic",
+    "mr_funnel_plot",
+    "mr_scatter_plot",
+    "ModeBasedResult",
+    "FStatisticResult",
+    "mr_multivariable",
+    "mr_mediation",
+    "mr_bma",
+    "MVMRResult",
+    "MediationMRResult",
+    "MRBMAResult",
+    "mr_lap",
+    "mr_clust",
+    "grapple",
+    "mr_cml",
+    "mr_raps",
+    "MRLapResult",
+    "MRClustResult",
+    "GrappleResult",
+    "MRcMLResult",
+    "MRRapsResult",
+    "mr",
+    "mr_available_methods",
 )
-_register_lazy("experimental",
-    "randomize", "RandomizationResult",
-    "balance_check", "BalanceResult",
-    "attrition_test", "attrition_bounds", "AttritionResult",
-    "optimal_design", "OptimalDesignResult",
+_register_lazy(
+    "experimental",
+    "randomize",
+    "RandomizationResult",
+    "balance_check",
+    "BalanceResult",
+    "attrition_test",
+    "attrition_bounds",
+    "AttritionResult",
+    "optimal_design",
+    "OptimalDesignResult",
 )
-_register_lazy("imputation",
-    "mice", "MICEResult", "mi_estimate",
+_register_lazy(
+    "imputation",
+    "mice",
+    "MICEResult",
+    "mi_estimate",
 )
-_register_lazy("survey",
-    "svydesign", "SurveyDesign", "svymean", "svytotal", "svyglm",
-    "rake", "linear_calibration",
+_register_lazy(
+    "survey",
+    "svydesign",
+    "SurveyDesign",
+    "svymean",
+    "svytotal",
+    "svyglm",
+    "rake",
+    "linear_calibration",
 )
-_register_lazy("survival",
-    "cox", "kaplan_meier", "survreg",
-    "CoxResult", "KMResult", "logrank_test",
-    "cox_frailty", "aft",
-    "causal_survival_forest", "causal_survival",
+_register_lazy(
+    "survival",
+    "cox",
+    "kaplan_meier",
+    "survreg",
+    "CoxResult",
+    "KMResult",
+    "logrank_test",
+    "cox_frailty",
+    "aft",
+    "causal_survival_forest",
+    "causal_survival",
     "CausalSurvivalForestResult",
 )
-_register_lazy("nonparametric",
-    "lpoly", "LPolyResult", "kdensity", "KDensityResult",
+_register_lazy(
+    "nonparametric",
+    "lpoly",
+    "LPolyResult",
+    "kdensity",
+    "KDensityResult",
 )
-_register_lazy("multilevel",
-    "mixed", "MixedResult",
-    "meglm", "melogit", "mepoisson", "menbreg", "megamma", "meologit",
-    "MEGLMResult", "icc", "lrtest",
+_register_lazy(
+    "multilevel",
+    "mixed",
+    "MixedResult",
+    "meglm",
+    "melogit",
+    "mepoisson",
+    "menbreg",
+    "megamma",
+    "meologit",
+    "MEGLMResult",
+    "icc",
+    "lrtest",
 )
-_register_lazy("structural",
-    "blp", "BLPResult",
+_register_lazy(
+    "structural",
+    "blp",
+    "BLPResult",
     "prod_fn",
-    "olley_pakes", "opreg",
-    "levinsohn_petrin", "levpet",
-    "ackerberg_caves_frazer", "acf",
+    "olley_pakes",
+    "opreg",
+    "levinsohn_petrin",
+    "levpet",
+    "ackerberg_caves_frazer",
+    "acf",
     "wooldridge_prod",
     "markup",
     "ProductionResult",
 )
-_register_lazy("causal_llm",
-    "llm_dag_propose", "LLMDAGProposal",
-    "llm_unobserved_confounders", "UnobservedConfounderProposal",
-    "llm_sensitivity_priors", "SensitivityPriorProposal",
-    "causal_mas", "CausalMASResult",
-    "llm_dag_constrained", "llm_dag_validate",
-    "LLMConstrainedDAGResult", "DAGValidationResult",
+_register_lazy(
+    "causal_llm",
+    "llm_dag_propose",
+    "LLMDAGProposal",
+    "llm_unobserved_confounders",
+    "UnobservedConfounderProposal",
+    "llm_sensitivity_priors",
+    "SensitivityPriorProposal",
+    "causal_mas",
+    "CausalMASResult",
+    "llm_dag_constrained",
+    "llm_dag_validate",
+    "LLMConstrainedDAGResult",
+    "DAGValidationResult",
 )
-_register_lazy("mht",
-    "romano_wolf", "RomanoWolfResult",
-    "adjust_pvalues", "bonferroni", "holm", "benjamini_hochberg",
+_register_lazy(
+    "mht",
+    "romano_wolf",
+    "RomanoWolfResult",
+    "adjust_pvalues",
+    "bonferroni",
+    "holm",
+    "benjamini_hochberg",
 )
-_register_lazy("robustness",
-    "spec_curve", "SpecCurveResult",
-    "robustness_report", "RobustnessResult",
-    "subgroup_analysis", "SubgroupResult",
-    "copula_sensitivity", "survival_sensitivity",
-    "calibrate_confounding_strength", "FrontierSensitivityResult",
-    "unified_sensitivity", "SensitivityDashboard",
+_register_lazy(
+    "robustness",
+    "spec_curve",
+    "SpecCurveResult",
+    "robustness_report",
+    "RobustnessResult",
+    "subgroup_analysis",
+    "SubgroupResult",
+    "copula_sensitivity",
+    "survival_sensitivity",
+    "calibrate_confounding_strength",
+    "FrontierSensitivityResult",
+    "unified_sensitivity",
+    "SensitivityDashboard",
 )
 
 
@@ -1780,11 +2740,13 @@ def __getattr__(name):
     """
     if name in {"verify", "verify_recommendation"}:
         from .smart.verify import verify_recommendation as _vr
+
         globals()["verify"] = _vr
         globals()["verify_recommendation"] = _vr
         return _vr
     if name == "verify_benchmark":
         from .smart.benchmark import verify_benchmark as _vb
+
         globals()["verify_benchmark"] = _vb
         return _vb
     if name == "fast":
@@ -1793,11 +2755,13 @@ def __getattr__(name):
         # ``sp.fast``. ``importlib.import_module`` bypasses our
         # ``__getattr__`` so we don't re-enter this branch.
         import importlib
+
         _fast_mod = importlib.import_module(".fast", package=__name__)
         globals()["fast"] = _fast_mod
         return _fast_mod
     if name in _LAZY_ATTRS:
         import importlib
+
         _modpath, _attr = _LAZY_ATTRS[name]
         _mod = importlib.import_module(f".{_modpath}", package=__name__)
         _obj = getattr(_mod, _attr)
@@ -1805,6 +2769,7 @@ def __getattr__(name):
         return _obj
     if name in _LAZY_SUBMODULES:
         import importlib
+
         _modpath = _LAZY_SUBMODULES[name]
         _mod = importlib.import_module(f".{_modpath}", package=__name__)
         globals()[name] = _mod

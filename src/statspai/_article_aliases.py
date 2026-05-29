@@ -50,6 +50,7 @@ __all__ = [
 # Regression discontinuity
 # ---------------------------------------------------------------------------
 
+
 def rdd(
     data: pd.DataFrame,
     y: str,
@@ -81,6 +82,7 @@ def rdd(
 # Pearl's front-door criterion
 # ---------------------------------------------------------------------------
 
+
 def frontdoor(
     data: pd.DataFrame,
     y: str,
@@ -109,6 +111,7 @@ def frontdoor(
 # ---------------------------------------------------------------------------
 # Meta-learner shortcuts
 # ---------------------------------------------------------------------------
+
 
 def xlearner(
     data: pd.DataFrame,
@@ -148,6 +151,7 @@ def xlearner(
 # Conformal ITE intervals
 # ---------------------------------------------------------------------------
 
+
 def conformal_ite(
     data: pd.DataFrame,
     y: str,
@@ -175,6 +179,7 @@ def conformal_ite(
 # ---------------------------------------------------------------------------
 # Propensity-score matching
 # ---------------------------------------------------------------------------
+
 
 def psm(
     data: pd.DataFrame,
@@ -217,6 +222,7 @@ def psm(
 # ---------------------------------------------------------------------------
 # Partial identification / bounds
 # ---------------------------------------------------------------------------
+
 
 def partial_identification(
     data: pd.DataFrame,
@@ -274,8 +280,12 @@ def partial_identification(
                 "indicator is needed."
             )
         return _bounds.lee_bounds(
-            data=data, y=y, treat=d,
-            selection=selection, covariates=X, **kwargs,
+            data=data,
+            y=y,
+            treat=d,
+            selection=selection,
+            covariates=X,
+            **kwargs,
         )
 
     if method in {"horowitz_manski", "horowitz-manski", "hm"}:
@@ -288,7 +298,11 @@ def partial_identification(
                 "Horowitz-Manski bounds condition on X."
             )
         return _bounds.horowitz_manski(
-            data=data, y=y, treatment=d, covariates=X, **kwargs,
+            data=data,
+            y=y,
+            treatment=d,
+            covariates=X,
+            **kwargs,
         )
 
     if method == "iv":
@@ -300,8 +314,12 @@ def partial_identification(
                 "`instrument=<column name>` for the IV bounds (Manski-Pepper)."
             )
         return _bounds.iv_bounds(
-            data=data, y=y, treatment=d,
-            instrument=instrument, controls=X, **kwargs,
+            data=data,
+            y=y,
+            treatment=d,
+            instrument=instrument,
+            controls=X,
+            **kwargs,
         )
 
     raise ValueError(
@@ -314,6 +332,7 @@ def partial_identification(
 # Weak-IV robust confidence sets (top-level re-exports)
 # ---------------------------------------------------------------------------
 
+
 def anderson_rubin_ci(*args, **kwargs):
     """Anderson-Rubin confidence set — re-export of
     :func:`statspai.iv.weak_iv_ci.anderson_rubin_ci`.
@@ -322,6 +341,7 @@ def anderson_rubin_ci(*args, **kwargs):
     the corresponding confidence set is the canonical weak-IV-robust CI.
     """
     from .iv.weak_iv_ci import anderson_rubin_ci as _impl
+
     return _impl(*args, **kwargs)
 
 
@@ -330,12 +350,14 @@ def conditional_lr_ci(*args, **kwargs):
     :func:`statspai.iv.weak_iv_ci.conditional_lr_ci`.
     """
     from .iv.weak_iv_ci import conditional_lr_ci as _impl
+
     return _impl(*args, **kwargs)
 
 
 # ---------------------------------------------------------------------------
 # Lee-McCrary-Moreira-Porter (2022) tF adjustment
 # ---------------------------------------------------------------------------
+
 
 def tF_adjustment(first_stage_F: float, alpha: float = 0.05) -> float:
     """tF adjusted critical value (Lee, McCrary, Moreira & Porter 2022, AER).
@@ -345,6 +367,7 @@ def tF_adjustment(first_stage_F: float, alpha: float = 0.05) -> float:
     that ``sp.tF_adjustment(F)`` works as advertised.
     """
     from .diagnostics.weak_iv import tF_critical_value
+
     return tF_critical_value(first_stage_F, alpha=alpha)
 
 
@@ -357,6 +380,7 @@ def tF_adjustment(first_stage_F: float, alpha: float = 0.05) -> float:
 # wins over the submodule binding (same pattern the package already uses
 # for ``sp.iv``).
 # ---------------------------------------------------------------------------
+
 
 def matrix_completion(
     data: pd.DataFrame,
@@ -375,9 +399,15 @@ def matrix_completion(
     # because this function itself is late-bound as `sp.matrix_completion`,
     # which shadows the submodule attribute on the package.
     import importlib
+
     _mc = importlib.import_module("statspai.matrix_completion")
     return _mc.mc_panel(
-        data=data, y=y, unit=unit, time=time, treat=d, **kwargs,
+        data=data,
+        y=y,
+        unit=unit,
+        time=time,
+        treat=d,
+        **kwargs,
     )
 
 
@@ -402,6 +432,7 @@ def causal_discovery(
     # Same late-bind shadowing trick — use importlib to reach the
     # subpackage explicitly rather than the now-shadowed attribute.
     import importlib
+
     _cd = importlib.import_module("statspai.causal_discovery")
 
     method = method.lower()
@@ -443,15 +474,22 @@ def mediation(
     ``(y, treat, mediator, covariates)`` kwargs.
     """
     import importlib
+
     _med = importlib.import_module("statspai.mediation")
     return _med.mediate(
-        data=data, y=y, treat=d, mediator=m, covariates=X, **kwargs,
+        data=data,
+        y=y,
+        treat=d,
+        mediator=m,
+        covariates=X,
+        **kwargs,
     )
 
 
 # ---------------------------------------------------------------------------
 # kwarg alignment wrappers
 # ---------------------------------------------------------------------------
+
 
 def evalue_rr(
     rr: float,
@@ -486,9 +524,7 @@ def evalue_rr(
     if rr_lower is not None and rr_upper is not None:
         ci = (float(rr_lower), float(rr_upper))
     elif rr_lower is not None or rr_upper is not None:
-        raise ValueError(
-            "evalue_rr: provide BOTH rr_lower and rr_upper, or neither."
-        )
+        raise ValueError("evalue_rr: provide BOTH rr_lower and rr_upper, or neither.")
 
     return _evalue(
         estimate=float(rr),
@@ -552,17 +588,20 @@ def policy_tree(
 
     # Resolve depth / max_depth
     if depth is not None and max_depth is not None and depth != max_depth:
-        raise TypeError(
-            "policy_tree: pass either `depth` or `max_depth`, not both."
-        )
+        raise TypeError("policy_tree: pass either `depth` or `max_depth`, not both.")
     md = depth if depth is not None else max_depth
     if md is None:
         md = 2  # matches underlying default
 
     from .policy_learning import policy_tree as _pt
+
     return _pt(
-        data=data, y=y, treat=treat_final, covariates=cov_final,
-        max_depth=md, **kwargs,
+        data=data,
+        y=y,
+        treat=treat_final,
+        covariates=cov_final,
+        max_depth=md,
+        **kwargs,
     )
 
 
@@ -593,6 +632,13 @@ def dml(
     forwards to ``ml_g`` (outcome nuisance), ``model_d`` to ``ml_m``
     (treatment / propensity nuisance). ``model=`` controls the DML
     variant: ``'plr'``, ``'irm'``, ``'pliv'``, ``'iivm'``.
+
+    References
+    ----------
+    Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
+    Newey, W. and Robins, J. (2018). Double/debiased machine learning for
+    treatment and structural parameters. *The Econometrics Journal*.
+    [@chernozhukov2018double]
     """
     from .dml import dml as _dml
 
@@ -630,6 +676,10 @@ def dml(
         kwargs.setdefault("ml_m", model_d)
 
     return _dml(
-        data=data, y=y, treat=treat_final, covariates=cov_final,
-        model=model, **kwargs,
+        data=data,
+        y=y,
+        treat=treat_final,
+        covariates=cov_final,
+        model=model,
+        **kwargs,
     )

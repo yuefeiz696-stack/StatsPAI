@@ -196,9 +196,11 @@ def wild_cluster_ci_inv(
     ``grid_span * se_cluster`` and ``grid_size`` evenly-spaced points.
     Linear interpolation refines the boundary.
 
+    Shares the data / model arguments of :func:`subcluster_wild_bootstrap`;
+    the grid-specific parameters are documented below.
+
     Parameters
     ----------
-    See :func:`subcluster_wild_bootstrap`.
     grid_size : int
         Number of null-value grid points to evaluate (odd preferred).
     grid_span : float
@@ -213,8 +215,16 @@ def wild_cluster_ci_inv(
     from .wild_bootstrap import wild_cluster_bootstrap
 
     base = wild_cluster_bootstrap(
-        data, y, x, cluster, test_var=test_var, h0=0.0,
-        n_boot=n_boot, weight_type=weight_type, seed=seed, alpha=alpha,
+        data,
+        y,
+        x,
+        cluster,
+        test_var=test_var,
+        h0=0.0,
+        n_boot=n_boot,
+        weight_type=weight_type,
+        seed=seed,
+        alpha=alpha,
     )
     beta_hat = base["beta_hat"]
     se_cl = base["se_cluster"]
@@ -225,8 +235,16 @@ def wild_cluster_ci_inv(
     p_grid = np.empty(grid_size)
     for i, h0 in enumerate(grid):
         res = wild_cluster_bootstrap(
-            data, y, x, cluster, test_var=test_var, h0=float(h0),
-            n_boot=n_boot, weight_type=weight_type, seed=seed, alpha=alpha,
+            data,
+            y,
+            x,
+            cluster,
+            test_var=test_var,
+            h0=float(h0),
+            n_boot=n_boot,
+            weight_type=weight_type,
+            seed=seed,
+            alpha=alpha,
         )
         p_grid[i] = res["p_boot"]
 
@@ -268,10 +286,16 @@ def _draw_weights(S: int, weight_type: str, rng: np.random.Generator) -> np.ndar
     if weight_type == "rademacher":
         return rng.choice([-1.0, 1.0], size=S)
     if weight_type == "webb":
-        vals = np.array([
-            -np.sqrt(1.5), -np.sqrt(1.0), -np.sqrt(0.5),
-            np.sqrt(0.5), np.sqrt(1.0), np.sqrt(1.5),
-        ])
+        vals = np.array(
+            [
+                -np.sqrt(1.5),
+                -np.sqrt(1.0),
+                -np.sqrt(0.5),
+                np.sqrt(0.5),
+                np.sqrt(1.0),
+                np.sqrt(1.5),
+            ]
+        )
         return rng.choice(vals, size=S)
     if weight_type == "mammen":
         p = (np.sqrt(5) + 1) / (2 * np.sqrt(5))

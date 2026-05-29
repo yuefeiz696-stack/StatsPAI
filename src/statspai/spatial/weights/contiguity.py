@@ -1,4 +1,5 @@
 """Contiguity weights (queen / rook). Requires geopandas + shapely."""
+
 from __future__ import annotations
 
 from .core import W
@@ -44,8 +45,71 @@ def _contiguity(gdf, criterion: str) -> W:
 
 
 def queen_weights(gdf) -> W:
+    """Queen-contiguity spatial weights from polygon geometries.
+
+    Two areal units are queen-contiguous if their geometries share at least
+    one boundary point (an edge *or* a single vertex). Requires ``geopandas``.
+
+    Parameters
+    ----------
+    gdf : geopandas.GeoDataFrame
+        Layer of polygon geometries (accessed via ``gdf.geometry`` and the
+        spatial index ``gdf.sindex``).
+
+    Returns
+    -------
+    W
+        Spatial weights object whose neighbour lists encode queen contiguity.
+
+    Raises
+    ------
+    ImportError
+        If ``geopandas`` is not installed.
+
+    Examples
+    --------
+    >>> import statspai as sp
+    >>> import geopandas as gpd  # doctest: +SKIP
+    >>> gdf = gpd.read_file("counties.shp")  # doctest: +SKIP
+    >>> w = sp.queen_weights(gdf)  # doctest: +SKIP
+
+    See Also
+    --------
+    rook_weights : Edge-only contiguity (excludes shared vertices).
+    """
     return _contiguity(gdf, "queen")
 
 
 def rook_weights(gdf) -> W:
+    """Rook-contiguity spatial weights from polygon geometries.
+
+    Two areal units are rook-contiguous if their geometries share a boundary
+    segment of positive length (a shared edge); units touching only at a
+    single vertex are *not* neighbours. Requires ``geopandas``.
+
+    Parameters
+    ----------
+    gdf : geopandas.GeoDataFrame
+        Layer of polygon geometries.
+
+    Returns
+    -------
+    W
+        Spatial weights object whose neighbour lists encode rook contiguity.
+
+    Raises
+    ------
+    ImportError
+        If ``geopandas`` is not installed.
+
+    Examples
+    --------
+    >>> import statspai as sp
+    >>> import geopandas as gpd  # doctest: +SKIP
+    >>> w = sp.rook_weights(gpd.read_file("counties.shp"))  # doctest: +SKIP
+
+    See Also
+    --------
+    queen_weights : Contiguity that also counts shared vertices.
+    """
     return _contiguity(gdf, "rook")

@@ -264,6 +264,7 @@ def _load_floor() -> Dict[str, int]:
 
 def _current_floor_snapshot(report: Dict[str, Any]) -> Dict[str, int]:
     """The counters we ratchet — only these may not regress."""
+    validation_counts = report["validation_counts"]
     snap = {
         "tier_b": report["tier_totals"]["tier_b"],
         "tier_a": report["tier_totals"]["tier_a"],
@@ -271,8 +272,15 @@ def _current_floor_snapshot(report: Dict[str, Any]) -> Dict[str, int]:
     }
     for f in TIER_B_FIELDS + TIER_A_FIELDS:
         snap[f"field_{f}"] = report["field_counts"].get(f, 0)
-    for s in ("certified", "validated"):
-        snap[f"validation_{s}"] = report["validation_counts"].get(s, 0)
+    snap["validation_certified"] = validation_counts.get("certified", 0)
+    # `certified` is a stricter validation tier than `validated`. Treat
+    # validation_validated as a cumulative "validated or better" floor so
+    # promoting evidence from validated -> certified cannot look like a
+    # regression in the lower tier.
+    snap["validation_validated"] = (
+        validation_counts.get("certified", 0)
+        + validation_counts.get("validated", 0)
+    )
     return snap
 
 

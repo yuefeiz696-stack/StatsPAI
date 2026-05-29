@@ -36,7 +36,7 @@ def honest_did(
     result: CausalResult,
     e: int = 0,
     m_grid: Optional[List[float]] = None,
-    method: str = 'smoothness',
+    method: str = "smoothness",
     alpha: float = 0.05,
 ) -> pd.DataFrame:
     """
@@ -100,32 +100,36 @@ def honest_did(
         violations can be as large as the largest pre violation.
 
     See Rambachan & Roth (2023, *ReStud*), Section 2.
+
+    References
+    ----------
+    Rambachan, A. and Roth, J. (2023). A more credible approach to parallel
+    trends. *Review of Economic Studies*. [@rambachan2023more]
     """
     es = _extract_event_study(result)
     z_crit = stats.norm.ppf(1 - alpha / 2)
 
     # Find the target period
-    target_row = es[es['relative_time'] == e]
+    target_row = es[es["relative_time"] == e]
     if len(target_row) == 0:
         raise ValueError(f"No event study estimate at relative time e={e}")
 
-    theta_hat = float(target_row['att'].iloc[0])
-    se_hat = float(target_row['se'].iloc[0])
+    theta_hat = float(target_row["att"].iloc[0])
+    se_hat = float(target_row["se"].iloc[0])
 
     # Pre-treatment estimates (for calibrating M)
-    pre = es[es['relative_time'] < 0].sort_values('relative_time')
-    pre_atts = pre['att'].values
-    pre_ses = pre['se'].values
+    pre = es[es["relative_time"] < 0].sort_values("relative_time")
+    pre_atts = pre["att"].values
+    pre_ses = pre["se"].values
 
     # Default M grid: multiples of SE
     if m_grid is None:
         sigma = se_hat
-        m_grid = [0, 0.5 * sigma, sigma, 1.5 * sigma, 2.0 * sigma,
-                  3.0 * sigma]
+        m_grid = [0, 0.5 * sigma, sigma, 1.5 * sigma, 2.0 * sigma, 3.0 * sigma]
 
     rows = []
 
-    if method == 'smoothness':
+    if method == "smoothness":
         # Smoothness bound: worst-case bias = M × (number of post periods from base)
         # For relative time e, the bias is bounded by M × (e + 1)
         # (each period can drift by at most M)
@@ -137,14 +141,16 @@ def honest_did(
             ci_upper = theta_hat + bias_bound + z_crit * se_hat
             rejects = not (ci_lower <= 0 <= ci_upper)
 
-            rows.append({
-                'M': round(M, 6),
-                'ci_lower': round(ci_lower, 6),
-                'ci_upper': round(ci_upper, 6),
-                'rejects_zero': rejects,
-            })
+            rows.append(
+                {
+                    "M": round(M, 6),
+                    "ci_lower": round(ci_lower, 6),
+                    "ci_upper": round(ci_upper, 6),
+                    "rejects_zero": rejects,
+                }
+            )
 
-    elif method == 'relative_magnitude':
+    elif method == "relative_magnitude":
         # Relative magnitude: |δ_post| ≤ M̄ × max|δ_pre|
         if len(pre_atts) == 0:
             max_pre = 0
@@ -157,17 +163,18 @@ def honest_did(
             ci_upper = theta_hat + bias_bound + z_crit * se_hat
             rejects = not (ci_lower <= 0 <= ci_upper)
 
-            rows.append({
-                'M': round(M_bar, 6),
-                'ci_lower': round(ci_lower, 6),
-                'ci_upper': round(ci_upper, 6),
-                'rejects_zero': rejects,
-            })
+            rows.append(
+                {
+                    "M": round(M_bar, 6),
+                    "ci_lower": round(ci_lower, 6),
+                    "ci_upper": round(ci_upper, 6),
+                    "rejects_zero": rejects,
+                }
+            )
 
     else:
         raise ValueError(
-            f"method must be 'smoothness' or 'relative_magnitude', "
-            f"got '{method}'"
+            f"method must be 'smoothness' or 'relative_magnitude', " f"got '{method}'"
         )
 
     return pd.DataFrame(rows)
@@ -176,7 +183,7 @@ def honest_did(
 def breakdown_m(
     result: CausalResult,
     e: int = 0,
-    method: str = 'smoothness',
+    method: str = "smoothness",
     alpha: float = 0.05,
 ) -> float:
     """
@@ -218,12 +225,12 @@ def breakdown_m(
     """
     es = _extract_event_study(result)
 
-    target = es[es['relative_time'] == e]
+    target = es[es["relative_time"] == e]
     if len(target) == 0:
         raise ValueError(f"No estimate at relative time e={e}")
 
-    theta = float(target['att'].iloc[0])
-    se = float(target['se'].iloc[0])
+    theta = float(target["att"].iloc[0])
+    se = float(target["se"].iloc[0])
     z_crit = stats.norm.ppf(1 - alpha / 2)
 
     n_drift = max(e + 1, 1)
@@ -236,6 +243,7 @@ def breakdown_m(
 # ======================================================================
 # Polymorphic event-study extractor
 # ======================================================================
+
 
 def _extract_event_study(result: CausalResult) -> pd.DataFrame:
     """Locate the event-study table inside a CausalResult.
@@ -256,10 +264,10 @@ def _extract_event_study(result: CausalResult) -> pd.DataFrame:
         If no event study can be found.
     """
     info = result.model_info or {}
-    es = info.get('event_study')
-    if es is None and getattr(result, 'detail', None) is not None:
+    es = info.get("event_study")
+    if es is None and getattr(result, "detail", None) is not None:
         det = result.detail
-        if {'relative_time', 'att', 'se'}.issubset(det.columns):
+        if {"relative_time", "att", "se"}.issubset(det.columns):
             es = det
     if es is None:
         raise ValueError(
@@ -270,17 +278,15 @@ def _extract_event_study(result: CausalResult) -> pd.DataFrame:
     # Defensive copy — callers mutate / filter it.
     es = es.copy()
     # If aggte produced uniform-band columns but no explicit 'type', ignore.
-    required = {'relative_time', 'att', 'se'}
+    required = {"relative_time", "att", "se"}
     missing = required - set(es.columns)
     if missing:
-        raise ValueError(
-            f"Event-study table is missing required columns: {missing}"
-        )
+        raise ValueError(f"Event-study table is missing required columns: {missing}")
     return es
 
 
 # Citation
-CausalResult._CITATIONS['honest_did'] = (
+CausalResult._CITATIONS["honest_did"] = (
     "@article{rambachan2023more,\n"
     "  title={A More Credible Approach to Parallel Trends},\n"
     "  author={Rambachan, Ashesh and Roth, Jonathan},\n"

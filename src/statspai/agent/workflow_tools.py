@@ -78,6 +78,49 @@ WORKFLOW_TOOL_SPECS: List[Dict[str, Any]] = [
         ),
     },
     {
+        'name': 'interpret_result',
+        'description': (
+            "Natural-language interpretation of a fitted result. When the "
+            "connected MCP client advertised sampling, this REUSES the "
+            "agent's own model (no API key) to explain the estimate, its "
+            "uncertainty, and what the design does / does not identify — "
+            "optionally focused by a `question` and tuned for an "
+            "`audience`. With no sampling available it falls back to a "
+            "deterministic structured brief: it NEVER fabricates a "
+            "narrative. Every claim is grounded in the result's own "
+            "numbers — the model is told not to invent estimates. Pass "
+            "the result_id from an earlier as_handle=true call."
+        ),
+        'input_schema': {
+            'type': 'object',
+            'properties': {
+                'result_id': {
+                    'type': 'string',
+                    'description': "Handle to a previously-fitted result.",
+                },
+                'question': {
+                    'type': 'string',
+                    'description': (
+                        "Optional specific question to focus the "
+                        "interpretation (e.g. 'is the effect "
+                        "economically meaningful?')."
+                    ),
+                },
+                'audience': {
+                    'type': 'string',
+                    'enum': ['researcher', 'policymaker', 'general'],
+                    'default': 'researcher',
+                    'description': (
+                        "Tone / depth: 'researcher' (precise, names "
+                        "identification assumptions), 'policymaker' "
+                        "(plain, decision-focused), 'general' (no jargon)."
+                    ),
+                },
+            },
+            'required': ['result_id'],
+        },
+    },
+    {
         'name': 'sensitivity_from_result',
         'description': (
             "Run sp.sensitivity / sp.evalue / sp.oster_bounds / "
@@ -412,6 +455,9 @@ def execute_workflow_tool(
     if name in {'brief_result', 'brief'}:
         return _tool_brief(rid_arg)
 
+    if name == 'interpret_result':
+        return _tool_interpret_result(rid_arg, arguments, detail=detail)
+
     if name == 'sensitivity_from_result':
         return _tool_sensitivity_from_result(
             rid_arg, arguments, detail=detail, as_handle=as_handle)
@@ -503,6 +549,178 @@ def _tool_brief(rid: Optional[str]) -> Dict[str, Any]:
             'remediation': remediate(e, context={'tool': 'brief'}),
         }
     return {'brief': str(text), 'result_id': rid}
+
+
+# ----------------------------------------------------------------------
+# interpret_result — natural-language explanation, LLM-in-the-loop
+# ----------------------------------------------------------------------
+
+_AUDIENCE_TONE = {
+    'researcher': (
+        "for an applied econometrician: be precise and name the "
+        "identification assumptions the design relies on"
+    ),
+    'policymaker': (
+        "for a policymaker: plain language, focus on the magnitude and "
+        "what it implies for decisions"
+    ),
+    'general': "for a general audience: no jargon, explain any term you use",
+}
+
+
+def _result_summary_for_interpretation(obj: Any, *,
+                                       detail: str) -> Dict[str, Any]:
+    """Structured, JSON-safe summary the interpretation is grounded in.
+
+    Grounding the LLM in the result's *own* numbers (estimate / SE / CI /
+    method / diagnostics) is what keeps the natural-language explanation
+    honest — the model is asked to explain these, never to invent them.
+    Best-effort: every extraction is optional so an exotic cached object
+    still yields *something* to interpret.
+    """
+    summary: Dict[str, Any] = {'result_class': type(obj).__name__}
+
+    import statspai as sp
+    brief_fn = getattr(sp, 'brief', None)
+    if callable(brief_fn):
+        try:
+            summary['brief'] = str(brief_fn(obj))
+        except Exception:
+            # brief() is a convenience; its failure must not sink the
+            # whole interpretation — the structured fields below carry
+            # the load.
+            pass
+
+    try:
+        from .tools import _default_serializer
+        struct = _default_serializer(obj, detail=detail)
+        if isinstance(struct, dict) and struct:
+            summary['fields'] = struct
+    except Exception:
+        pass
+
+    return summary
+
+
+def _interpretation_prompt(summary: Dict[str, Any], *,
+                           question: str, audience: str) -> str:
+    """Assemble the sampling prompt — anti-hallucination by construction."""
+    import json as _json
+
+    tone = _AUDIENCE_TONE.get(audience, _AUDIENCE_TONE['researcher'])
+    lines = [
+        f"Interpret the following StatsPAI estimation result {tone}.",
+        "",
+        "Ground EVERY claim in the numbers below. Do NOT invent or alter "
+        "any estimate, standard error, confidence interval, p-value, or "
+        "sample size. If a quantity is not present, say it is not reported "
+        "rather than guessing. Keep it to 3-6 sentences.",
+        "",
+        "RESULT (JSON):",
+        _json.dumps(summary, indent=2, default=str),
+    ]
+    if question:
+        lines += ["", f"Focus specifically on this question: {question}"]
+    return "\n".join(lines)
+
+
+def _deterministic_interpretation(obj: Any,
+                                  summary: Dict[str, Any]) -> str:
+    """Templated narrative used when no LLM is available — no fabrication.
+
+    Prefers the one-line ``sp.brief`` text; otherwise stitches a sentence
+    or two from whatever scalar fields the serializer surfaced.
+    """
+    brief = summary.get('brief')
+    if isinstance(brief, str) and brief.strip():
+        return brief.strip()
+
+    fields = summary.get('fields') or {}
+    parts: List[str] = []
+    method = fields.get('method')
+    if method:
+        parts.append(f"Method: {method}.")
+    est = fields.get('estimate')
+    se = fields.get('std_error')
+    if est is not None:
+        sentence = f"Point estimate: {est:.4g}"
+        if se is not None:
+            sentence += f" (standard error {se:.4g})"
+        parts.append(sentence + ".")
+    lo, hi = fields.get('conf_low'), fields.get('conf_high')
+    if lo is not None and hi is not None:
+        parts.append(f"95% confidence interval: [{lo:.4g}, {hi:.4g}].")
+    p = fields.get('p_value')
+    if p is not None:
+        parts.append(f"p-value: {p:.4g}.")
+    if not parts:
+        return (
+            f"Fitted result of type {type(obj).__name__}; it exposes no "
+            "scalar estimate for a templated summary. Connect a "
+            "sampling-capable MCP client for a richer interpretation."
+        )
+    return " ".join(parts)
+
+
+def _tool_interpret_result(rid: Optional[str],
+                           arguments: Dict[str, Any],
+                           *, detail: str) -> Dict[str, Any]:
+    obj = _need_result(rid)
+    if isinstance(obj, dict) and 'error' in obj:
+        return obj
+
+    question = str(arguments.get('question') or '').strip()
+    audience = arguments.get('audience') or 'researcher'
+
+    summary = _result_summary_for_interpretation(obj, detail=detail)
+
+    out: Dict[str, Any] = {
+        'result_id': rid,
+        'result_class': type(obj).__name__,
+        'audience': audience,
+        'summary': summary,
+    }
+    if question:
+        out['question'] = question
+
+    # ── The wiring ──────────────────────────────────────────────────
+    # resolve_llm_client() returns a SamplingLLMClient when the MCP
+    # client advertised capabilities.sampling (reusing the agent's own
+    # model, no API key), else None so we degrade to the deterministic
+    # brief. It never raises — resolution failure means "no LLM".
+    from ..causal_llm.sampling_client import resolve_llm_client
+    client = resolve_llm_client()
+
+    if client is None:
+        out['interpretation'] = _deterministic_interpretation(obj, summary)
+        out['backend'] = 'deterministic'
+        out['note'] = (
+            "No MCP sampling advertised; returned a deterministic brief. "
+            "Connect a sampling-capable client for a natural-language "
+            "explanation that reuses the agent's own model."
+        )
+        return out
+
+    prompt = _interpretation_prompt(summary, question=question,
+                                    audience=audience)
+    try:
+        text = client.chat('user', prompt)
+    except Exception as exc:
+        # Mid-call sampling failure (timeout / client error). Fall back
+        # LOUDLY: surface the error in the payload (CLAUDE.md §3 #7 —
+        # 失败要响亮) rather than returning nothing or a wrong narrative.
+        out['interpretation'] = _deterministic_interpretation(obj, summary)
+        out['backend'] = 'deterministic'
+        out['sampling_error'] = f"{type(exc).__name__}: {exc}"
+        out['note'] = (
+            "MCP sampling failed mid-call; fell back to the deterministic "
+            "brief. See sampling_error."
+        )
+        return out
+
+    out['interpretation'] = str(text).strip()
+    out['backend'] = getattr(client, 'name', 'mcp_sampling')
+    return out
 
 
 def _tool_sensitivity_from_result(rid: Optional[str],

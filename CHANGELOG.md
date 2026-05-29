@@ -32,6 +32,15 @@ All notable changes to StatsPAI will be documented in this file.
   `sp.llm_dag_propose` (and friends) can reuse the connected agent's own
   model with no extra API key, falling back to the deterministic heuristic
   when sampling is unavailable.
+- **`interpret_result` MCP tool** — natural-language explanation of a
+  fitted result from its cached handle. Wires `resolve_llm_client()` into
+  the server's tool-dispatch path: when the client advertised sampling it
+  reuses the agent's own model (grounded in the result's own numbers — the
+  model is told not to invent estimates), and degrades to a deterministic
+  structured brief otherwise. Mid-call sampling failures fall back loudly
+  (the error is surfaced in `sampling_error`, never swallowed). Optional
+  `question` / `audience` knobs; exposed as a dataless tool so strict-schema
+  clients dispatch it without a `data_path`.
 - **Auto-tool citation enrichment** — `_enrichment.build_citations` now
   falls back to verified citation tokens in a function's registry
   `reference` field, so hundreds of carded estimators carry citations in

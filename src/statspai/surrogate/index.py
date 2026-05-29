@@ -160,7 +160,9 @@ def _delta_variance(
     var_exp = np.var(h1, ddof=1) / n1 + np.var(h0, ddof=1) / n0
 
     # First-order correction for observational-sample variability.
-    var_obs = float(np.var(resid_obs, ddof=1)) * float(np.var(h_pred_obs)) / max(n_obs, 1)
+    var_obs = (
+        float(np.var(resid_obs, ddof=1)) * float(np.var(h_pred_obs)) / max(n_obs, 1)
+    )
     return var_exp + var_obs
 
 
@@ -297,17 +299,17 @@ def surrogate_index(
         )
     else:
         var = _delta_variance(
-            h=h, T=T_e, resid_obs=resid_obs,
+            h=h,
+            T=T_e,
+            resid_obs=resid_obs,
             h_pred_obs=h_pred_obs,
-            n_exp=len(experimental), n_obs=len(observational),
+            n_exp=len(experimental),
+            n_obs=len(observational),
         )
         se = float(np.sqrt(max(var, 0.0)))
         z = stats.norm.ppf(1 - alpha / 2)
         ci = (est - z * se, est + z * se)
-        pval = (
-            2 * (1 - stats.norm.cdf(abs(est) / se))
-            if se > 0 else float("nan")
-        )
+        pval = 2 * (1 - stats.norm.cdf(abs(est) / se)) if se > 0 else float("nan")
 
     _result = CausalResult(
         method="surrogate_index",
@@ -330,6 +332,7 @@ def surrogate_index(
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             _result,
             function="sp.surrogate.surrogate_index",
@@ -339,7 +342,8 @@ def surrogate_index(
                 "long_term_outcome": long_term_outcome,
                 "covariates": list(covariates) if covariates else None,
                 "model": str(model),
-                "alpha": alpha, "n_boot": n_boot,
+                "alpha": alpha,
+                "n_boot": n_boot,
                 "random_state": random_state,
             },
             data=experimental,
@@ -379,8 +383,7 @@ def long_term_from_short(
     surrogates_waves : sequence of sequences
         ``[wave_1_cols, wave_2_cols, ..., wave_K_cols]`` where each
         ``wave_k_cols`` is a list of column names. Wave ``k`` is assumed
-        measured in both samples.
-    ...
+        measured in both samples (and so on for each of the ``K`` waves).
 
     Notes
     -----
@@ -596,7 +599,9 @@ def proximal_surrogate_index(
         intercept = beta2[0]
         beta_x = beta2[s_end:] if cov_list else None
 
-        def predict(S_exp: np.ndarray, X_exp: Optional[np.ndarray] = None) -> np.ndarray:
+        def predict(
+            S_exp: np.ndarray, X_exp: Optional[np.ndarray] = None
+        ) -> np.ndarray:
             val = intercept + S_exp @ beta_s
             if beta_x is not None and X_exp is not None:
                 val = val + X_exp @ beta_x

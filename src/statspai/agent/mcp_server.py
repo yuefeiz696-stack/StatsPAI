@@ -302,6 +302,7 @@ _DETAIL_LEVELS = ("minimal", "standard", "agent")
 #: dependency was added after the schema was frozen).
 _DATALESS_OVERRIDES = frozenset({"honest_did", "sensitivity",
                                   "audit_result", "brief_result",
+                                  "interpret_result",
                                   "sensitivity_from_result",
                                   "honest_did_from_result",
                                   "plot_from_result",

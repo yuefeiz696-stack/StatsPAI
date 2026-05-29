@@ -40,9 +40,16 @@ def demo_spec():
 
 class TestRenderAgentBlock:
     def test_empty_for_unpopulated_entry(self):
-        # qreg (quantile regression) has no agent-native fields populated
-        block = sp.render_agent_block("qreg")
-        assert block == ""
+        name = "__test_empty_agent_block__"
+        register(FunctionSpec(
+            name=name,
+            category="utils",
+            description="Scratch spec with no agent-native fields.",
+        ))
+        try:
+            assert sp.render_agent_block(name) == ""
+        finally:
+            _REGISTRY.pop(name, None)
 
     def test_renders_header_by_default(self, demo_spec):
         block = sp.render_agent_block(demo_spec.name)

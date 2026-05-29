@@ -34,10 +34,10 @@ def interactive_fe(
     data: pd.DataFrame,
     y: str,
     x: List[str],
-    id: str = 'id',
-    time: str = 'time',
+    id: str = "id",
+    time: str = "time",
     n_factors: int = 1,
-    method: str = 'iterative',
+    method: str = "iterative",
     maxiter: int = 1000,
     tol: float = 1e-6,
     robust: bool = True,
@@ -80,6 +80,11 @@ def interactive_fe(
     >>> result = sp.interactive_fe(df, y='gdp', x=['investment', 'trade'],
     ...                            id='country', time='year', n_factors=2)
     >>> print(result.summary())
+
+    References
+    ----------
+    Bai, J. (2009). Panel data models with interactive fixed effects.
+    *Econometrica*. [@bai2009panel]
     """
     df = data.copy()
     units = df[id].unique()
@@ -92,23 +97,24 @@ def interactive_fe(
     # Create unit and time indices
     unit_map = {u: i for i, u in enumerate(units)}
     time_map = {t: i for i, t in enumerate(times)}
-    df['_uid'] = df[id].map(unit_map)
-    df['_tid'] = df[time].map(time_map)
-    df = df.sort_values(['_uid', '_tid'])
+    df["_uid"] = df[id].map(unit_map)
+    df["_tid"] = df[time].map(time_map)
+    df = df.sort_values(["_uid", "_tid"])
 
     # Reshape to panel matrices (N x T)
     Y_mat = np.full((N, T), np.nan)
     X_mats = [np.full((N, T), np.nan) for _ in range(k)]
 
     for _, row in df.iterrows():
-        i, t = int(row['_uid']), int(row['_tid'])
+        i, t = int(row["_uid"]), int(row["_tid"])
         Y_mat[i, t] = row[y]
         for j, xvar in enumerate(x):
             X_mats[j][i, t] = row[xvar]
 
     # Handle unbalanced panel: create mask
-    x_valid = np.all(np.array(
-        [np.all(np.isfinite(xm), axis=1) for xm in X_mats]), axis=0)
+    x_valid = np.all(
+        np.array([np.all(np.isfinite(xm), axis=1) for xm in X_mats]), axis=0
+    )
     valid = np.all(np.isfinite(Y_mat), axis=1) & x_valid
     if not np.all(valid):
         Y_mat = Y_mat[valid]
@@ -190,35 +196,35 @@ def interactive_fe(
     std_errors = pd.Series(se, index=x)
 
     # R-squared
-    tss = np.sum((Y_mat - Y_mat.mean())**2)
+    tss = np.sum((Y_mat - Y_mat.mean()) ** 2)
     rss = np.sum(residuals**2)
     r2 = 1 - rss / tss
 
     # Eigenvalues of E'E / (NT) for factor diagnostics
-    eigenvalues = (S[:min(10, len(S))]**2) / (N * T)
+    eigenvalues = (S[: min(10, len(S))] ** 2) / (N * T)
 
     return EconometricResults(
         params=params,
         std_errors=std_errors,
         model_info={
-            'model_type': 'Interactive Fixed Effects (Bai 2009)',
-            'n_factors': r,
-            'method': method,
-            'n_iterations': iteration + 1,
-            'converged': iteration < maxiter - 1,
+            "model_type": "Interactive Fixed Effects (Bai 2009)",
+            "n_factors": r,
+            "method": method,
+            "n_iterations": iteration + 1,
+            "converged": iteration < maxiter - 1,
         },
         data_info={
-            'n_obs': N * T,
-            'n_units': N,
-            'n_periods': T,
-            'dep_var': y,
-            'df_resid': N * T - k - r * (N + T - r),
+            "n_obs": N * T,
+            "n_units": N,
+            "n_periods": T,
+            "dep_var": y,
+            "df_resid": N * T - k - r * (N + T - r),
         },
         diagnostics={
-            'r_squared': r2,
-            'sigma2': sigma2,
-            'eigenvalues': eigenvalues.tolist(),
-            'factors': F,
-            'loadings': Lambda,
+            "r_squared": r2,
+            "sigma2": sigma2,
+            "eigenvalues": eigenvalues.tolist(),
+            "factors": F,
+            "loadings": Lambda,
         },
     )

@@ -28,11 +28,13 @@ import pandas as pd
 from scipy import stats, optimize
 
 from ..core.results import CausalResult
+from ..exceptions import DataInsufficient
 
 
 # ======================================================================
 # Public API
 # ======================================================================
+
 
 def sdid(
     data: pd.DataFrame,
@@ -45,9 +47,9 @@ def sdid(
     y: Optional[str] = None,
     treat_unit: Any = None,
     treat_time: Any = None,
-    method: Literal['sdid', 'sc', 'did'] = 'sdid',
+    method: Literal["sdid", "sc", "did"] = "sdid",
     covariates: Optional[List[str]] = None,
-    se_method: Literal['placebo', 'bootstrap', 'jackknife'] = 'placebo',
+    se_method: Literal["placebo", "bootstrap", "jackknife"] = "placebo",
     n_reps: int = 200,
     seed: Optional[int] = None,
     alpha: float = 0.05,
@@ -128,6 +130,12 @@ def sdid(
     ...                 time='year', treat_unit='California',
     ...                 treat_time=1989, method=m)
     ...     print(f"{m:4s}: ATT = {r.estimate:.3f} (SE = {r.se:.3f})")
+
+    References
+    ----------
+    Arkhangelsky, D., Athey, S., Hirshberg, D. A., Imbens, G. W. and Wager, S.
+    (2021). Synthetic difference-in-differences. *American Economic Review*.
+    [@arkhangelsky2021synthetic]
     """
     # --- Resolve canonical/legacy parameter names ---------------------
     if outcome is None:
@@ -142,13 +150,9 @@ def sdid(
     if unit is None or time is None:
         raise TypeError("sdid: `unit` and `time` are required")
     if treated_unit is None:
-        raise TypeError(
-            "sdid: provide `treated_unit` (or legacy alias `treat_unit`)"
-        )
+        raise TypeError("sdid: provide `treated_unit` (or legacy alias `treat_unit`)")
     if treatment_time is None:
-        raise TypeError(
-            "sdid: provide `treatment_time` (or legacy alias `treat_time`)"
-        )
+        raise TypeError("sdid: provide `treatment_time` (or legacy alias `treat_time`)")
 
     # Internal variable names kept short for the math below.
     y = outcome
@@ -163,7 +167,10 @@ def sdid(
 
     # --- Build panel matrix -------------------------------------------
     panel = data.pivot_table(
-        index=unit, columns=time, values=y, aggfunc='first',
+        index=unit,
+        columns=time,
+        values=y,
+        aggfunc="first",
     )
     all_times = sorted(panel.columns.tolist())
     treated_mask = panel.index.isin(treat_unit)
@@ -173,45 +180,72 @@ def sdid(
     post_times = [t for t in all_times if t >= treat_time]
 
     if len(pre_times) < 2:
-        raise ValueError("Need at least 2 pre-treatment periods.")
+        raise DataInsufficient("Need at least 2 pre-treatment periods.")
     if len(post_times) < 1:
-        raise ValueError("Need at least 1 post-treatment period.")
+        raise DataInsufficient("Need at least 1 post-treatment period.")
 
     n_tr = int(treated_mask.sum())
     n_co = int(control_mask.sum())
     T_pre = len(pre_times)
     T_post = len(post_times)
 
-    Y_co_pre = panel.loc[control_mask, pre_times].values    # (N_co, T_pre)
-    Y_co_post = panel.loc[control_mask, post_times].values   # (N_co, T_post)
-    Y_tr_pre = panel.loc[treated_mask, pre_times].values     # (N_tr, T_pre)
-    Y_tr_post = panel.loc[treated_mask, post_times].values   # (N_tr, T_post)
+    Y_co_pre = panel.loc[control_mask, pre_times].values  # (N_co, T_pre)
+    Y_co_post = panel.loc[control_mask, post_times].values  # (N_co, T_post)
+    Y_tr_pre = panel.loc[treated_mask, pre_times].values  # (N_tr, T_pre)
+    Y_tr_post = panel.loc[treated_mask, post_times].values  # (N_tr, T_post)
 
     # --- Solve weights ------------------------------------------------
     omega, lam = _compute_weights(
-        Y_co_pre, Y_co_post, Y_tr_pre, method, n_co, T_pre,
+        Y_co_pre,
+        Y_co_post,
+        Y_tr_pre,
+        method,
+        n_co,
+        T_pre,
     )
 
     # --- Point estimate -----------------------------------------------
     tau = _estimate_tau(
-        Y_co_pre, Y_co_post, Y_tr_pre, Y_tr_post, omega, lam,
+        Y_co_pre,
+        Y_co_post,
+        Y_tr_pre,
+        Y_tr_post,
+        omega,
+        lam,
     )
 
     # --- Standard errors ----------------------------------------------
-    if se_method == 'placebo':
+    if se_method == "placebo":
         se, tau_reps = _se_placebo(
-            Y_co_pre, Y_co_post, Y_tr_pre, Y_tr_post,
-            method, n_co, T_pre,
+            Y_co_pre,
+            Y_co_post,
+            Y_tr_pre,
+            Y_tr_post,
+            method,
+            n_co,
+            T_pre,
         )
-    elif se_method == 'bootstrap':
+    elif se_method == "bootstrap":
         se, tau_reps = _se_bootstrap(
-            Y_co_pre, Y_co_post, Y_tr_pre, Y_tr_post,
-            method, n_co, T_pre, n_reps, rng,
+            Y_co_pre,
+            Y_co_post,
+            Y_tr_pre,
+            Y_tr_post,
+            method,
+            n_co,
+            T_pre,
+            n_reps,
+            rng,
         )
-    elif se_method == 'jackknife':
+    elif se_method == "jackknife":
         se, tau_reps = _se_jackknife(
-            Y_co_pre, Y_co_post, Y_tr_pre, Y_tr_post,
-            method, n_co, T_pre,
+            Y_co_pre,
+            Y_co_post,
+            Y_tr_pre,
+            Y_tr_post,
+            method,
+            n_co,
+            T_pre,
         )
     else:
         raise ValueError(f"Unknown se_method: {se_method!r}")
@@ -228,53 +262,59 @@ def sdid(
     # Observed treated trajectory (average over treated units)
     Y_tr_all = panel.loc[treated_mask, all_times].values.mean(axis=0)  # (T,)
     # Synthetic trajectory
-    Y_synth_pre = omega @ Y_co_pre    # (T_pre,)
+    Y_synth_pre = omega @ Y_co_pre  # (T_pre,)
     Y_synth_post = omega @ Y_co_post  # (T_post,)
     # Adjust intercept for SDID / DID
-    if method in ('sdid', 'did'):
+    if method in ("sdid", "did"):
         intercept = float(Y_tr_pre.mean(axis=0) @ lam) - float(omega @ (Y_co_pre @ lam))
         Y_synth_pre = Y_synth_pre + intercept
         Y_synth_post = Y_synth_post + intercept
     Y_synth_all = np.concatenate([Y_synth_pre, Y_synth_post])
 
     # Weight tables
-    weight_df = pd.DataFrame({
-        'unit': control_names,
-        'weight': omega,
-    }).sort_values('weight', ascending=False).reset_index(drop=True)
+    weight_df = (
+        pd.DataFrame(
+            {
+                "unit": control_names,
+                "weight": omega,
+            }
+        )
+        .sort_values("weight", ascending=False)
+        .reset_index(drop=True)
+    )
 
-    time_weight_series = pd.Series(lam, index=pre_times, name='time_weight')
+    time_weight_series = pd.Series(lam, index=pre_times, name="time_weight")
 
     method_labels = {
-        'sdid': 'Synthetic Difference-in-Differences',
-        'sc': 'Synthetic Control',
-        'did': 'Difference-in-Differences',
+        "sdid": "Synthetic Difference-in-Differences",
+        "sc": "Synthetic Control",
+        "did": "Difference-in-Differences",
     }
 
     model_info = {
-        'estimator': method,
-        'estimator_label': method_labels[method],
-        'n_treated': n_tr,
-        'n_control': n_co,
-        'T_pre': T_pre,
-        'T_post': T_post,
-        'treat_time': treat_time,
-        'treated_units': treated_names,
-        'control_units': control_names,
-        'unit_weights': weight_df,
-        'time_weights': time_weight_series,
-        'se_method': se_method,
-        'n_reps': n_reps if se_method in ('bootstrap',) else None,
-        'Y_obs': pd.Series(Y_tr_all, index=all_times, name='treated'),
-        'Y_synth': pd.Series(Y_synth_all, index=all_times, name='synthetic'),
-        'pre_times': pre_times,
-        'post_times': post_times,
-        'all_times': all_times,
+        "estimator": method,
+        "estimator_label": method_labels[method],
+        "n_treated": n_tr,
+        "n_control": n_co,
+        "T_pre": T_pre,
+        "T_post": T_post,
+        "treat_time": treat_time,
+        "treated_units": treated_names,
+        "control_units": control_names,
+        "unit_weights": weight_df,
+        "time_weights": time_weight_series,
+        "se_method": se_method,
+        "n_reps": n_reps if se_method in ("bootstrap",) else None,
+        "Y_obs": pd.Series(Y_tr_all, index=all_times, name="treated"),
+        "Y_synth": pd.Series(Y_synth_all, index=all_times, name="synthetic"),
+        "pre_times": pre_times,
+        "post_times": post_times,
+        "all_times": all_times,
     }
 
     return CausalResult(
-        method=f'{method_labels[method]} (Arkhangelsky et al. 2021)',
-        estimand='ATT',
+        method=f"{method_labels[method]} (Arkhangelsky et al. 2021)",
+        estimand="ATT",
         estimate=float(tau),
         se=se,
         pvalue=pvalue,
@@ -282,7 +322,7 @@ def sdid(
         alpha=alpha,
         n_obs=len(data),
         model_info=model_info,
-        _citation_key='sdid',
+        _citation_key="sdid",
     )
 
 
@@ -290,24 +330,26 @@ def sdid(
 # Convenience wrappers (mirror R package names)
 # ======================================================================
 
+
 def synthdid_estimate(data, y, unit, time, treat_unit, treat_time, **kw):
     """R-style alias: ``synthdid::synthdid_estimate``."""
-    return sdid(data, y, unit, time, treat_unit, treat_time, method='sdid', **kw)
+    return sdid(data, y, unit, time, treat_unit, treat_time, method="sdid", **kw)
 
 
 def sc_estimate(data, y, unit, time, treat_unit, treat_time, **kw):
     """R-style alias: ``synthdid::sc_estimate``."""
-    return sdid(data, y, unit, time, treat_unit, treat_time, method='sc', **kw)
+    return sdid(data, y, unit, time, treat_unit, treat_time, method="sc", **kw)
 
 
 def did_estimate(data, y, unit, time, treat_unit, treat_time, **kw):
     """R-style alias: ``synthdid::did_estimate``."""
-    return sdid(data, y, unit, time, treat_unit, treat_time, method='did', **kw)
+    return sdid(data, y, unit, time, treat_unit, treat_time, method="did", **kw)
 
 
 # ======================================================================
 # Placebo analysis
 # ======================================================================
+
 
 def synthdid_placebo(
     data: pd.DataFrame,
@@ -316,7 +358,7 @@ def synthdid_placebo(
     time: str,
     treat_unit: Any,
     treat_time: Any,
-    method: Literal['sdid', 'sc', 'did'] = 'sdid',
+    method: Literal["sdid", "sc", "did"] = "sdid",
     **kw,
 ) -> pd.DataFrame:
     """
@@ -324,9 +366,8 @@ def synthdid_placebo(
 
     Replicates ``synthdid::synthdid_placebo``.
 
-    Parameters
-    ----------
-    Same as :func:`sdid`, plus any extra keyword arguments.
+    Accepts the same arguments as :func:`sdid`, plus any extra keyword
+    arguments.
 
     Returns
     -------
@@ -337,14 +378,14 @@ def synthdid_placebo(
     if not isinstance(treat_unit, (list, tuple, np.ndarray)):
         treat_unit = [treat_unit]
 
-    panel = data.pivot_table(index=unit, columns=time, values=y, aggfunc='first')
+    panel = data.pivot_table(index=unit, columns=time, values=y, aggfunc="first")
     control_units = [u for u in panel.index if u not in treat_unit]
 
     # Subset data to exclude the real treated units
     control_data = data[~data[unit].isin(treat_unit)]
 
     # Merge defaults with caller overrides
-    placebo_kw = {'n_reps': 50}
+    placebo_kw = {"n_reps": 50}
     placebo_kw.update(kw)
 
     rows = []
@@ -352,16 +393,22 @@ def synthdid_placebo(
         try:
             r = sdid(
                 control_data,
-                y=y, unit=unit, time=time,
-                treat_unit=cu, treat_time=treat_time,
-                method=method, **placebo_kw,
+                y=y,
+                unit=unit,
+                time=time,
+                treat_unit=cu,
+                treat_time=treat_time,
+                method=method,
+                **placebo_kw,
             )
-            rows.append({
-                'unit': cu,
-                'estimate': r.estimate,
-                'se': r.se,
-                'pvalue': r.pvalue,
-            })
+            rows.append(
+                {
+                    "unit": cu,
+                    "estimate": r.estimate,
+                    "se": r.se,
+                    "pvalue": r.pvalue,
+                }
+            )
         except Exception:
             continue
 
@@ -372,12 +419,13 @@ def synthdid_placebo(
 # Plotting
 # ======================================================================
 
+
 def synthdid_plot(
     result: CausalResult,
     ax=None,
     figsize: tuple = (10, 6),
-    treated_color: str = '#2C3E50',
-    synth_color: str = '#E74C3C',
+    treated_color: str = "#2C3E50",
+    synth_color: str = "#E74C3C",
     ci_alpha: float = 0.15,
     title: Optional[str] = None,
 ):
@@ -406,48 +454,58 @@ def synthdid_plot(
         raise ImportError("matplotlib required. Install: pip install matplotlib")
 
     mi = result.model_info
-    times = mi['all_times']
-    Y_obs = mi['Y_obs'].values
-    Y_syn = mi['Y_synth'].values
-    treat_time = mi['treat_time']
+    times = mi["all_times"]
+    Y_obs = mi["Y_obs"].values
+    Y_syn = mi["Y_synth"].values
+    treat_time = mi["treat_time"]
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure()
 
-    ax.plot(times, Y_obs, color=treated_color, linewidth=2, label='Treated')
-    ax.plot(times, Y_syn, color=synth_color, linewidth=2,
-            linestyle='--', label='Synthetic')
+    ax.plot(times, Y_obs, color=treated_color, linewidth=2, label="Treated")
+    ax.plot(
+        times, Y_syn, color=synth_color, linewidth=2, linestyle="--", label="Synthetic"
+    )
 
     # Shade post-treatment gap
     post_mask = np.array([t >= treat_time for t in times])
     ax.fill_between(
         np.array(times)[post_mask],
-        Y_obs[post_mask], Y_syn[post_mask],
-        alpha=ci_alpha, color=synth_color, label='Treatment effect',
+        Y_obs[post_mask],
+        Y_syn[post_mask],
+        alpha=ci_alpha,
+        color=synth_color,
+        label="Treatment effect",
     )
 
-    ax.axvline(x=treat_time, color='gray', linestyle=':', linewidth=1,
-               alpha=0.7, label='Treatment onset')
+    ax.axvline(
+        x=treat_time,
+        color="gray",
+        linestyle=":",
+        linewidth=1,
+        alpha=0.7,
+        label="Treatment onset",
+    )
 
     # Time weight shading (pre-period emphasis)
-    if mi.get('estimator') in ('sdid',):
-        tw = mi['time_weights']
-        pre_t = mi['pre_times']
+    if mi.get("estimator") in ("sdid",):
+        tw = mi["time_weights"]
+        pre_t = mi["pre_times"]
         max_w = tw.max() if tw.max() > 0 else 1
         for t_val, w_val in zip(pre_t, tw.values):
-            ax.axvspan(t_val - 0.4, t_val + 0.4,
-                       alpha=0.08 * (w_val / max_w), color='blue')
+            ax.axvspan(
+                t_val - 0.4, t_val + 0.4, alpha=0.08 * (w_val / max_w), color="blue"
+            )
 
-    ax.set_xlabel('Time', fontsize=11)
-    ax.set_ylabel(f'Outcome', fontsize=11)
-    label = mi.get('estimator_label', result.method)
-    ax.set_title(title or f'{label}: ATT = {result.estimate:.3f}',
-                 fontsize=13)
+    ax.set_xlabel("Time", fontsize=11)
+    ax.set_ylabel(f"Outcome", fontsize=11)
+    label = mi.get("estimator_label", result.method)
+    ax.set_title(title or f"{label}: ATT = {result.estimate:.3f}", fontsize=13)
     ax.legend(fontsize=9, frameon=False)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     fig.tight_layout()
     return fig, ax
 
@@ -480,19 +538,19 @@ def synthdid_units_plot(
     except ImportError:
         raise ImportError("matplotlib required.")
 
-    w = result.model_info['unit_weights'].head(top_n).copy()
-    w = w[w['weight'] > 1e-6].sort_values('weight', ascending=True)
+    w = result.model_info["unit_weights"].head(top_n).copy()
+    w = w[w["weight"] > 1e-6].sort_values("weight", ascending=True)
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure()
 
-    ax.barh(w['unit'].astype(str), w['weight'], color='#3498DB')
-    ax.set_xlabel('Weight', fontsize=11)
-    ax.set_title('Donor Unit Weights', fontsize=13)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.barh(w["unit"].astype(str), w["weight"], color="#3498DB")
+    ax.set_xlabel("Weight", fontsize=11)
+    ax.set_title("Donor Unit Weights", fontsize=13)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     fig.tight_layout()
     return fig, ax
 
@@ -515,9 +573,9 @@ def synthdid_rmse_plot(
         raise ImportError("matplotlib required.")
 
     mi = result.model_info
-    pre_t = mi['pre_times']
-    Y_obs_pre = mi['Y_obs'][pre_t].values
-    Y_syn_pre = mi['Y_synth'][pre_t].values
+    pre_t = mi["pre_times"]
+    Y_obs_pre = mi["Y_obs"][pre_t].values
+    Y_syn_pre = mi["Y_synth"][pre_t].values
     gap = Y_obs_pre - Y_syn_pre
 
     if ax is None:
@@ -525,14 +583,14 @@ def synthdid_rmse_plot(
     else:
         fig = ax.get_figure()
 
-    ax.bar(range(len(pre_t)), gap ** 2, color='#95A5A6', alpha=0.7)
+    ax.bar(range(len(pre_t)), gap**2, color="#95A5A6", alpha=0.7)
     ax.set_xticks(range(len(pre_t)))
     ax.set_xticklabels([str(t) for t in pre_t], rotation=45, fontsize=8)
-    ax.set_ylabel('Squared Gap', fontsize=11)
-    rmse = np.sqrt(np.mean(gap ** 2))
-    ax.set_title(f'Pre-treatment Fit (RMSE = {rmse:.4f})', fontsize=13)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.set_ylabel("Squared Gap", fontsize=11)
+    rmse = np.sqrt(np.mean(gap**2))
+    ax.set_title(f"Pre-treatment Fit (RMSE = {rmse:.4f})", fontsize=13)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     fig.tight_layout()
     return fig, ax
 
@@ -540,6 +598,7 @@ def synthdid_rmse_plot(
 # ======================================================================
 # Example dataset
 # ======================================================================
+
 
 def california_prop99() -> pd.DataFrame:
     """
@@ -567,15 +626,45 @@ def california_prop99() -> pd.DataFrame:
     rng = np.random.default_rng(99)
 
     states = [
-        'Alabama', 'Arkansas', 'Colorado', 'Connecticut', 'Delaware',
-        'Georgia', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
-        'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Minnesota',
-        'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
-        'New Hampshire', 'New Mexico', 'North Carolina', 'North Dakota',
-        'Ohio', 'Oklahoma', 'Pennsylvania', 'Rhode Island',
-        'South Carolina', 'South Dakota', 'Tennessee', 'Texas',
-        'Utah', 'Vermont', 'Virginia', 'West Virginia',
-        'Wisconsin', 'Wyoming', 'California',
+        "Alabama",
+        "Arkansas",
+        "Colorado",
+        "Connecticut",
+        "Delaware",
+        "Georgia",
+        "Idaho",
+        "Illinois",
+        "Indiana",
+        "Iowa",
+        "Kansas",
+        "Kentucky",
+        "Louisiana",
+        "Maine",
+        "Minnesota",
+        "Mississippi",
+        "Missouri",
+        "Montana",
+        "Nebraska",
+        "Nevada",
+        "New Hampshire",
+        "New Mexico",
+        "North Carolina",
+        "North Dakota",
+        "Ohio",
+        "Oklahoma",
+        "Pennsylvania",
+        "Rhode Island",
+        "South Carolina",
+        "South Dakota",
+        "Tennessee",
+        "Texas",
+        "Utah",
+        "Vermont",
+        "Virginia",
+        "West Virginia",
+        "Wisconsin",
+        "Wyoming",
+        "California",
     ]
 
     years = list(range(1970, 2001))
@@ -591,19 +680,20 @@ def california_prop99() -> pd.DataFrame:
     for i, st in enumerate(states):
         for yr in years:
             t = yr - 1970
-            val = (base_levels[i]
-                   + time_trend * t
-                   + state_trends[i] * t
-                   + rng.normal(0, 3))
+            val = (
+                base_levels[i] + time_trend * t + state_trends[i] * t + rng.normal(0, 3)
+            )
             # California treatment effect (≈ -25 packs decline post-1989)
-            if st == 'California' and yr >= treat_year:
+            if st == "California" and yr >= treat_year:
                 val -= 25 * (1 - np.exp(-0.3 * (yr - treat_year + 1)))
-            rows.append({
-                'state': st,
-                'year': yr,
-                'packspercapita': max(val, 5),  # floor at 5
-                'treated': 1 if st == 'California' and yr >= treat_year else 0,
-            })
+            rows.append(
+                {
+                    "state": st,
+                    "year": yr,
+                    "packspercapita": max(val, 5),  # floor at 5
+                    "treated": 1 if st == "California" and yr >= treat_year else 0,
+                }
+            )
 
     return pd.DataFrame(rows)
 
@@ -611,6 +701,7 @@ def california_prop99() -> pd.DataFrame:
 # ======================================================================
 # Internal: Weight solvers
 # ======================================================================
+
 
 def _compute_weights(
     Y_co_pre: np.ndarray,
@@ -622,14 +713,14 @@ def _compute_weights(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Compute unit weights (omega) and time weights (lambda)."""
 
-    y_tr_pre_mean = Y_tr_pre.mean(axis=0)   # (T_pre,)
+    y_tr_pre_mean = Y_tr_pre.mean(axis=0)  # (T_pre,)
     y_co_post_mean = Y_co_post.mean(axis=1)  # (N_co,)
 
-    if method == 'did':
+    if method == "did":
         # Uniform weights
         omega = np.ones(n_co) / n_co
         lam = np.ones(T_pre) / T_pre
-    elif method == 'sc':
+    elif method == "sc":
         # Unit weights only, uniform time weights
         omega = _solve_unit_weights(Y_co_pre, y_tr_pre_mean, n_co, T_pre)
         lam = np.ones(T_pre) / T_pre
@@ -677,16 +768,20 @@ def _solve_unit_weights(
 
     def objective(w):
         fit = Y_co_pre.T @ w
-        return np.sum((y_target - fit) ** 2) + zeta ** 2 * np.sum(w ** 2)
+        return np.sum((y_target - fit) ** 2) + zeta**2 * np.sum(w**2)
 
-    constraints = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1}
+    constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
     bounds = [(0, None)] * n_co
     w0 = np.ones(n_co) / n_co
 
     try:
         res = optimize.minimize(
-            objective, w0, bounds=bounds, constraints=constraints,
-            method='SLSQP', options={'maxiter': 500, 'ftol': 1e-10},
+            objective,
+            w0,
+            bounds=bounds,
+            constraints=constraints,
+            method="SLSQP",
+            options={"maxiter": 500, "ftol": 1e-10},
         )
         return res.x if res.success else w0
     except Exception:
@@ -707,16 +802,20 @@ def _solve_time_weights(
 
     def objective(lam):
         fit = Y_co_pre @ lam
-        return np.sum((y_target - fit) ** 2) + zeta ** 2 * np.sum(lam ** 2)
+        return np.sum((y_target - fit) ** 2) + zeta**2 * np.sum(lam**2)
 
-    constraints = {'type': 'eq', 'fun': lambda lam: np.sum(lam) - 1}
+    constraints = {"type": "eq", "fun": lambda lam: np.sum(lam) - 1}
     bounds = [(0, None)] * T_pre
     lam0 = np.ones(T_pre) / T_pre
 
     try:
         res = optimize.minimize(
-            objective, lam0, bounds=bounds, constraints=constraints,
-            method='SLSQP', options={'maxiter': 500, 'ftol': 1e-10},
+            objective,
+            lam0,
+            bounds=bounds,
+            constraints=constraints,
+            method="SLSQP",
+            options={"maxiter": 500, "ftol": 1e-10},
         )
         return res.x if res.success else lam0
     except Exception:
@@ -727,9 +826,15 @@ def _solve_time_weights(
 # Internal: Standard error methods
 # ======================================================================
 
+
 def _se_placebo(
-    Y_co_pre, Y_co_post, Y_tr_pre, Y_tr_post,
-    method, n_co, T_pre,
+    Y_co_pre,
+    Y_co_post,
+    Y_tr_pre,
+    Y_tr_post,
+    method,
+    n_co,
+    T_pre,
 ) -> Tuple[float, np.ndarray]:
     """
     Placebo SE: assign treatment to each control unit in turn,
@@ -738,8 +843,8 @@ def _se_placebo(
     taus = []
     for i in range(n_co):
         # Unit i is "treated", the rest are controls
-        Y_pl_tr_pre = Y_co_pre[i:i+1, :]     # (1, T_pre)
-        Y_pl_tr_post = Y_co_post[i:i+1, :]    # (1, T_post)
+        Y_pl_tr_pre = Y_co_pre[i : i + 1, :]  # (1, T_pre)
+        Y_pl_tr_post = Y_co_post[i : i + 1, :]  # (1, T_post)
         idx = [j for j in range(n_co) if j != i]
         Y_pl_co_pre = Y_co_pre[idx, :]
         Y_pl_co_post = Y_co_post[idx, :]
@@ -747,12 +852,20 @@ def _se_placebo(
         n_co_pl = len(idx)
         try:
             omega_pl, lam_pl = _compute_weights(
-                Y_pl_co_pre, Y_pl_co_post, Y_pl_tr_pre,
-                method, n_co_pl, T_pre,
+                Y_pl_co_pre,
+                Y_pl_co_post,
+                Y_pl_tr_pre,
+                method,
+                n_co_pl,
+                T_pre,
             )
             tau_pl = _estimate_tau(
-                Y_pl_co_pre, Y_pl_co_post, Y_pl_tr_pre, Y_pl_tr_post,
-                omega_pl, lam_pl,
+                Y_pl_co_pre,
+                Y_pl_co_post,
+                Y_pl_tr_pre,
+                Y_pl_tr_post,
+                omega_pl,
+                lam_pl,
             )
             taus.append(tau_pl)
         except Exception:
@@ -764,8 +877,15 @@ def _se_placebo(
 
 
 def _se_bootstrap(
-    Y_co_pre, Y_co_post, Y_tr_pre, Y_tr_post,
-    method, n_co, T_pre, n_reps, rng,
+    Y_co_pre,
+    Y_co_post,
+    Y_tr_pre,
+    Y_tr_post,
+    method,
+    n_co,
+    T_pre,
+    n_reps,
+    rng,
 ) -> Tuple[float, np.ndarray]:
     """
     Bootstrap SE: resample control units with replacement.
@@ -780,12 +900,20 @@ def _se_bootstrap(
 
         try:
             omega_b, lam_b = _compute_weights(
-                Y_co_pre_b, Y_co_post_b, Y_tr_pre,
-                method, n_co, T_pre,
+                Y_co_pre_b,
+                Y_co_post_b,
+                Y_tr_pre,
+                method,
+                n_co,
+                T_pre,
             )
             taus[b] = _estimate_tau(
-                Y_co_pre_b, Y_co_post_b, Y_tr_pre, Y_tr_post,
-                omega_b, lam_b,
+                Y_co_pre_b,
+                Y_co_post_b,
+                Y_tr_pre,
+                Y_tr_post,
+                omega_b,
+                lam_b,
             )
         except Exception:
             taus[b] = np.nan
@@ -796,8 +924,13 @@ def _se_bootstrap(
 
 
 def _se_jackknife(
-    Y_co_pre, Y_co_post, Y_tr_pre, Y_tr_post,
-    method, n_co, T_pre,
+    Y_co_pre,
+    Y_co_post,
+    Y_tr_pre,
+    Y_tr_post,
+    method,
+    n_co,
+    T_pre,
 ) -> Tuple[float, np.ndarray]:
     """
     Jackknife SE: leave-one-control-unit-out.
@@ -811,12 +944,20 @@ def _se_jackknife(
 
         try:
             omega_j, lam_j = _compute_weights(
-                Y_co_pre_j, Y_co_post_j, Y_tr_pre,
-                method, n_co_j, T_pre,
+                Y_co_pre_j,
+                Y_co_post_j,
+                Y_tr_pre,
+                method,
+                n_co_j,
+                T_pre,
             )
             tau_j = _estimate_tau(
-                Y_co_pre_j, Y_co_post_j, Y_tr_pre, Y_tr_post,
-                omega_j, lam_j,
+                Y_co_pre_j,
+                Y_co_post_j,
+                Y_tr_pre,
+                Y_tr_post,
+                omega_j,
+                lam_j,
             )
             taus.append(tau_j)
         except Exception:
@@ -836,7 +977,7 @@ def _se_jackknife(
 # Citation
 # ======================================================================
 
-CausalResult._CITATIONS['sdid'] = (
+CausalResult._CITATIONS["sdid"] = (
     "@article{arkhangelsky2021synthetic,\n"
     "  title={Synthetic Difference-in-Differences},\n"
     "  author={Arkhangelsky, Dmitry and Athey, Susan and "

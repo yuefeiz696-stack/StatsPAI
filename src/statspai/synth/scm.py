@@ -66,17 +66,32 @@ def synth(
     the call (function name, args, data hash) without each individual
     SCM backend having to opt in. The 20-method dispatcher itself
     lives in :func:`_dispatch_synth_impl`.
+
+    References
+    ----------
+    Abadie, A., Diamond, A. and Hainmueller, J. (2010). Synthetic control
+    methods for comparative case studies. *Journal of the American
+    Statistical Association*. [@abadie2010synthetic]
     """
     _result = _dispatch_synth_impl(
-        data=data, outcome=outcome, unit=unit, time=time,
-        treated_unit=treated_unit, treatment_time=treatment_time,
-        method=method, covariates=covariates,
-        penalization=penalization, placebo=placebo, alpha=alpha,
-        inference=inference, treatment=treatment,
+        data=data,
+        outcome=outcome,
+        unit=unit,
+        time=time,
+        treated_unit=treated_unit,
+        treatment_time=treatment_time,
+        method=method,
+        covariates=covariates,
+        penalization=penalization,
+        placebo=placebo,
+        alpha=alpha,
+        inference=inference,
+        treatment=treatment,
         **kwargs,
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             _result,
             function="sp.synth",
@@ -93,10 +108,20 @@ def synth(
                 "alpha": alpha,
                 "inference": inference,
                 "treatment": treatment,
-                **{k: v for k, v in kwargs.items()
-                   if k in ("n_factors", "outcomes", "v_method",
-                           "se_method", "se_type", "weights",
-                           "l2_penalty")},
+                **{
+                    k: v
+                    for k, v in kwargs.items()
+                    if k
+                    in (
+                        "n_factors",
+                        "outcomes",
+                        "v_method",
+                        "se_method",
+                        "se_type",
+                        "weights",
+                        "l2_penalty",
+                    )
+                },
             },
             data=data,
             overwrite=False,
@@ -273,11 +298,18 @@ def _dispatch_synth_impl(
     # --- Conformal inference override ---
     if inference == "conformal":
         from .conformal import conformal_synth
+
         return conformal_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
             scm_method=method if method in ("classic", "ridge") else "classic",
-            penalization=penalization, alpha=alpha, **kwargs,
+            penalization=penalization,
+            alpha=alpha,
+            **kwargs,
         )
 
     # --- Dispatch ---
@@ -289,180 +321,314 @@ def _dispatch_synth_impl(
         standardize_predictors = kwargs.pop("standardize_predictors", True)
         n_random_starts = kwargs.pop("n_random_starts", 4)
         model = SyntheticControl(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
             covariates=covariates,
             special_predictors=special_predictors,
             v_method=v_method,
             standardize_predictors=standardize_predictors,
             n_random_starts=n_random_starts,
-            penalization=penalization, alpha=alpha,
+            penalization=penalization,
+            alpha=alpha,
         )
         return model.fit(placebo=placebo)
 
     if method in ("demeaned", "detrended"):
         from .demeaned import demeaned_synth
+
         return demeaned_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, variant=method,
-            penalization=penalization, placebo=placebo, alpha=alpha,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            variant=method,
+            penalization=penalization,
+            placebo=placebo,
+            alpha=alpha,
             **kwargs,
         )
 
     if method in ("unconstrained", "elastic_net"):
         from .robust import robust_synth
+
         return robust_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, variant=method,
-            placebo=placebo, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            variant=method,
+            placebo=placebo,
+            alpha=alpha,
+            **kwargs,
         )
 
     if method in ("augmented", "ascm"):
         from .augsynth import augsynth
+
         return augsynth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            alpha=alpha,
+            **kwargs,
         )
 
     if method == "sdid":
         from .sdid import sdid as _sdid
+
         se_method = inference or "placebo"
         return _sdid(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            method="sdid", covariates=covariates,
-            se_method=se_method, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            method="sdid",
+            covariates=covariates,
+            se_method=se_method,
+            alpha=alpha,
+            **kwargs,
         )
 
     if method in ("factor", "gsynth"):
         from .gsynth import gsynth as _gsynth
+
         return _gsynth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, placebo=placebo, alpha=alpha,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            placebo=placebo,
+            alpha=alpha,
             **kwargs,
         )
 
     if method == "staggered":
         from .staggered import staggered_synth
+
         if treatment is None:
             raise ValueError(
                 "method='staggered' requires the `treatment` parameter "
                 "(binary treatment indicator column name)"
             )
         return staggered_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treatment=treatment, penalization=penalization,
-            placebo=placebo, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treatment=treatment,
+            penalization=penalization,
+            placebo=placebo,
+            alpha=alpha,
+            **kwargs,
         )
 
     if method in ("mc", "matrix_completion"):
         from .mc import mc_synth
+
         return mc_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            alpha=alpha, placebo=placebo, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            alpha=alpha,
+            placebo=placebo,
+            **kwargs,
         )
 
     if method in ("discos", "distributional"):
         from .discos import discos
+
         return discos(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            alpha=alpha, placebo=placebo, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            alpha=alpha,
+            placebo=placebo,
+            **kwargs,
         )
 
     if method in ("multi_outcome", "multi"):
         from .multi_outcome import multi_outcome_synth
+
         outcomes = kwargs.pop("outcomes", None)
         if outcomes is None:
             outcomes = [outcome]
         return multi_outcome_synth(
-            data=data, outcomes=outcomes, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            penalization=penalization, alpha=alpha, placebo=placebo,
+            data=data,
+            outcomes=outcomes,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            penalization=penalization,
+            alpha=alpha,
+            placebo=placebo,
             **kwargs,
         )
 
     if method in ("scpi", "prediction_interval"):
         from .scpi import scpi
+
         return scpi(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            alpha=alpha,
+            **kwargs,
         )
 
     # --- New methods (v0.9) ---
 
     if method == "bayesian":
         from .bayesian import bayesian_synth
+
         return bayesian_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            alpha=alpha,
+            **kwargs,
         )
 
     if method in ("bsts", "causal_impact"):
         from .bsts import bsts_synth
+
         return bsts_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            alpha=alpha,
+            **kwargs,
         )
 
     if method in ("penscm", "abadie_lhour", "pairwise"):
         from .penscm import penalized_synth
+
         return penalized_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, placebo=placebo, alpha=alpha,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            placebo=placebo,
+            alpha=alpha,
             **kwargs,
         )
 
     if method in ("fdid", "forward_did"):
         from .fdid import fdid as _fdid
+
         return _fdid(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            placebo=placebo, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            placebo=placebo,
+            alpha=alpha,
+            **kwargs,
         )
 
     if method == "cluster":
         from .cluster import cluster_synth
+
         return cluster_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, placebo=placebo, alpha=alpha,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            placebo=placebo,
+            alpha=alpha,
             **kwargs,
         )
 
     if method in ("sparse", "lasso"):
         from .sparse import sparse_synth
+
         return sparse_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, placebo=placebo, alpha=alpha,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            placebo=placebo,
+            alpha=alpha,
             **kwargs,
         )
 
     if method == "kernel":
         from .kernel import kernel_synth
+
         return kernel_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, placebo=placebo, alpha=alpha,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            placebo=placebo,
+            alpha=alpha,
             **kwargs,
         )
 
     if method == "kernel_ridge":
         from .kernel import kernel_ridge_synth
+
         return kernel_ridge_synth(
-            data=data, outcome=outcome, unit=unit, time=time,
-            treated_unit=treated_unit, treatment_time=treatment_time,
-            covariates=covariates, placebo=placebo, alpha=alpha, **kwargs,
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            covariates=covariates,
+            placebo=placebo,
+            alpha=alpha,
+            **kwargs,
         )
 
     raise ValueError(
@@ -570,7 +736,9 @@ class SyntheticControl:
     def _prepare_matrices(self):
         """Pivot data into (T x J) outcome matrix and build predictor tables."""
         pivot = self.data.pivot_table(
-            index=self.time, columns=self.unit, values=self.outcome,
+            index=self.time,
+            columns=self.unit,
+            values=self.outcome,
         )
 
         if self.treated_unit not in pivot.columns:
@@ -620,9 +788,7 @@ class SyntheticControl:
         if self.special_predictors:
             for col, period_spec, op in self.special_predictors:
                 if col not in self.data.columns:
-                    raise ValueError(
-                        f"special_predictor column '{col}' not in data"
-                    )
+                    raise ValueError(f"special_predictor column '{col}' not in data")
                 row = []
                 years = self._resolve_period_spec(period_spec)
                 spec_df = self.data[self.data[self.time].isin(years)]
@@ -641,19 +807,20 @@ class SyntheticControl:
                         )
                 predictor_rows.append(np.asarray(row, dtype=float))
                 label = (
-                    f"{col}[{years[0]}]" if len(years) == 1
+                    f"{col}[{years[0]}]"
+                    if len(years) == 1
                     else f"{col}[{years[0]}-{years[-1]},{op}]"
                 )
                 self._predictor_names.append(label)
 
         if predictor_rows:
-            X_full = np.vstack(predictor_rows)           # (K, J+1)
+            X_full = np.vstack(predictor_rows)  # (K, J+1)
             if np.any(~np.isfinite(X_full)):
                 raise ValueError(
                     "Predictor matrix contains NaN/Inf — check data coverage."
                 )
-            self.X_treated = X_full[:, 0]                # (K,)
-            self.X_donors = X_full[:, 1:]                # (K, J)
+            self.X_treated = X_full[:, 0]  # (K,)
+            self.X_donors = X_full[:, 1:]  # (K, J)
             self._has_predictors = True
         else:
             # No covariates / special predictors → use pre-period Y
@@ -708,7 +875,10 @@ class SyntheticControl:
 
         if run_nested:
             return solve_synth_weights_adh(
-                X_treated, X_donors, Y_treated_pre, Y_donors_pre,
+                X_treated,
+                X_donors,
+                Y_treated_pre,
+                Y_donors_pre,
                 standardize=self.standardize_predictors,
                 n_random_starts=self.n_random_starts,
                 penalization=self.penalization,
@@ -729,7 +899,7 @@ class SyntheticControl:
             "w": w,
             "v": V,
             "loss": float(r_outer @ r_outer),
-            "inner_loss": float(np.sum(V * r_inner ** 2)),
+            "inner_loss": float(np.sum(V * r_inner**2)),
             "scale": scale,
             "n_starts": 1,
             "converged": True,
@@ -767,8 +937,10 @@ class SyntheticControl:
 
         run_nested = self._should_run_nested()
         solver_out = self._solve_weights(
-            Y_pre_treated, Y_pre_donors,
-            self.X_treated, self.X_donors,
+            Y_pre_treated,
+            Y_pre_donors,
+            self.X_treated,
+            self.X_donors,
             run_nested=run_nested,
         )
         weights = solver_out["w"]
@@ -790,18 +962,19 @@ class SyntheticControl:
 
         # --- Placebo inference ---
         post_mspe = float(np.mean(gap_post**2))
-        ratio_treated = (np.sqrt(post_mspe) / np.sqrt(pre_mspe)
-                         if pre_mspe > 1e-10 else np.inf)
+        ratio_treated = (
+            np.sqrt(post_mspe) / np.sqrt(pre_mspe) if pre_mspe > 1e-10 else np.inf
+        )
 
         placebo_result: Dict[str, Any] = {}
         if placebo and len(self.donor_units) >= 2:
             placebo_result = self._run_placebos()
 
-        placebo_atts = placebo_result.get('atts', [])
+        placebo_atts = placebo_result.get("atts", [])
 
         # P-value from placebo distribution
         if len(placebo_atts) > 0:
-            placebo_ratios = np.array(placebo_result['ratios'])
+            placebo_ratios = np.array(placebo_result["ratios"])
 
             # One-sided p-value: fraction of placebos with ratio >= treated
             pvalue = float(np.mean(placebo_ratios >= ratio_treated))
@@ -817,78 +990,90 @@ class SyntheticControl:
         ci = (att - z_crit * se, att + z_crit * se)
 
         # --- Weight table ---
-        weight_df = pd.DataFrame({
-            'unit': self.donor_units,
-            'weight': weights,
-        }).sort_values('weight', ascending=False).reset_index(drop=True)
-        weight_df = weight_df[weight_df['weight'] > 1e-6]
+        weight_df = (
+            pd.DataFrame(
+                {
+                    "unit": self.donor_units,
+                    "weight": weights,
+                }
+            )
+            .sort_values("weight", ascending=False)
+            .reset_index(drop=True)
+        )
+        weight_df = weight_df[weight_df["weight"] > 1e-6]
 
         # --- Gap table ---
-        gap_df = pd.DataFrame({
-            'time': self.times,
-            'treated': self.Y_treated,
-            'synthetic': Y_synth,
-            'gap': gap,
-            'post_treatment': self.post_mask,
-        })
+        gap_df = pd.DataFrame(
+            {
+                "time": self.times,
+                "treated": self.Y_treated,
+                "synthetic": Y_synth,
+                "gap": gap,
+                "post_treatment": self.post_mask,
+            }
+        )
 
         # --- Predictor V table (ADH diagnostic) ---
-        v_df = pd.DataFrame({
-            'predictor': self._predictor_names,
-            'v_weight': V,
-        })
+        v_df = pd.DataFrame(
+            {
+                "predictor": self._predictor_names,
+                "v_weight": V,
+            }
+        )
 
         # --- Predictor balance table (treated vs synthetic on matching vars) ---
         X_synth = self.X_donors @ weights
-        predictor_balance_df = pd.DataFrame({
-            'predictor': self._predictor_names,
-            'treated': self.X_treated,
-            'synthetic': X_synth,
-            'donor_mean': self.X_donors.mean(axis=1),
-        })
+        predictor_balance_df = pd.DataFrame(
+            {
+                "predictor": self._predictor_names,
+                "treated": self.X_treated,
+                "synthetic": X_synth,
+                "donor_mean": self.X_donors.mean(axis=1),
+            }
+        )
 
         # --- Weight-concentration diagnostics ---
         w_active = weights[weights > 1e-6]
-        hhi = float(np.sum(weights ** 2))
+        hhi = float(np.sum(weights**2))
         n_effective = 1.0 / hhi if hhi > 0 else 0.0
 
         # --- Model info ---
         model_info: Dict[str, Any] = {
-            'n_donors': len(self.donor_units),
-            'n_pre_periods': int(self.pre_mask.sum()),
-            'n_post_periods': int(self.post_mask.sum()),
-            'pre_treatment_mspe': round(pre_mspe, 6),
-            'pre_treatment_rmse': round(np.sqrt(pre_mspe), 6),
-            'penalization': self.penalization,
-            'treatment_time': self.treatment_time,
-            'treated_unit': self.treated_unit,
-            'weights': weight_df,
-            'v_weights': v_df,
-            'predictor_balance': predictor_balance_df,
-            'gap_table': gap_df,
-            'Y_synth': Y_synth,
-            'Y_treated': self.Y_treated,
-            'times': self.times,
-            'v_method': 'nested' if run_nested else 'equal',
-            'n_starts': solver_out['n_starts'],
-            'converged': solver_out['converged'],
-            'n_active_donors': int(len(w_active)),
-            'weight_hhi': round(hhi, 4),
-            'effective_n_donors': round(n_effective, 2),
+            "n_donors": len(self.donor_units),
+            "n_pre_periods": int(self.pre_mask.sum()),
+            "n_post_periods": int(self.post_mask.sum()),
+            "pre_treatment_mspe": round(pre_mspe, 6),
+            "pre_treatment_rmse": round(np.sqrt(pre_mspe), 6),
+            "penalization": self.penalization,
+            "treatment_time": self.treatment_time,
+            "treated_unit": self.treated_unit,
+            "weights": weight_df,
+            "v_weights": v_df,
+            "predictor_balance": predictor_balance_df,
+            "gap_table": gap_df,
+            "Y_synth": Y_synth,
+            "Y_treated": self.Y_treated,
+            "times": self.times,
+            "v_method": "nested" if run_nested else "equal",
+            "n_starts": solver_out["n_starts"],
+            "converged": solver_out["converged"],
+            "n_active_donors": int(len(w_active)),
+            "weight_hhi": round(hhi, 4),
+            "effective_n_donors": round(n_effective, 2),
         }
 
         if len(placebo_atts) > 0:
-            model_info['placebo_atts'] = placebo_atts
-            model_info['placebo_pre_mspes'] = placebo_result['pre_mspes']
-            model_info['placebo_ratios'] = placebo_result['ratios']
-            model_info['placebo_gaps'] = placebo_result['gaps']
-            model_info['placebo_units'] = placebo_result['units']
-            model_info['treated_ratio'] = ratio_treated
-            model_info['n_placebos'] = len(placebo_atts)
+            model_info["placebo_atts"] = placebo_atts
+            model_info["placebo_pre_mspes"] = placebo_result["pre_mspes"]
+            model_info["placebo_ratios"] = placebo_result["ratios"]
+            model_info["placebo_gaps"] = placebo_result["gaps"]
+            model_info["placebo_units"] = placebo_result["units"]
+            model_info["treated_ratio"] = ratio_treated
+            model_info["n_placebos"] = len(placebo_atts)
 
         return CausalResult(
-            method='Synthetic Control Method',
-            estimand='ATT',
+            method="Synthetic Control Method",
+            estimand="ATT",
             estimate=att,
             se=se,
             pvalue=pvalue,
@@ -897,7 +1082,7 @@ class SyntheticControl:
             n_obs=len(self.Y_treated),
             detail=weight_df,
             model_info=model_info,
-            _citation_key='synth',
+            _citation_key="synth",
         )
 
     def _run_placebos(self) -> Dict[str, Any]:
@@ -921,9 +1106,7 @@ class SyntheticControl:
         gap_trajectories: List[np.ndarray] = []
         units: List[Any] = []
 
-        all_units_data = np.column_stack([
-            self.Y_treated[:, np.newaxis], self.Y_donors
-        ])
+        all_units_data = np.column_stack([self.Y_treated[:, np.newaxis], self.Y_donors])
         # Placebo predictor matrix: column 0 = treated, 1..J = donors
         X_all = np.column_stack([self.X_treated[:, None], self.X_donors])
 
@@ -932,9 +1115,7 @@ class SyntheticControl:
         for i, placebo_unit in enumerate(self.donor_units):
             idx_placebo = i + 1  # treated at column 0
             Y_placebo = all_units_data[:, idx_placebo]
-            donor_idx = [
-                j for j in range(all_units_data.shape[1]) if j != idx_placebo
-            ]
+            donor_idx = [j for j in range(all_units_data.shape[1]) if j != idx_placebo]
             Y_placebo_donors = all_units_data[:, donor_idx]
 
             Y_pre_p = Y_placebo[self.pre_mask]
@@ -951,19 +1132,24 @@ class SyntheticControl:
 
             try:
                 sol = self._solve_weights(
-                    Y_pre_p, Y_pre_d,
-                    X_placebo, X_placebo_donors,
+                    Y_pre_p,
+                    Y_pre_d,
+                    X_placebo,
+                    X_placebo_donors,
                     run_nested=run_nested,
                 )
                 w = sol["w"]
                 synth_p = Y_placebo_donors @ w
                 gap_p = Y_placebo - synth_p
 
-                pre_mspe_p = float(np.mean(gap_p[self.pre_mask]**2))
-                post_mspe_p = float(np.mean(gap_p[self.post_mask]**2))
+                pre_mspe_p = float(np.mean(gap_p[self.pre_mask] ** 2))
+                post_mspe_p = float(np.mean(gap_p[self.post_mask] ** 2))
                 att_p = float(np.mean(gap_p[self.post_mask]))
-                ratio_p = (np.sqrt(post_mspe_p) / np.sqrt(pre_mspe_p)
-                           if pre_mspe_p > 1e-10 else 0.0)
+                ratio_p = (
+                    np.sqrt(post_mspe_p) / np.sqrt(pre_mspe_p)
+                    if pre_mspe_p > 1e-10
+                    else 0.0
+                )
 
                 atts.append(att_p)
                 pre_mspes.append(pre_mspe_p)
@@ -974,16 +1160,19 @@ class SyntheticControl:
             except Exception:
                 continue
 
-        gaps = (np.column_stack(gap_trajectories)
-                if gap_trajectories else np.empty((len(self.times), 0)))
+        gaps = (
+            np.column_stack(gap_trajectories)
+            if gap_trajectories
+            else np.empty((len(self.times), 0))
+        )
 
         return {
-            'atts': atts,
-            'pre_mspes': pre_mspes,
-            'post_mspes': post_mspes,
-            'ratios': ratios,
-            'gaps': gaps,
-            'units': units,
+            "atts": atts,
+            "pre_mspes": pre_mspes,
+            "post_mspes": post_mspes,
+            "ratios": ratios,
+            "gaps": gaps,
+            "units": units,
         }
 
 
@@ -991,9 +1180,10 @@ class SyntheticControl:
 # Plotting
 # ------------------------------------------------------------------
 
+
 def synthplot(
     result: CausalResult,
-    type: str = 'trajectory',
+    type: str = "trajectory",
     ax=None,
     figsize: tuple = (10, 7),
     title: Optional[str] = None,
@@ -1025,37 +1215,38 @@ def synthplot(
         raise ImportError("matplotlib required. Install: pip install matplotlib")
 
     mi = result.model_info
-    gap_df = mi.get('gap_table')
+    gap_df = mi.get("gap_table")
     if gap_df is None:
         raise ValueError("No gap_table in model_info. Use synth() result.")
 
-    times = gap_df['time'].values
-    treated = gap_df['treated'].values
-    synthetic = gap_df['synthetic'].values
-    gap = gap_df['gap'].values
-    treatment_time = mi.get('treatment_time')
-    treated_unit = mi.get('treated_unit', 'Treated')
+    times = gap_df["time"].values
+    treated = gap_df["treated"].values
+    synthetic = gap_df["synthetic"].values
+    gap = gap_df["gap"].values
+    treatment_time = mi.get("treatment_time")
+    treated_unit = mi.get("treated_unit", "Treated")
 
-    if type == 'both':
-        fig, axes = plt.subplots(2, 1, figsize=(figsize[0], figsize[1] * 1.3),
-                                 sharex=True)
+    if type == "both":
+        fig, axes = plt.subplots(
+            2, 1, figsize=(figsize[0], figsize[1] * 1.3), sharex=True
+        )
         # Top: trajectory
-        _trajectory_panel(axes[0], times, treated, synthetic,
-                          treatment_time, treated_unit)
+        _trajectory_panel(
+            axes[0], times, treated, synthetic, treatment_time, treated_unit
+        )
         # Bottom: gap
         _gap_panel(axes[1], times, gap, treatment_time)
-        fig.suptitle(title or f'Synthetic Control: {treated_unit}',
-                     fontsize=14, y=1.01)
+        fig.suptitle(title or f"Synthetic Control: {treated_unit}", fontsize=14, y=1.01)
         fig.tight_layout()
         return fig, axes
 
-    if type == 'gap':
+    if type == "gap":
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize)
         else:
             fig = ax.get_figure()
         _gap_panel(ax, times, gap, treatment_time)
-        ax.set_title(title or f'Gap Plot: {treated_unit}', fontsize=13)
+        ax.set_title(title or f"Gap Plot: {treated_unit}", fontsize=13)
         fig.tight_layout()
         return fig, ax
 
@@ -1064,39 +1255,49 @@ def synthplot(
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure()
-    _trajectory_panel(ax, times, treated, synthetic,
-                      treatment_time, treated_unit)
-    ax.set_title(title or f'Synthetic Control: {treated_unit}', fontsize=13)
+    _trajectory_panel(ax, times, treated, synthetic, treatment_time, treated_unit)
+    ax.set_title(title or f"Synthetic Control: {treated_unit}", fontsize=13)
     fig.tight_layout()
     return fig, ax
 
 
-def _trajectory_panel(ax, times, treated, synthetic,
-                      treatment_time, treated_unit):
-    ax.plot(times, treated, color='#2C3E50', linewidth=2,
-            label=str(treated_unit))
-    ax.plot(times, synthetic, color='#E74C3C', linewidth=2,
-            linestyle='--', label='Synthetic')
+def _trajectory_panel(ax, times, treated, synthetic, treatment_time, treated_unit):
+    ax.plot(times, treated, color="#2C3E50", linewidth=2, label=str(treated_unit))
+    ax.plot(
+        times,
+        synthetic,
+        color="#E74C3C",
+        linewidth=2,
+        linestyle="--",
+        label="Synthetic",
+    )
     if treatment_time is not None:
-        ax.axvline(x=treatment_time, color='gray', linestyle=':',
-                   linewidth=1, alpha=0.7, label='Treatment')
-    ax.set_ylabel('Outcome', fontsize=11)
+        ax.axvline(
+            x=treatment_time,
+            color="gray",
+            linestyle=":",
+            linewidth=1,
+            alpha=0.7,
+            label="Treatment",
+        )
+    ax.set_ylabel("Outcome", fontsize=11)
     ax.legend(fontsize=10, frameon=False)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
 
 def _gap_panel(ax, times, gap, treatment_time):
-    ax.plot(times, gap, color='#2C3E50', linewidth=2)
-    ax.fill_between(times, 0, gap, alpha=0.15, color='#3498DB')
-    ax.axhline(y=0, color='gray', linestyle='--', linewidth=0.8)
+    ax.plot(times, gap, color="#2C3E50", linewidth=2)
+    ax.fill_between(times, 0, gap, alpha=0.15, color="#3498DB")
+    ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8)
     if treatment_time is not None:
-        ax.axvline(x=treatment_time, color='gray', linestyle=':',
-                   linewidth=1, alpha=0.7)
-    ax.set_xlabel('Time', fontsize=11)
-    ax.set_ylabel('Gap (Treated - Synthetic)', fontsize=11)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+        ax.axvline(
+            x=treatment_time, color="gray", linestyle=":", linewidth=1, alpha=0.7
+        )
+    ax.set_xlabel("Time", fontsize=11)
+    ax.set_ylabel("Gap (Treated - Synthetic)", fontsize=11)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
 
 # ------------------------------------------------------------------
@@ -1104,7 +1305,7 @@ def _gap_panel(ax, times, gap, treatment_time):
 # ------------------------------------------------------------------
 
 # Add to CausalResult citation registry
-CausalResult._CITATIONS['synth'] = (
+CausalResult._CITATIONS["synth"] = (
     "@article{abadie2010synthetic,\n"
     "  title={Synthetic Control Methods for Comparative Case Studies: "
     "Estimating the Effect of California's Tobacco Control Program},\n"

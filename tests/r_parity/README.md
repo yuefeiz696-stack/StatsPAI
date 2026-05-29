@@ -20,17 +20,21 @@ It complements:
 tests/r_parity/
 ├── _common.py            # shared scaffolding for the Python side
 ├── _common.R             # shared scaffolding for the R side
-├── compare.py            # joins per-module JSONs, emits parity_table.{md,tex}
+├── compare.py            # joins JSONs, emits 2-way and 3-way parity tables
 ├── NN_<method>.py        # one Python script per module
-├── NN_<method>.R         # the matching R script
+├── NN_<method>.R         # the matching R script when a reference is materialized
 ├── data/                 # CSVs dumped from sp.datasets so R sees same bytes
 └── results/
     ├── NN_<method>_{py,R}.json   # full-precision per-module results
-    ├── parity_table.md           # human-readable rollup
-    └── parity_table.tex          # LaTeX longtable for Appendix B
+    ├── parity_table.md           # human-readable R rollup
+    ├── parity_table_3way.md      # human-readable R + Stata rollup
+    └── parity_table_3way.tex     # LaTeX longtable for Appendix B
 ```
 
-## Modules (36)
+Latest full verification record:
+[`PARITY_TEST_WORKLOG_2026-05-29.md`](PARITY_TEST_WORKLOG_2026-05-29.md).
+
+## Modules (51 total: 50 materialized R matches, 1 Py-Stata-primary)
 
 | # | Module | StatsPAI | R reference |
 | --- | --- | --- | --- |
@@ -70,6 +74,21 @@ tests/r_parity/
 | 34 | Local projections | `sp.local_projections` | `lpirfs::lp_lin` |
 | 35 | Panel FE/RE/Hausman | `sp.panel` | `plm::plm` + `plm::phtest` |
 | 36 | Causal mediation | `sp.mediation` | `mediation::mediate` |
+| 37 | PPML + HDFE | `sp.ppmlhdfe` | `fixest::fepois` |
+| 38 | DR-DID (Sant'Anna-Zhao) | `sp.drdid` | `DRDID::drdid_imp_panel` |
+| 39 | ARIMA(2,0,0) | `sp.arima` | `forecast::Arima` |
+| 40 | Quantile regression | `sp.qreg` | `quantreg::rq` |
+| 41 | Tobit | `sp.tobit` | `censReg::censReg` |
+| 42 | Negative binomial | `sp.nbreg` | `MASS::glm.nb` |
+| 43 | Heckman selection | `sp.heckman` | `sampleSelection::heckit` |
+| 44 | Multinomial logit | `sp.mlogit` | `nnet::multinom` |
+| 45 | Ordered logit | `sp.ologit` | `MASS::polr(method="logistic")` |
+| 46 | Conditional logit | `sp.clogit` | `survival::clogit` |
+| 47 | PPML + 3-way HDFE | `sp.ppmlhdfe` | `fixest::fepois` |
+| 48 | Binary probit | `sp.probit` | `stats::glm(family=binomial("probit"))` |
+| 49 | Ordered probit | `sp.oprobit` | `MASS::polr(method="probit")` |
+| 50 | Arellano-Bond GMM | `sp.xtabond` | `plm::pgmm` script; Stata `xtabond` is the strict fixture |
+| 51 | Newey-West HAC OLS | `sp.regress(robust="hac")` | `sandwich::NeweyWest` |
 
 ## Running
 
@@ -79,10 +98,12 @@ End-to-end run for a single module:
 cd tests/r_parity
 python3 11_psm.py     # writes data/11_psm.csv + results/11_psm_py.json
 Rscript 11_psm.R      # reads same CSV + writes results/11_psm_R.json
-python3 compare.py    # refresh parity_table.{md,tex}
+python3 compare.py    # refresh parity tables
 ```
 
-Run everything (36 modules):
+Run all materialized R modules. Module 50 has an R script, but Stata
+`xtabond` remains the strict checked-in fixture until the `plm::pgmm`
+artifact is generated and reviewed:
 
 ```bash
 cd tests/r_parity
@@ -90,9 +111,17 @@ for py in [0-9][0-9]_*.py; do
   n="${py%.py}"
   R="${n}.R"
   test -f "${R}" || continue
+  test "${n}" = "50_xtabond" && continue
   python3 "${py}" && Rscript "${R}"
 done
 python3 compare.py
+```
+
+To execute the external runtime smoke tests from pytest on a machine
+with R/Stata installed, run:
+
+```bash
+pytest tests/test_parity_runtime.py -m external_parity_runtime --no-cov
 ```
 
 ## Tolerance budget (pre-registered)
@@ -115,7 +144,8 @@ CRAN: `AER`, `fixest`, `did`, `HonestDiD`, `Synth`, `rdrobust`,
 `sandwich`, `bacondecomp`, `didimputation`, `EValue`, `sensemakr`,
 `lme4`, `oaxaca`, `sfaR`, `frontier`, `etwfe`, `gsynth`,
 `ddecompose`, `dineq`, `vars`, `lpirfs`, `mediation`,
-`survival`, `plm`, `Matching`.
+`survival`, `plm`, `Matching`, `DRDID`, `forecast`, `quantreg`,
+`censReg`, `MASS`, `sampleSelection`, `nnet`, `lmtest`.
 
 GitHub:
 
@@ -126,7 +156,7 @@ GitHub:
 
 [`Paper-JSS/manuscript/sections/appendix.tex`](../../Paper-JSS/manuscript/sections/appendix.tex)
 `\input`s `manuscript/tables/appendix_b_parity.tex`, which is a
-copy of `tests/r_parity/results/parity_table.tex` refreshed by
+copy of `tests/r_parity/results/parity_table_3way.tex` refreshed by
 `compare.py`. Re-running `compare.py` after any module change is
 sufficient to keep the appendix in sync; the build step in
 `Paper-JSS/replication/Makefile` should `cp` the table back into

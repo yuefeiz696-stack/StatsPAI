@@ -110,6 +110,14 @@ rd-cct = [
     # for bandwidth selection + inference.
     "rdrobust>=1.3",
 ]
+docs = [
+    # MkDocs Material site + mkdocstrings auto-API (scripts/gen_api_ref.py).
+    # Build with ``mkdocs build``; preview with ``mkdocs serve``.
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+    "mkdocs-gen-files>=0.5",
+    "mkdocs-literate-nav>=0.6",
+]
 
 [project.scripts]
 statspai = "statspai.cli:main"
@@ -143,6 +151,7 @@ python_functions = ["test_*"]
 addopts = "--cov=statspai --cov-report=html --cov-report=term-missing -m 'not slow'"
 markers = [
     "slow: Monte Carlo coverage suite and other long-running tests. Run with `pytest -m slow tests/coverage_monte_carlo/`. Excluded from default `pytest` run.",
+    "external_parity_runtime: run R/Stata parity scripts against local external software; excluded from default pytest because tests are marked slow.",
 ]
 
 [tool.mypy]

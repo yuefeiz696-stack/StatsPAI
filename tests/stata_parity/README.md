@@ -11,7 +11,9 @@ The harness is read by the same `compare.py` that drives the R
 side — there is **one** comparator and **one** tolerance budget
 (`compare.py::TOLERANCES`). Parity is a property of the estimator,
 not of the reference language, so we deliberately do not register
-a separate budget for the Stata comparison.
+a separate budget for the Stata comparison. Known Stata convention
+gaps that exceed the shared headline budget are explicitly enumerated
+in `compare.py::STATA_HEADLINE_GAP_EXCEPTIONS`.
 
 ## What's here
 
@@ -31,7 +33,7 @@ bytes the R side reads), runs the canonical Stata reference, and
 writes one row per parity statistic to
 `results/NN_<name>_Stata.json` via the helpers in `_common.do`.
 
-## Modules covered (21 of 36)
+## Modules covered (44 of 51)
 
 | # | Method                       | StatsPAI                       | Stata reference                                              |
 | --- | --- | --- | --- |
@@ -53,9 +55,32 @@ writes one row per parity statistic to
 | 20 | Goodman-Bacon decomposition   | `sp.bacon_decomposition`       | `bacondecomp, ddetail`                                       |
 | 21 | Honest-DiD relative-mags      | `sp.honest_did(restriction="relative_magnitudes")` | `honestdid, ... delta(rm)` |
 | 22 | sensemakr robustness          | `sp.sensemakr`                 | `sensemakr depvar regs, treat(...) benchmark(...) kd(1) ky(1)` |
+| 23 | E-value                       | `sp.evalue`                    | `evalue rr`                                                 |
+| 24 | Cox proportional hazards      | `sp.survival.cox`              | `stcox`                                                     |
 | 25 | Linear mixed model            | `sp.mixed`                     | `mixed ..., reml`                                            |
+| 26 | GLMM logit (Laplace)          | `sp.melogit`                   | `melogit ..., intmethod(laplace)`                           |
+| 27 | GLMM AGHQ (n=8)               | `sp.melogit(nAGQ=8)`           | `melogit ..., intpoints(8)`                                  |
 | 28 | Stochastic frontier (cross-sec) | `sp.frontier`                | `frontier, distribution(hnormal)`                            |
+| 29 | Panel SFA Pitt-Lee            | `sp.xtfrontier`                | `xtfrontier, ti`                                             |
 | 30 | Blinder-Oaxaca decomposition  | `sp.oaxaca_blinder`            | `oaxaca`                                                     |
+| 33 | VAR                           | `sp.var`                       | `var`                                                        |
+| 34 | Local projections             | `sp.local_projections`         | horizon-by-horizon `regress`; `lpirf` recorded in extras     |
+| 35 | Panel FE/RE/Hausman           | `sp.panel`                     | `xtreg, fe/re` + `hausman`                                   |
+| 36 | Causal mediation              | `sp.mediation`                 | `paramed`                                                    |
+| 37 | PPML + HDFE                   | `sp.ppmlhdfe`                  | `ppmlhdfe`                                                   |
+| 39 | ARIMA(2,0,0)                  | `sp.arima`                     | `arima`                                                      |
+| 40 | Quantile reg (median)         | `sp.qreg`                      | `qreg`                                                       |
+| 41 | Tobit (left-censored)         | `sp.tobit`                     | `tobit, ll(0)`                                               |
+| 42 | Negative binomial             | `sp.nbreg`                     | `nbreg`                                                      |
+| 43 | Heckman 2-step                | `sp.heckman`                   | `heckman, twostep`                                           |
+| 44 | Multinomial logit             | `sp.mlogit`                    | `mlogit`                                                     |
+| 45 | Ordered logit                 | `sp.ologit`                    | `ologit`                                                     |
+| 46 | Conditional logit             | `sp.clogit`                    | `clogit, group(...)`                                         |
+| 47 | PPML + 3-way HDFE             | `sp.ppmlhdfe`                  | `ppmlhdfe, absorb(origin dest year)`                         |
+| 48 | Binary probit                 | `sp.probit`                    | `probit`                                                     |
+| 49 | Ordered probit                | `sp.oprobit`                   | `oprobit`                                                    |
+| 50 | Arellano-Bond GMM             | `sp.xtabond`                   | `xtabond`                                                    |
+| 51 | Newey-West HAC OLS            | `sp.regress(robust="hac")`     | `newey`                                                      |
 
 ### Modules **without** a Stata sibling
 
@@ -68,11 +93,11 @@ the reason and the 3-way table prints it explicitly:
 - **13 causal forest** — no Stata port of `grf`.
 - **18 augsynth** — no Stata port of the augmented SCM.
 - **19 gsynth** — no Stata port of the generalised SCM.
-
-The remaining modules (23-36, minus 25/28/30) currently have the
-status "Stata harness not yet built": a Stata sibling is feasible
-(many of them — `stcox`, `melogit`, `var`, `lpirf`, `xtreg`,
-`sfpanel`, etc. — are reachable) but is outside the v1.13.1 scope.
+- **31 DFL reweighting** — no canonical Stata port selected.
+- **32 RIF / UQR** — `rifhdreg` requires a GitHub install and is not
+  part of the portable Stata parity baseline.
+- **38 DR-DID** — Stata `drdid` is Ferman's different DR formula, not
+  the Sant'Anna-Zhao estimator used by the R reference.
 
 ## Running
 
@@ -90,19 +115,22 @@ Run everything:
 
 ```bash
 cd tests/stata_parity
-for n in 01_ols 02_iv 03_hdfe 04_csdid 05_sunab 06_rd 07_scm 09_rddensity \
-         10_honest_did 11_psm 12_sdid 14_ols_cluster 15_hdfe_cluster \
-         16_bjs 17_etwfe 20_bacon 21_honest_relmags 22_sensemakr 25_lmm \
-         28_frontier 30_oaxaca; do
-  /Applications/Stata/StataMP.app/Contents/MacOS/stata-mp -b -q do ${n}.do
+for dofile in [0-9][0-9]_*.do; do
+  /Applications/Stata/StataMP.app/Contents/MacOS/stata-mp -b -q do "${dofile}"
 done
 python3 ../r_parity/compare.py
+```
+
+The same critical Stata smoke path is available through pytest:
+
+```bash
+pytest tests/test_parity_runtime.py -m external_parity_runtime --no-cov
 ```
 
 ## Stata environment
 
 - **Edition tested**: Stata 18 BE (Basic Edition; matrix max = 800).
-  None of the 21 modules trip the BE matrix limit.
+  None of the 44 modules trip the BE matrix limit.
 - **`set type double`** is forced in `_common.do` so
   `import delimited` reads the CSV bytes at full IEEE-754 precision;
   without it, Stata's float default would cost 4-5 orders of
@@ -117,12 +145,14 @@ python3 ../r_parity/compare.py
 ```stata
 ssc install ivreg2 ranktest csdid drdid did_imputation eventstudyinteract \
     jwdid hdfe synth rdrobust rddensity honestdid bacondecomp \
-    sfcross sfpanel sensemakr avar
+    sfcross sfpanel sensemakr avar ppmlhdfe paramed evalue
 ```
 
 `reghdfe`, `sdid`, `psmatch2`, and `oaxaca` were already on the test
-machine; `mixed`, `xtfrontier`, `frontier`, `regress`, `ivregress`,
-`teffects psmatch`, `xtreg`, and `var` are Stata built-ins.
+machine; `mixed`, `melogit`, `xtfrontier`, `frontier`, `regress`,
+`ivregress`, `teffects psmatch`, `xtreg`, `var`, `arima`, `qreg`,
+`tobit`, `nbreg`, `heckman`, `mlogit`, `ologit`, `clogit`, `probit`,
+`oprobit`, `xtabond`, and `newey` are Stata built-ins.
 
 ## How the JSS paper uses this
 

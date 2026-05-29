@@ -161,6 +161,11 @@ def gardner_did(
     structure for the untreated potential outcome.  Stage-2 standard errors
     cluster by unit — bootstrapping the whole two-step procedure gives a
     conservative covariance when covariate models are heavy.
+
+    References
+    ----------
+    Gardner, J. (2022). Two-stage differences in differences. Working paper.
+    [@gardner2022stage]
     """
     if controls is None:
         controls = []
@@ -179,10 +184,9 @@ def gardner_did(
 
     ft = df[first_treat].to_numpy(dtype=float)
     t_arr = df[time].to_numpy(dtype=float)
-    treated_now = np.array([
-        (np.isfinite(fi) and fi > 0 and ti >= fi)
-        for fi, ti in zip(ft, t_arr)
-    ])
+    treated_now = np.array(
+        [(np.isfinite(fi) and fi > 0 and ti >= fi) for fi, ti in zip(ft, t_arr)]
+    )
     df["_D"] = treated_now.astype(float)
 
     # ── Stage 1: FE + covariate regression on untreated rows ────── #
@@ -202,9 +206,11 @@ def gardner_did(
     t_levels = np.unique(time_all)
 
     A_un, _, _ = _build_fe_design(
-        unit_all[untreated_mask], time_all[untreated_mask],
+        unit_all[untreated_mask],
+        time_all[untreated_mask],
         X_all[untreated_mask] if controls else None,
-        u_levels=u_levels, t_levels=t_levels,
+        u_levels=u_levels,
+        t_levels=t_levels,
     )
     y_un = df.loc[untreated_mask, y].to_numpy(dtype=float)
 
@@ -212,9 +218,11 @@ def gardner_did(
 
     # Predict counterfactual Y(0) for all rows using Stage-1 coefficients.
     A_full, _, _ = _build_fe_design(
-        unit_all, time_all,
+        unit_all,
+        time_all,
         X_all if controls else None,
-        u_levels=u_levels, t_levels=t_levels,
+        u_levels=u_levels,
+        t_levels=t_levels,
     )
     y_all_arr = df[y].to_numpy(dtype=float)
     y_hat_0 = A_full @ coefs
@@ -291,8 +299,7 @@ def gardner_did(
 
     z = sp_stats.norm.ppf(1 - alpha / 2)
     ci = {
-        k: (coef_dict[k] - z * se_dict[k], coef_dict[k] + z * se_dict[k])
-        for k in names
+        k: (coef_dict[k] - z * se_dict[k], coef_dict[k] + z * se_dict[k]) for k in names
     }
 
     if event_study:
@@ -312,7 +319,8 @@ def gardner_did(
 
     pvalue = (
         float(2 * (1 - sp_stats.norm.cdf(abs(att_overall / att_se))))
-        if att_se > 0 else float("nan")
+        if att_se > 0
+        else float("nan")
     )
 
     n_units = int(df[group].nunique())
@@ -325,12 +333,16 @@ def gardner_did(
         "n_treated_units": n_treated_units,
         "alpha": alpha,
         "stage1_n": int(untreated_mask.sum()),
-        "event_study": {
-            "horizon": names,
-            "coef": coef_dict,
-            "se": se_dict,
-            "ci": ci,
-        } if event_study else None,
+        "event_study": (
+            {
+                "horizon": names,
+                "coef": coef_dict,
+                "se": se_dict,
+                "ci": ci,
+            }
+            if event_study
+            else None
+        ),
         "citation": (
             "Gardner, J. (2021). Two-stage differences in differences. "
             "arXiv:2207.05943. Butts & Gardner (2022), R Journal 14(3)."
@@ -350,15 +362,20 @@ def gardner_did(
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             _result,
             function="sp.did.gardner_did",
             params={
-                "y": y, "group": group, "time": time,
+                "y": y,
+                "group": group,
+                "time": time,
                 "first_treat": first_treat,
                 "controls": controls,
-                "event_study": event_study, "horizon": horizon,
-                "cluster": cluster, "alpha": alpha,
+                "event_study": event_study,
+                "horizon": horizon,
+                "cluster": cluster,
+                "alpha": alpha,
             },
             data=data,
             overwrite=False,

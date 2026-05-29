@@ -47,6 +47,7 @@ from sklearn.linear_model import LogisticRegression
 #  Result containers
 # ═══════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class ConformalCounterfactualResult:
     """Counterfactual prediction intervals under each potential outcome."""
@@ -61,12 +62,14 @@ class ConformalCounterfactualResult:
     method: str = "Lei-Candès-2021-split-CQR"
 
     def to_frame(self) -> pd.DataFrame:
-        return pd.DataFrame({
-            "Y1_lower": self.lower_Y1,
-            "Y1_upper": self.upper_Y1,
-            "Y0_lower": self.lower_Y0,
-            "Y0_upper": self.upper_Y0,
-        })
+        return pd.DataFrame(
+            {
+                "Y1_lower": self.lower_Y1,
+                "Y1_upper": self.upper_Y1,
+                "Y0_lower": self.lower_Y0,
+                "Y0_upper": self.upper_Y0,
+            }
+        )
 
     def summary(self) -> str:
         return (
@@ -98,11 +101,13 @@ class ConformalITEResult:
     method: str = "nested-counterfactual-bound (Lei-Candès 2021 Eq. 3.4)"
 
     def to_frame(self) -> pd.DataFrame:
-        return pd.DataFrame({
-            "tau": self.point,
-            "tau_lower": self.lower,
-            "tau_upper": self.upper,
-        })
+        return pd.DataFrame(
+            {
+                "tau": self.point,
+                "tau_lower": self.lower,
+                "tau_upper": self.upper,
+            }
+        )
 
     def summary(self) -> str:
         w = np.mean(self.upper - self.lower)
@@ -121,6 +126,7 @@ class ConformalITEResult:
 # ═══════════════════════════════════════════════════════════════════════
 #  Core weighted split-conformal prediction
 # ═══════════════════════════════════════════════════════════════════════
+
 
 def weighted_conformal_prediction(
     X_train: np.ndarray,
@@ -163,7 +169,9 @@ def weighted_conformal_prediction(
     """
     if model is None:
         model = RandomForestRegressor(
-            n_estimators=200, min_samples_leaf=5, random_state=0,
+            n_estimators=200,
+            min_samples_leaf=5,
+            random_state=0,
         )
     model = clone(model)
     model.fit(X_train, y_train)
@@ -195,8 +203,7 @@ def weighted_conformal_prediction(
     return lower, upper, test_mean
 
 
-def _weighted_quantile(values: np.ndarray, weights: np.ndarray,
-                       q: float) -> float:
+def _weighted_quantile(values: np.ndarray, weights: np.ndarray, q: float) -> float:
     """Lower weighted quantile of sorted (values, weights)."""
     order = np.argsort(values)
     v = values[order]
@@ -212,9 +219,13 @@ def _weighted_quantile(values: np.ndarray, weights: np.ndarray,
 #  Counterfactual and ITE intervals
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def _split_calib(
-    X: np.ndarray, y: np.ndarray, t: np.ndarray,
-    calib_frac: float, rng: np.random.Generator,
+    X: np.ndarray,
+    y: np.ndarray,
+    t: np.ndarray,
+    calib_frac: float,
+    rng: np.random.Generator,
 ) -> tuple:
     n = len(y)
     idx = rng.permutation(n)
@@ -300,8 +311,7 @@ def conformal_counterfactual(
         X_arm = X_all[mask]
         Y_arm = Y[mask]
         g_arm = g[mask]
-        trn, cal = _split_calib(X_arm, Y_arm, np.full(len(Y_arm), arm),
-                                calib_frac, rng)
+        trn, cal = _split_calib(X_arm, Y_arm, np.full(len(Y_arm), arm), calib_frac, rng)
         # Weight corrects from P(X|T=arm) to P(X)
         #   w_i = f(X_i) / f(X_i | T=arm) = P(T=arm)/P(T=arm|X_i)
         #   ∝ 1/g(X_i)  when arm=1, 1/(1-g(X_i))  when arm=0
@@ -311,8 +321,10 @@ def conformal_counterfactual(
             w_cal = 1.0 / (1.0 - g_arm[cal])
 
         lower, upper, point = weighted_conformal_prediction(
-            X_train=X_arm[trn], y_train=Y_arm[trn],
-            X_calib=X_arm[cal], y_calib=Y_arm[cal],
+            X_train=X_arm[trn],
+            y_train=Y_arm[trn],
+            X_calib=X_arm[cal],
+            y_calib=Y_arm[cal],
             X_test=X_test_arr,
             weights_calib=w_cal,
             model=model,
@@ -329,24 +341,30 @@ def conformal_counterfactual(
     # nominal level with sample noise, so we simply echo the target.
     _result = ConformalCounterfactualResult(
         X=X_test_arr,
-        lower_Y1=lo1, upper_Y1=hi1,
-        lower_Y0=lo0, upper_Y0=hi0,
+        lower_Y1=lo1,
+        upper_Y1=hi1,
+        lower_Y0=lo0,
+        upper_Y0=hi0,
         alpha=alpha,
         marginal_coverage_estimate=1.0 - alpha,
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             _result,
             function="sp.conformal_causal.conformal_counterfactual",
             params={
-                "y": y, "treat": treat,
+                "y": y,
+                "treat": treat,
                 "covariates": list(covariates),
-                "alpha": alpha, "calib_frac": calib_frac,
+                "alpha": alpha,
+                "calib_frac": calib_frac,
                 "model": type(model).__name__ if model is not None else None,
                 "propensity_model": (
                     type(propensity_model).__name__
-                    if propensity_model is not None else None
+                    if propensity_model is not None
+                    else None
                 ),
                 "random_state": random_state,
             },
@@ -388,18 +406,22 @@ def conformal_ite_interval(
     conservative but finite-sample valid under the usual overlap and
     SUTVA conditions.
 
-    Parameters
-    ----------
-    Same as :func:`conformal_counterfactual`.
+    Accepts the same arguments as :func:`conformal_counterfactual`.
 
     Returns
     -------
     ConformalITEResult
     """
     cf = conformal_counterfactual(
-        data, y=y, treat=treat, covariates=covariates,
-        X_test=X_test, alpha=alpha / 2, calib_frac=calib_frac,
-        model=model, propensity_model=propensity_model,
+        data,
+        y=y,
+        treat=treat,
+        covariates=covariates,
+        X_test=X_test,
+        alpha=alpha / 2,
+        calib_frac=calib_frac,
+        model=model,
+        propensity_model=propensity_model,
         random_state=random_state,
     )
     point_1 = 0.5 * (cf.lower_Y1 + cf.upper_Y1)
@@ -417,17 +439,21 @@ def conformal_ite_interval(
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             _result,
             function="sp.conformal_causal.conformal_ite_interval",
             params={
-                "y": y, "treat": treat,
+                "y": y,
+                "treat": treat,
                 "covariates": list(covariates),
-                "alpha": alpha, "calib_frac": calib_frac,
+                "alpha": alpha,
+                "calib_frac": calib_frac,
                 "model": type(model).__name__ if model is not None else None,
                 "propensity_model": (
                     type(propensity_model).__name__
-                    if propensity_model is not None else None
+                    if propensity_model is not None
+                    else None
                 ),
                 "random_state": random_state,
             },

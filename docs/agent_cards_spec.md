@@ -196,7 +196,7 @@ nothing.
 The floor in
 [`scripts/agent_card_coverage_floor.json`](../scripts/agent_card_coverage_floor.json)
 tracks 15 counters: per-tier totals + per-field counts + per-validation-status
-counts for `certified` / `validated`.  Each may only go up.  To
+counts for `certified` / `validated-or-better`.  Each may only go up.  To
 intentionally raise the bar, run:
 
 ```bash

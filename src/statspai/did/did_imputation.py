@@ -94,6 +94,12 @@ def did_imputation(
        tau_hat_it = Y_it - (alpha_hat_i + lambda_hat_t + X_it'beta_hat).
     4. **Aggregate** into ATT or event-study ATT(k) and compute
        cluster-robust standard errors with a two-step adjustment.
+
+    References
+    ----------
+    Borusyak, K., Jaravel, X. and Spiess, J. (2024). Revisiting event-study
+    designs: Robust and efficient estimation. *Review of Economic Studies*.
+    [@borusyak2024revisiting]
     """
     # ── Input validation ─────────────────────────────────────────── #
     df = data.copy()
@@ -113,14 +119,14 @@ def did_imputation(
     ft = df[first_treat].copy().astype(float)
     ft = ft.replace(0, np.inf)
     ft = ft.fillna(np.inf)
-    df['_ft'] = ft
+    df["_ft"] = ft
 
-    df['_treated_obs'] = df[time].astype(float) >= df['_ft']
-    df['_never_treated'] = np.isinf(df['_ft'])
-    df['_untreated_obs'] = ~df['_treated_obs']  # includes never-treated
+    df["_treated_obs"] = df[time].astype(float) >= df["_ft"]
+    df["_never_treated"] = np.isinf(df["_ft"])
+    df["_untreated_obs"] = ~df["_treated_obs"]  # includes never-treated
 
-    n_treated = df['_treated_obs'].sum()
-    n_untreated = df['_untreated_obs'].sum()
+    n_treated = df["_treated_obs"].sum()
+    n_untreated = df["_untreated_obs"].sum()
 
     if n_treated == 0:
         raise ValueError("No treated observations found. Check 'first_treat' column.")
@@ -136,21 +142,21 @@ def did_imputation(
     n_units = len(unit_ids)
     n_times = len(time_ids)
 
-    df['_uid'] = df[group].map(unit_map)
-    df['_tid'] = df[time].map(time_map)
+    df["_uid"] = df[group].map(unit_map)
+    df["_tid"] = df[time].map(time_map)
 
-    untreated = df[df['_untreated_obs']].copy()
+    untreated = df[df["_untreated_obs"]].copy()
 
     has_controls = controls is not None and len(controls) > 0
-    uid_u = untreated['_uid'].values
-    tid_u = untreated['_tid'].values
+    uid_u = untreated["_uid"].values
+    tid_u = untreated["_tid"].values
 
     unit_adj_count = np.bincount(uid_u, minlength=n_units).astype(float)
     time_resid_count = np.bincount(tid_u, minlength=n_times).astype(float)
 
-    treated_mask = df['_treated_obs'].values
-    treated_uids = np.unique(df.loc[treated_mask, '_uid'].values)
-    treated_tids = np.unique(df.loc[treated_mask, '_tid'].values)
+    treated_mask = df["_treated_obs"].values
+    treated_uids = np.unique(df.loc[treated_mask, "_uid"].values)
+    treated_tids = np.unique(df.loc[treated_mask, "_tid"].values)
     missing_units = [
         unit_ids[int(ui)] for ui in treated_uids if unit_adj_count[int(ui)] <= 0
     ]
@@ -179,8 +185,8 @@ def did_imputation(
         untreated=untreated,
         y=y,
         controls=controls if has_controls else None,
-        uid_col='_uid',
-        tid_col='_tid',
+        uid_col="_uid",
+        tid_col="_tid",
         n_units=n_units,
         n_times=n_times,
     )
@@ -197,18 +203,18 @@ def did_imputation(
     # Individual treatment effects for treated obs
     tau_hat = y_all - y0_hat  # defined for all obs; meaningful for treated
 
-    df['_tau_hat'] = tau_hat
-    df['_y0_hat'] = y0_hat
+    df["_tau_hat"] = tau_hat
+    df["_y0_hat"] = y0_hat
 
     # ── Relative time ──────────────────────────────────────────── #
-    df['_rel_time'] = df[time].astype(float) - df['_ft']
+    df["_rel_time"] = df[time].astype(float) - df["_ft"]
     # For never-treated, _rel_time will be -inf; that's fine
 
     # ── Step 4: Aggregate treatment effects ────────────────────── #
     treated_df = df[treated_mask].copy()
 
     # Overall ATT
-    att = float(treated_df['_tau_hat'].mean())
+    att = float(treated_df["_tau_hat"].mean())
 
     # ── Step 5: Standard errors ────────────────────────────────── #
     # Cluster-robust SEs with influence-function approach
@@ -222,8 +228,8 @@ def did_imputation(
         treated_mask=treated_mask,
         resid_untreated=resid_u,
         cluster_col=cluster,
-        uid_col='_uid',
-        tid_col='_tid',
+        uid_col="_uid",
+        tid_col="_tid",
         alpha_hat=alpha_hat,
         lambda_hat=lambda_hat,
         unit_adj_count=unit_adj_count,
@@ -233,7 +239,9 @@ def did_imputation(
     )
 
     z_crit = stats.norm.ppf(1 - alpha / 2)
-    pvalue_att = float(2 * (1 - stats.norm.cdf(abs(att / se_att)))) if se_att > 0 else 1.0
+    pvalue_att = (
+        float(2 * (1 - stats.norm.cdf(abs(att / se_att)))) if se_att > 0 else 1.0
+    )
     ci_att = (att - z_crit * se_att, att + z_crit * se_att)
 
     # ── Event study (if horizon requested) ─────────────────────── #
@@ -246,8 +254,8 @@ def did_imputation(
 
         # For event study, we need all obs of eventually-treated units
         # (including pre-treatment periods for placebo/pre-trend checks)
-        eventually_treated = ~np.isinf(df['_ft'].values)
-        rel_time_rounded = np.round(df['_rel_time'].values)
+        eventually_treated = ~np.isinf(df["_ft"].values)
+        rel_time_rounded = np.round(df["_rel_time"].values)
 
         for k in sorted(horizon):
             # Observations of eventually-treated units at relative time k
@@ -266,8 +274,8 @@ def did_imputation(
                 treated_mask=treated_mask,
                 resid_untreated=resid_u,
                 cluster_col=cluster,
-                uid_col='_uid',
-                tid_col='_tid',
+                uid_col="_uid",
+                tid_col="_tid",
                 alpha_hat=alpha_hat,
                 lambda_hat=lambda_hat,
                 unit_adj_count=unit_adj_count,
@@ -276,17 +284,21 @@ def did_imputation(
                 n_times=n_times,
             )
 
-            pval_k = float(2 * (1 - stats.norm.cdf(abs(att_k / se_k)))) if se_k > 0 else 1.0
+            pval_k = (
+                float(2 * (1 - stats.norm.cdf(abs(att_k / se_k)))) if se_k > 0 else 1.0
+            )
 
-            es_rows.append({
-                'relative_time': k,
-                'att': att_k,
-                'se': se_k,
-                'ci_lower': att_k - z_crit * se_k,
-                'ci_upper': att_k + z_crit * se_k,
-                'pvalue': pval_k,
-                'n_obs': n_k,
-            })
+            es_rows.append(
+                {
+                    "relative_time": k,
+                    "att": att_k,
+                    "se": se_k,
+                    "ci_lower": att_k - z_crit * se_k,
+                    "ci_upper": att_k + z_crit * se_k,
+                    "pvalue": pval_k,
+                    "n_obs": n_k,
+                }
+            )
 
             # Collect pre-treatment for joint test
             if k < 0 and se_k > 0:
@@ -302,36 +314,36 @@ def did_imputation(
             df_chi2 = len(pre_k_chi2_components)
             chi2_pval = float(1 - stats.chi2.cdf(chi2_stat, df_chi2))
             pretrend_test = {
-                'statistic': chi2_stat,
-                'df': df_chi2,
-                'pvalue': chi2_pval,
+                "statistic": chi2_stat,
+                "df": df_chi2,
+                "pvalue": chi2_pval,
             }
 
     # ── Build model_info ───────────────────────────────────────── #
     model_info: Dict[str, Any] = {
-        'estimator': 'BJS Imputation',
-        'n_treated_obs': int(n_treated),
-        'n_control_obs': int(n_untreated),
-        'n_units': int(n_units),
-        'n_time_periods': int(n_times),
-        'n_never_treated': int(df['_never_treated'].sum() // max(n_times, 1)),
-        'cluster_var': cluster,
+        "estimator": "BJS Imputation",
+        "n_treated_obs": int(n_treated),
+        "n_control_obs": int(n_untreated),
+        "n_units": int(n_units),
+        "n_time_periods": int(n_times),
+        "n_never_treated": int(df["_never_treated"].sum() // max(n_times, 1)),
+        "cluster_var": cluster,
     }
 
     if has_controls:
-        model_info['controls'] = controls
-        model_info['beta_controls'] = dict(zip(controls, beta.tolist()))
+        model_info["controls"] = controls
+        model_info["beta_controls"] = dict(zip(controls, beta.tolist()))
 
     if event_study_df is not None and len(event_study_df) > 0:
-        model_info['event_study'] = event_study_df
+        model_info["event_study"] = event_study_df
 
     if pretrend_test is not None:
-        model_info['pretrend_test'] = pretrend_test
+        model_info["pretrend_test"] = pretrend_test
 
     # ── Return CausalResult ────────────────────────────────────── #
     _result = CausalResult(
-        method='Borusyak, Jaravel & Spiess (2024) Imputation Estimator',
-        estimand='ATT',
+        method="Borusyak, Jaravel & Spiess (2024) Imputation Estimator",
+        estimand="ATT",
         estimate=att,
         se=se_att,
         pvalue=pvalue_att,
@@ -340,18 +352,23 @@ def did_imputation(
         n_obs=len(data),
         detail=event_study_df,
         model_info=model_info,
-        _citation_key='did_imputation',
+        _citation_key="did_imputation",
     )
     try:
         from ..output._lineage import attach_provenance as _attach_prov
+
         _attach_prov(
             _result,
             function="sp.did.did_imputation",
             params={
-                "y": y, "group": group, "time": time,
+                "y": y,
+                "group": group,
+                "time": time,
                 "first_treat": first_treat,
-                "controls": controls, "horizon": horizon,
-                "cluster": cluster, "alpha": alpha,
+                "controls": controls,
+                "horizon": horizon,
+                "cluster": cluster,
+                "alpha": alpha,
             },
             data=data,
             overwrite=False,
@@ -457,7 +474,7 @@ def _fit_untreated_twfe_sparse(
             return fixed
 
         x = sparse.csr_matrix(frame[controls].values.astype(float))
-        return sparse.hstack([fixed, x], format='csr')
+        return sparse.hstack([fixed, x], format="csr")
 
     X_u = _design(untreated)
     n_cols = X_u.shape[1]
@@ -470,7 +487,7 @@ def _fit_untreated_twfe_sparse(
     )
     coef = fit[0]
     y0_hat = np.asarray(_design(df) @ coef, dtype=float)
-    beta = coef[-len(controls):] if controls else np.array([])
+    beta = coef[-len(controls) :] if controls else np.array([])
     return y0_hat, np.asarray(beta, dtype=float)
 
 
@@ -547,19 +564,15 @@ def _cluster_se_imputation(
 
                 # Influence via unit FE
                 if unit_adj_count[u_i] > 0:
-                    adjustment += eps_it * n_treated_unit / (
-                        unit_adj_count[u_i] * N1
-                    )
+                    adjustment += eps_it * n_treated_unit / (unit_adj_count[u_i] * N1)
                 # Influence via time FE
                 if time_resid_count[t_i] > 0:
-                    adjustment += eps_it * n_treated_time / (
-                        time_resid_count[t_i] * N1
-                    )
+                    adjustment += eps_it * n_treated_time / (time_resid_count[t_i] * N1)
 
         psi_values[c_idx] = direct + adjustment
 
     # Clustered variance: V = sum(psi_c^2)
-    variance = float(np.sum(psi_values ** 2))
+    variance = float(np.sum(psi_values**2))
     se = float(np.sqrt(variance))
 
     # Small-sample correction: G/(G-1)
@@ -635,17 +648,13 @@ def _cluster_se_horizon(
                 n_k_time = np.sum(mask_k & (tid == t_i))
 
                 if unit_adj_count[u_i] > 0:
-                    adjustment += eps_it * n_k_unit / (
-                        unit_adj_count[u_i] * N_k
-                    )
+                    adjustment += eps_it * n_k_unit / (unit_adj_count[u_i] * N_k)
                 if time_resid_count[t_i] > 0:
-                    adjustment += eps_it * n_k_time / (
-                        time_resid_count[t_i] * N_k
-                    )
+                    adjustment += eps_it * n_k_time / (time_resid_count[t_i] * N_k)
 
         psi_values[c_idx] = direct + adjustment
 
-    variance = float(np.sum(psi_values ** 2))
+    variance = float(np.sum(psi_values**2))
     se = float(np.sqrt(variance))
 
     if n_clusters > 1:
@@ -655,7 +664,7 @@ def _cluster_se_horizon(
 
 
 # Register citation
-CausalResult._CITATIONS['did_imputation'] = (
+CausalResult._CITATIONS["did_imputation"] = (
     "@article{borusyak2024revisiting,\n"
     "  title={Revisiting Event-Study Designs: Robust and Efficient Estimation},\n"
     "  author={Borusyak, Kirill and Jaravel, Xavier and Spiess, Jann},\n"

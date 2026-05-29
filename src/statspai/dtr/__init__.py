@@ -7,7 +7,7 @@ assigned over multiple time periods.
 Methods
 -------
 - **G-estimation** : Structural nested mean model for optimal DTR
-  (Robins 1986, 2004).
+    (Robins 1986, 2004).
 
 References
 ----------
@@ -26,8 +26,12 @@ from .a_learning import a_learning, ALearningResult
 from .snmm import snmm, SNMMResult
 
 __all__ = [
-    'g_estimation', 'GEstimation',
-    'q_learning', 'QLearningResult',
-    'a_learning', 'ALearningResult',
-    'snmm', 'SNMMResult',
+    "g_estimation",
+    "GEstimation",
+    "q_learning",
+    "QLearningResult",
+    "a_learning",
+    "ALearningResult",
+    "snmm",
+    "SNMMResult",
 ]

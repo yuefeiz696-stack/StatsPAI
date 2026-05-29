@@ -79,9 +79,17 @@ class TestFunctionSpecAgentFields:
     def test_agent_card_shape(self, scratch_spec):
         card = scratch_spec.agent_card()
         for key in (
-            "name", "category", "description", "signature",
-            "pre_conditions", "assumptions", "failure_modes",
-            "alternatives", "typical_n_min", "reference", "example",
+            "name",
+            "category",
+            "description",
+            "signature",
+            "pre_conditions",
+            "assumptions",
+            "failure_modes",
+            "alternatives",
+            "typical_n_min",
+            "reference",
+            "example",
         ):
             assert key in card, f"agent_card missing {key!r}"
         assert card["signature"]["name"] == scratch_spec.name
@@ -157,7 +165,10 @@ class TestBackwardCompatibility:
             props = schema.get("parameters", {}).get("properties", {})
             for prop in props.values():
                 total += 1
-                if isinstance(prop.get("description"), str) and prop["description"].strip():
+                if (
+                    isinstance(prop.get("description"), str)
+                    and prop["description"].strip()
+                ):
                     described += 1
         assert total > 0
         assert described / total >= 0.95
@@ -215,9 +226,7 @@ class TestFlagshipPopulated:
     @pytest.mark.parametrize("name", FLAGSHIPS)
     def test_has_typical_n_min(self, name):
         card = sp.agent_card(name)
-        assert card["typical_n_min"] is not None, (
-            f"{name} must declare typical_n_min"
-        )
+        assert card["typical_n_min"] is not None, f"{name} must declare typical_n_min"
         assert isinstance(card["typical_n_min"], int)
         assert card["typical_n_min"] > 0
 
@@ -228,3 +237,48 @@ class TestFlagshipPopulated:
         assert "**Pre-conditions**" in block
         assert "**Identifying assumptions**" in block
         assert "**Failure modes → recovery**" in block
+
+
+class TestAgentNativeSchemaExport:
+    """sp.agent_schema / function_schema(agent_native=True) carry x_statspai."""
+
+    def test_function_schema_default_has_no_extension(self):
+        schema = sp.function_schema("did")
+        assert set(schema) == {"name", "description", "parameters"}
+        assert "x_statspai" not in schema
+
+    def test_agent_native_flag_adds_extension(self):
+        schema = sp.function_schema("did", agent_native=True)
+        assert "x_statspai" in schema
+        # base OpenAI shape is preserved alongside the extension
+        assert {"name", "description", "parameters"} <= set(schema)
+
+    def test_agent_schema_shorthand_matches_flag(self):
+        assert sp.agent_schema("did") == sp.function_schema("did", agent_native=True)
+
+    def test_extension_carries_planning_fields(self):
+        ext = sp.agent_schema("did")["x_statspai"]
+        for key in (
+            "assumptions",
+            "pre_conditions",
+            "failure_modes",
+            "alternatives",
+            "typical_n_min",
+            "stability",
+            "validation_status",
+            "category",
+        ):
+            assert key in ext, f"x_statspai missing {key!r}"
+        assert ext["assumptions"], "did must expose assumptions in the schema"
+
+    def test_family_seeded_function_exposed_in_schema(self):
+        # A function that only gets agent-native fields via the family-seed
+        # templates (not a hand-written flagship) still surfaces them.
+        ext = sp.agent_schema("gsynth")["x_statspai"]
+        assert ext["assumptions"]
+        assert ext["failure_modes"]
+        assert isinstance(ext["typical_n_min"], int) and ext["typical_n_min"] > 0
+
+    def test_all_schemas_agent_native_bulk(self):
+        schemas = sp.all_schemas(agent_native=True)
+        assert all("x_statspai" in s for s in schemas)

@@ -193,7 +193,7 @@ and human labels exist, then divide:
 | Symptom | Exception | Remedy | Try next |
 | --- | --- | --- | --- |
 | DataInsufficient: 'Need at least N rows' | `statspai.DataInsufficient` | Lower n_components or supply more data |  |
-| ImportError on embedder='sbert' | `ImportError` | Install sentence-transformers: `pip install sentence-transformers` or use embedder='hash' | `embedder='hash'` |
+| ImportError on embedder='sbert' | `ImportError` | Install sentence-transformers: `pip install sentence-transformers` or use embedder='hash' |  |
 
 **Alternatives (ranked)**
 - `sp.sp.regress: plain OLS without text adjustment`

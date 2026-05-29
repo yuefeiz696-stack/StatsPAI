@@ -17,10 +17,10 @@ The functions in this module are pure (no I/O, no caching) so they're
 safe to call inside any serializer. They degrade gracefully when the
 result object lacks the expected fields.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional
-
 
 # ----------------------------------------------------------------------
 # next_calls: pre-built JSON-RPC payloads
@@ -33,79 +33,95 @@ from typing import Any, Dict, Iterable, List, Optional
 #: can stop reading after entry [0] and still make a defensible move.
 _FOLLOWUP_BY_TOOL: Dict[str, List[Dict[str, Any]]] = {
     "did": [
-        {"tool": "audit_result",
-         "rationale": "Reviewer-grade checklist of robustness checks for DID."},
-        {"tool": "honest_did_from_result",
-         "arguments": {"method": "SD"},
-         "rationale": ("Rambachan-Roth (2023) honest CIs in case the "
-                        "pre-trend test is borderline.")},
-        {"tool": "bacon_decomposition",
-         "rationale": ("Goodman-Bacon weights — does TWFE give negative "
-                        "weight to any 2x2 comparison?")},
+        {
+            "tool": "audit_result",
+            "rationale": "Reviewer-grade checklist of robustness checks for DID.",
+        },
+        {
+            "tool": "honest_did_from_result",
+            "arguments": {"method": "SD"},
+            "rationale": (
+                "Rambachan-Roth (2023) honest CIs in case the "
+                "pre-trend test is borderline."
+            ),
+        },
+        {
+            "tool": "bacon_decomposition",
+            "rationale": (
+                "Goodman-Bacon weights — does TWFE give negative "
+                "weight to any 2x2 comparison?"
+            ),
+        },
     ],
     "callaway_santanna": [
-        {"tool": "audit_result",
-         "rationale": "Cohort-by-time event study + balance + placebo."},
-        {"tool": "honest_did_from_result",
-         "arguments": {"method": "SD"},
-         "rationale": "Sensitivity to parallel-trends violation."},
+        {
+            "tool": "audit_result",
+            "rationale": "Cohort-by-time event study + balance + placebo.",
+        },
+        {
+            "tool": "honest_did_from_result",
+            "arguments": {"method": "SD"},
+            "rationale": "Sensitivity to parallel-trends violation.",
+        },
     ],
     "did_imputation": [
         {"tool": "audit_result"},
-        {"tool": "honest_did_from_result",
-         "arguments": {"method": "SD"}},
+        {"tool": "honest_did_from_result", "arguments": {"method": "SD"}},
     ],
     "sun_abraham": [
         {"tool": "audit_result"},
-        {"tool": "honest_did_from_result",
-         "arguments": {"method": "SD"}},
+        {"tool": "honest_did_from_result", "arguments": {"method": "SD"}},
     ],
     "rdrobust": [
-        {"tool": "rdplot",
-         "rationale": "Visual sanity-check of the discontinuity."},
-        {"tool": "rddensity",
-         "rationale": "McCrary-style manipulation test on the running variable."},
-        {"tool": "rdsensitivity",
-         "rationale": "Bandwidth + kernel sensitivity."},
+        {"tool": "rdplot", "rationale": "Visual sanity-check of the discontinuity."},
+        {
+            "tool": "rddensity",
+            "rationale": "McCrary-style manipulation test on the running variable.",
+        },
+        {"tool": "rdsensitivity", "rationale": "Bandwidth + kernel sensitivity."},
     ],
     "ivreg": [
-        {"tool": "effective_f_test",
-         "rationale": "Olea-Pflueger weak-IV diagnostic."},
-        {"tool": "anderson_rubin_test",
-         "rationale": "Weak-instrument-robust CI / test."},
-        {"tool": "sensitivity_from_result",
-         "arguments": {"method": "evalue"},
-         "rationale": "E-value bound on omitted-confounder strength."},
+        {"tool": "effective_f_test", "rationale": "Olea-Pflueger weak-IV diagnostic."},
+        {
+            "tool": "anderson_rubin_test",
+            "rationale": "Weak-instrument-robust CI / test.",
+        },
+        {
+            "tool": "sensitivity_from_result",
+            "arguments": {"method": "evalue"},
+            "rationale": "E-value bound on omitted-confounder strength.",
+        },
     ],
     "iv": [
         {"tool": "effective_f_test"},
         {"tool": "anderson_rubin_test"},
     ],
     "synth": [
-        {"tool": "synthdid_placebo",
-         "rationale": "In-space placebo for inference."},
-        {"tool": "robust_synth",
-         "rationale": "Robust SC variant — Ben-Michael-Feller-Rothstein 2021."},
+        {"tool": "synthdid_placebo", "rationale": "In-space placebo for inference."},
+        {
+            "tool": "robust_synth",
+            "rationale": "Robust SC variant — Ben-Michael-Feller-Rothstein 2021.",
+        },
     ],
     "regress": [
-        {"tool": "vif",
-         "rationale": "Multicollinearity diagnostic."},
-        {"tool": "het_test",
-         "rationale": "Heteroskedasticity test (Breusch-Pagan / White)."},
-        {"tool": "sensitivity_from_result",
-         "arguments": {"method": "evalue"}},
+        {"tool": "vif", "rationale": "Multicollinearity diagnostic."},
+        {
+            "tool": "het_test",
+            "rationale": "Heteroskedasticity test (Breusch-Pagan / White).",
+        },
+        {"tool": "sensitivity_from_result", "arguments": {"method": "evalue"}},
     ],
     "dml": [
         {"tool": "audit_result"},
         {"tool": "spec_curve"},
     ],
     "causal_forest": [
-        {"tool": "cate_summary",
-         "rationale": "ATE + heterogeneity quantiles."},
-        {"tool": "blp_test",
-         "rationale": "Best linear projection — is heterogeneity real?"},
-        {"tool": "calibration_test",
-         "rationale": "Calibration of CATE predictions."},
+        {"tool": "cate_summary", "rationale": "ATE + heterogeneity quantiles."},
+        {
+            "tool": "blp_test",
+            "rationale": "Best linear projection — is heterogeneity real?",
+        },
+        {"tool": "calibration_test", "rationale": "Calibration of CATE predictions."},
     ],
     "metalearner": [
         {"tool": "cate_summary"},
@@ -116,10 +132,8 @@ _FOLLOWUP_BY_TOOL: Dict[str, List[Dict[str, Any]]] = {
         {"tool": "calibration_test"},
     ],
     "matching": [
-        {"tool": "balance_panel",
-         "rationale": "Post-match SMD balance audit."},
-        {"tool": "love_plot",
-         "rationale": "Visual covariate-balance sanity-check."},
+        {"tool": "balance_panel", "rationale": "Post-match SMD balance audit."},
+        {"tool": "love_plot", "rationale": "Visual covariate-balance sanity-check."},
     ],
     "ebalance": [
         {"tool": "balanceplot"},
@@ -150,8 +164,7 @@ def _instantiate_followup(
     # (e.g. agents commonly want the same outcome / treatment / time
     # column names without restating them). We never overwrite an
     # explicit value the template carries.
-    for key in ("y", "treat", "time", "id", "data_path",
-                 "running_var", "instrument"):
+    for key in ("y", "treat", "time", "id", "data_path", "running_var", "instrument"):
         if key in base_args and key not in out["arguments"]:
             out["arguments"][key] = base_args[key]
     return out
@@ -166,9 +179,10 @@ def build_next_calls(
     """Return a list of pre-filled tools/call payloads for follow-ups."""
     base_args = base_args or {}
     templates = _FOLLOWUP_BY_TOOL.get(tool_name, [])
-    return [_instantiate_followup(t, result_id=result_id,
-                                    base_args=base_args)
-            for t in templates]
+    return [
+        _instantiate_followup(t, result_id=result_id, base_args=base_args)
+        for t in templates
+    ]
 
 
 # ----------------------------------------------------------------------
@@ -184,7 +198,7 @@ _CITATIONS_BY_TOOL: Dict[str, List[str]] = {
     "callaway_santanna": ["callaway2021difference"],
     "did_imputation": ["borusyak2024revisiting"],
     "sun_abraham": ["sun2021estimating"],
-    "did_multiplegt": ["dechaisemartin2020twoway"],
+    "did_multiplegt": ["dechaisemartin2020two"],
     "honest_did": ["rambachan2023more"],
     "bacon_decomposition": ["goodmanbacon2021difference"],
     "rdrobust": ["calonico2014robust"],
@@ -218,9 +232,49 @@ _CITATIONS_BY_TOOL: Dict[str, List[str]] = {
 }
 
 
+def _bib_keys_from_reference(tool_name: str) -> List[str]:
+    """Derive bib keys from a registered function's ``reference`` field.
+
+    The curated convention writes references as ``Author (Year)`` plus a
+    Pandoc citation marker. We extract those citation tokens and keep only
+    keys that actually resolve in ``paper.bib`` — so the citation-
+    hallucination red line (CLAUDE.md §10) holds even though this path is
+    auto-derived: an unverified key is silently dropped, never surfaced.
+    """
+    import re
+
+    try:
+        from ..registry import _REGISTRY, _ensure_full_registry
+
+        _ensure_full_registry()
+        spec = _REGISTRY.get(tool_name)
+    except (AttributeError, ImportError, KeyError, RuntimeError):
+        spec = None
+    if spec is None or not getattr(spec, "reference", ""):
+        return []
+    candidates = re.findall(r"\[@([\w:./-]+)\]", spec.reference)
+    if not candidates:
+        return []
+    present = fetch_bibtex(candidates)
+    # Preserve order, drop unverified keys.
+    return [k for k in candidates if present.get(k)]
+
+
 def build_citations(tool_name: str) -> List[str]:
-    """Return the verified bib keys for ``tool_name`` (empty list = none)."""
-    return list(_CITATIONS_BY_TOOL.get(tool_name, []))
+    """Return the verified bib keys for ``tool_name`` (empty list = none).
+
+    Precedence: the hand-curated :data:`_CITATIONS_BY_TOOL` map wins (it
+    is reviewed and may rank multiple canonical refs); otherwise fall back
+    to bib keys parsed from the function's registry ``reference`` field.
+    The fallback only emits keys verified to exist in ``paper.bib``, so it
+    cannot introduce a hallucinated citation — it just lets the hundreds of
+    carded estimators carry their reference automatically instead of
+    requiring a second hand-maintained table.
+    """
+    keys = list(_CITATIONS_BY_TOOL.get(tool_name, []))
+    if keys:
+        return keys
+    return _bib_keys_from_reference(tool_name)
 
 
 def fetch_bibtex(keys: Iterable[str]) -> Dict[str, str]:
@@ -228,6 +282,7 @@ def fetch_bibtex(keys: Iterable[str]) -> Dict[str, str]:
     if not keys:
         return {}
     from .workflow_tools import _load_bibtex_index
+
     index = _load_bibtex_index()
     return {k: index.get(k, "") for k in keys}
 
@@ -235,6 +290,7 @@ def fetch_bibtex(keys: Iterable[str]) -> Dict[str, str]:
 # ----------------------------------------------------------------------
 # narrative: short markdown digest
 # ----------------------------------------------------------------------
+
 
 def build_narrative(
     tool_name: str,
@@ -293,6 +349,7 @@ def build_narrative(
 # enrich: glue
 # ----------------------------------------------------------------------
 
+
 def enrich_payload(
     payload: Dict[str, Any],
     *,
@@ -311,9 +368,7 @@ def enrich_payload(
         return payload
 
     if "next_calls" not in payload:
-        nc = build_next_calls(tool_name,
-                                result_id=result_id,
-                                base_args=base_args or {})
+        nc = build_next_calls(tool_name, result_id=result_id, base_args=base_args or {})
         if nc:
             payload["next_calls"] = nc
 

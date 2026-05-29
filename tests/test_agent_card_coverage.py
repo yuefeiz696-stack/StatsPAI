@@ -120,12 +120,26 @@ def test_inherits_from_merges_parent_assumptions() -> None:
 
     raw = variant.agent_card(merge_inherited=False)
     merged = variant.agent_card(merge_inherited=True)
-    # Raw view shows the empty own fields...
-    assert raw["assumptions"] == []
-    assert raw["failure_modes"] == []
-    # ...merged view absorbs the parent's content.
-    assert len(merged["assumptions"]) == len(parent.assumptions)
-    assert len(merged["failure_modes"]) == len(parent.failure_modes)
+    # The contract is a UNION: the merged view must surface the parent's
+    # family-shared assumptions / failure modes *on top of* whatever the
+    # variant declares for itself.  (The fixture used to assume the
+    # variant carried none of its own; that is no longer true now that
+    # curated cards give borusyak its own parallel-trends / no-anticipation
+    # assumptions — and over-specifying "own == []" made this test brittle
+    # against exactly the metadata enrichment it is meant to encourage.)
+    merged_assumptions = set(merged["assumptions"])
+    assert set(parent.assumptions) <= merged_assumptions, (
+        "merged view must include the parent's assumptions"
+    )
+    assert set(raw["assumptions"]) <= merged_assumptions, (
+        "merged view must not drop the variant's own assumptions"
+    )
+    parent_symptoms = {fm.symptom for fm in parent.failure_modes}
+    merged_symptoms = {fm["symptom"] for fm in merged["failure_modes"]}
+    assert parent_symptoms <= merged_symptoms, (
+        "merged view must include the parent's failure modes"
+    )
+    assert len(merged["assumptions"]) >= len(parent.assumptions)
     # typical_n_min falls back to parent when child is None
     if variant.typical_n_min is None:
         assert merged["typical_n_min"] == parent.typical_n_min

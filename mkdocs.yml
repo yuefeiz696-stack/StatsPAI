@@ -45,12 +45,39 @@ markdown_extensions:
   - toc:
       permalink: true
 
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - scripts/gen_api_ref.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_if_no_docstring: false
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            filters: ["!^_"]
+            heading_level: 2
+
 extra_javascript:
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
   - Home: index.md
+  - Getting started: getting-started.md
+  - Cookbook: cookbook.md
+  - FAQ & troubleshooting: faq.md
   - Ecosystem stats: stats.md
   - JOSS reviewer guide: joss_reviewer_guide.md
   - JOSS validation dossier: joss_validation_dossier.md
@@ -92,6 +119,8 @@ nav:
   - Reference:
       - "Overview": reference/index.md
       - "Difference-in-differences": reference/did.md
+      - "Instrumental variables": reference/iv.md
+      - "Panel data": reference/panel.md
       - "Regression discontinuity": reference/rd.md
       - "Synthetic control": reference/synth.md
       - "Decomposition analysis": reference/decomposition.md
@@ -107,4 +136,5 @@ nav:
       - "Spatial econometrics": reference/spatial.md
       - "Time series": reference/timeseries.md
       - "Survival analysis": reference/survival.md
+  - Full API reference: reference/api/
   - Changelog: changelog.md

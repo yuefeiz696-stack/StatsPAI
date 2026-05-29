@@ -77,11 +77,11 @@ def xtabond(
     data: pd.DataFrame,
     y: str,
     x: Optional[List[str]] = None,
-    id: str = 'id',
-    time: str = 'time',
+    id: str = "id",
+    time: str = "time",
     lags: int = 1,
     gmm_lags: Tuple[int, Optional[int]] = (2, None),
-    method: str = 'difference',
+    method: str = "difference",
     twostep: bool = False,
     robust: bool = True,
     alpha: float = 0.05,
@@ -184,6 +184,14 @@ def xtabond(
       two-step Hansen J when that is a concern.
 
     See Roodman (2009, *Stata Journal*) for practical guidance.
+
+    References
+    ----------
+    Arellano, M. and Bond, S. (1991). Some tests of specification for panel
+    data: Monte Carlo evidence and an application to employment equations.
+    *Review of Economic Studies*. [@arellano1991some]
+    Roodman, D. (2009). How to do xtabond2: An introduction to difference and
+    system GMM in Stata. *Stata Journal*. [@roodman2009xtabond]
     """
     if x is None:
         x = []
@@ -199,12 +207,14 @@ def xtabond(
 
     min_lag, max_lag = gmm_lags
     if min_lag < 2:
-        raise ValueError("gmm_lags min must be >= 2 (Arellano-Bond moment "
-                         "conditions require lags of at least 2).")
+        raise ValueError(
+            "gmm_lags min must be >= 2 (Arellano-Bond moment "
+            "conditions require lags of at least 2)."
+        )
     if max_lag is None:
         max_lag = T  # all available deeper lags (Stata's default)
 
-    if method == 'system':
+    if method == "system":
         raise NotImplementedError(
             "Blundell-Bond system GMM is not yet implemented. Proper system "
             "GMM stacks an additional level equation (instrumented by lagged "
@@ -213,13 +223,15 @@ def xtabond(
             "method='difference' (Arellano-Bond), which is validated to "
             "machine precision against Stata's `xtabond`."
         )
-    if method != 'difference':
-        raise ValueError("method must be 'difference' (or 'system', which is "
-                         "not yet implemented).")
+    if method != "difference":
+        raise ValueError(
+            "method must be 'difference' (or 'system', which is "
+            "not yet implemented)."
+        )
 
-    n_ylags = lags                       # number of lagged-Y regressors
+    n_ylags = lags  # number of lagged-Y regressors
     n_x = len(x)
-    k = n_ylags + n_x                    # number of structural parameters
+    k = n_ylags + n_x  # number of structural parameters
 
     # First differenced equation at global period position `p` requires
     # y at positions p, p-1, ..., p-n_ylags-1 (so that Δy_p and every
@@ -234,7 +246,7 @@ def xtabond(
     # s <= p-2 and lag = p - s within [min_lag, max_lag].
     ycols: List[Tuple[int, int]] = []
     for p in eq_positions:
-        for s in range(0, p - 1):        # s <= p-2  ->  lag = p-s >= 2
+        for s in range(0, p - 1):  # s <= p-2  ->  lag = p-s >= 2
             lag = p - s
             if min_lag <= lag <= max_lag:
                 ycols.append((p, s))
@@ -244,24 +256,25 @@ def xtabond(
     # exogenous instruments: Δx (one standard-instrument column per x var),
     # appended after the GMM columns.
     x_iv_offset = n_ycols
-    m = n_ycols + n_x                     # total instruments
+    m = n_ycols + n_x  # total instruments
 
     if m < k:
-        raise ValueError("Under-identified: fewer instruments than "
-                         "parameters. Loosen gmm_lags or add periods.")
+        raise ValueError(
+            "Under-identified: fewer instruments than "
+            "parameters. Loosen gmm_lags or add periods."
+        )
 
     # --- Build per-unit differenced equations and instrument blocks ----------
-    W_rows: List[np.ndarray] = []         # regressors  ΔW
-    Z_rows: List[np.ndarray] = []         # instruments Z
-    dY_rows: List[float] = []             # Δy
-    row_unit: List[int] = []              # unit index per row
-    row_eqpos: List[int] = []             # equation period per row
+    W_rows: List[np.ndarray] = []  # regressors  ΔW
+    Z_rows: List[np.ndarray] = []  # instruments Z
+    dY_rows: List[float] = []  # Δy
+    row_unit: List[int] = []  # unit index per row
+    row_eqpos: List[int] = []  # equation period per row
 
     for ui, uid in enumerate(units):
         g = df[df[id] == uid]
         ypos = {time_pos[t]: yv for t, yv in zip(g[time], g[y])}
-        xpos = {xv: {time_pos[t]: val for t, val in zip(g[time], g[xv])}
-                for xv in x}
+        xpos = {xv: {time_pos[t]: val for t, val in zip(g[time], g[xv])} for xv in x}
 
         for p in eq_positions:
             # need y at p, p-1, and the deepest regressor lag p-n_ylags-1
@@ -295,9 +308,9 @@ def xtabond(
     if len(dY_rows) < k + 1:
         raise ValueError("Not enough observations after differencing.")
 
-    W = np.asarray(W_rows)                # (n, k)
-    Z = np.asarray(Z_rows)                # (n, m)
-    dY = np.asarray(dY_rows)             # (n,)
+    W = np.asarray(W_rows)  # (n, k)
+    Z = np.asarray(Z_rows)  # (n, m)
+    dY = np.asarray(dY_rows)  # (n,)
     row_unit_arr = np.asarray(row_unit)
     row_eqpos_arr = np.asarray(row_eqpos)
     n = W.shape[0]
@@ -328,9 +341,9 @@ def xtabond(
         )
 
     # --- One-step weight matrix  A = (Σ_i Z_i' H Z_i)^{-1} -------------------
-    WZ = W.T @ Z                          # (k, m)
+    WZ = W.T @ Z  # (k, m)
     ZW = WZ.T
-    ZdY = Z.T @ dY                        # (m,)
+    ZdY = Z.T @ dY  # (m,)
 
     ZHZ = np.zeros((m, m))
     for r in unit_rows:
@@ -339,7 +352,7 @@ def xtabond(
     A = _safe_inv(ZHZ, "GMM weight matrix Z'HZ")
 
     def _gmm(weight: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        Mmat = WZ @ weight @ ZW           # (k, k)
+        Mmat = WZ @ weight @ ZW  # (k, k)
         Minv = _safe_inv(Mmat, "moment matrix W'ZWZ'W")
         beta_ = Minv @ (WZ @ weight @ ZdY)
         return beta_, Minv
@@ -348,7 +361,7 @@ def xtabond(
     beta1, Minv1 = _gmm(A)
     resid1 = dY - W @ beta1
 
-    Omega1 = np.zeros((m, m))             # Σ_i Z_i' ê1 ê1' Z_i
+    Omega1 = np.zeros((m, m))  # Σ_i Z_i' ê1 ê1' Z_i
     for r in unit_rows:
         ge = Z[r].T @ resid1[r]
         Omega1 += np.outer(ge, ge)
@@ -383,8 +396,7 @@ def xtabond(
         vcov = V1_robust if robust else sigma2 * Minv1
     elif robust:
         # two-step robust: Windmeijer (2005) finite-sample correction
-        vcov = _windmeijer(W, Z, WZ, resid1, resid, W2, Minv2,
-                           V1_robust, unit_rows)
+        vcov = _windmeijer(W, Z, WZ, resid1, resid, W2, Minv2, V1_robust, unit_rows)
     else:
         # two-step conventional: efficient-GMM VCE = (W'Z W2 Z'W)⁻¹
         vcov = Minv2
@@ -403,10 +415,30 @@ def xtabond(
     # AR test variance is robust for robust / two-step estimators, classical
     # otherwise (matching Stata's vce-dependent Arellano-Bond test).
     robust_ar = robust or twostep
-    ar1 = _ab_ar_test(resid, unit_rows, row_eqpos_arr, 1,
-                      Z, W, weight_final, Minv_final, robust_ar, sigma2)
-    ar2 = _ab_ar_test(resid, unit_rows, row_eqpos_arr, 2,
-                      Z, W, weight_final, Minv_final, robust_ar, sigma2)
+    ar1 = _ab_ar_test(
+        resid,
+        unit_rows,
+        row_eqpos_arr,
+        1,
+        Z,
+        W,
+        weight_final,
+        Minv_final,
+        robust_ar,
+        sigma2,
+    )
+    ar2 = _ab_ar_test(
+        resid,
+        unit_rows,
+        row_eqpos_arr,
+        2,
+        Z,
+        W,
+        weight_final,
+        Minv_final,
+        robust_ar,
+        sigma2,
+    )
 
     # Over-identification: Sargan (one-step, homoskedastic) and — for
     # two-step — the heteroskedasticity-robust Hansen J.
@@ -426,7 +458,7 @@ def xtabond(
 
     # --- Results -------------------------------------------------------------
     # Stata-style coefficient labels: lagged-Y terms as "L<k>.<y>".
-    var_names = [f'L{lg}.{y}' for lg in range(1, n_ylags + 1)] + x
+    var_names = [f"L{lg}.{y}" for lg in range(1, n_ylags + 1)] + x
     z_crit = stats.norm.ppf(1 - alpha / 2)
     rho = float(beta[0])
     rho_se = float(se[0])
@@ -434,42 +466,44 @@ def xtabond(
     pvalue = float(2 * stats.norm.sf(abs(z_val))) if np.isfinite(z_val) else np.nan
     ci = (rho - z_crit * rho_se, rho + z_crit * rho_se)
 
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         z_stats = np.where(se > 0, beta / se, np.nan)
     pvals = 2 * stats.norm.sf(np.abs(z_stats))
-    detail = pd.DataFrame({
-        'variable': var_names,
-        'coefficient': beta,
-        'se': se,
-        'z': z_stats,
-        'pvalue': pvals,
-    })
+    detail = pd.DataFrame(
+        {
+            "variable": var_names,
+            "coefficient": beta,
+            "se": se,
+            "z": z_stats,
+            "pvalue": pvals,
+        }
+    )
 
     model_info = {
-        'method': method.upper() + ' GMM',
-        'twostep': twostep,
-        'robust': robust,
-        'windmeijer': bool(twostep and robust),
-        'n_units': n_units,
-        'n_obs': n,
-        'n_instruments': m,
-        'n_regressors': k,
-        'gmm_lags': (min_lag, None if max_lag >= T else max_lag),
-        'ar1_z': ar1['z'],
-        'ar1_p': ar1['pvalue'],
-        'ar2_z': ar2['z'],
-        'ar2_p': ar2['pvalue'],
-        'sargan_stat': sargan,
-        'sargan_df': sargan_df,
-        'sargan_p': sargan_p,
-        'hansen_stat': hansen,
-        'hansen_df': sargan_df if twostep else 0,
-        'hansen_p': hansen_p,
+        "method": method.upper() + " GMM",
+        "twostep": twostep,
+        "robust": robust,
+        "windmeijer": bool(twostep and robust),
+        "n_units": n_units,
+        "n_obs": n,
+        "n_instruments": m,
+        "n_regressors": k,
+        "gmm_lags": (min_lag, None if max_lag >= T else max_lag),
+        "ar1_z": ar1["z"],
+        "ar1_p": ar1["pvalue"],
+        "ar2_z": ar2["z"],
+        "ar2_p": ar2["pvalue"],
+        "sargan_stat": sargan,
+        "sargan_df": sargan_df,
+        "sargan_p": sargan_p,
+        "hansen_stat": hansen,
+        "hansen_df": sargan_df if twostep else 0,
+        "hansen_p": hansen_p,
     }
 
     return CausalResult(
         method=f"Arellano-Bond ({'Two-step' if twostep else 'One-step'} GMM)",
-        estimand='rho (AR coefficient)',
+        estimand="rho (AR coefficient)",
         estimate=rho,
         se=rho_se,
         pvalue=pvalue,
@@ -478,7 +512,7 @@ def xtabond(
         n_obs=n,
         detail=detail,
         model_info=model_info,
-        _citation_key='arellano_bond',
+        _citation_key="arellano_bond",
     )
 
 
@@ -516,21 +550,22 @@ def _windmeijer(W, Z, WZ, resid1, resid2, W2, Minv2, V1_robust, unit_rows):
     k = W.shape[1]
     m = Z.shape[1]
     g2 = Z.T @ resid2
-    bread2 = Minv2 @ WZ @ W2                      # (k, m)
+    bread2 = Minv2 @ WZ @ W2  # (k, m)
     D = np.zeros((k, k))
     for j in range(k):
         Wj = W[:, j]
         dOmega = np.zeros((m, m))
         for r in unit_rows:
-            ge = Z[r].T @ resid1[r]               # step-1 residuals
+            ge = Z[r].T @ resid1[r]  # step-1 residuals
             gw = Z[r].T @ Wj[r]
             dOmega -= np.outer(ge, gw) + np.outer(gw, ge)
         D[:, j] = -(bread2 @ dOmega @ W2 @ g2)
-    return (Minv2 + D @ Minv2 + Minv2 @ D.T + D @ V1_robust @ D.T)
+    return Minv2 + D @ Minv2 + Minv2 @ D.T + D @ V1_robust @ D.T
 
 
-def _ab_ar_test(resid, unit_rows, eq_positions, order,
-                Z, W, weight, Minv, robust, sigma2):
+def _ab_ar_test(
+    resid, unit_rows, eq_positions, order, Z, W, weight, Minv, robust, sigma2
+):
     """Arellano-Bond (1991) test for AR(``order``) in the differenced errors.
 
     ``m = (q'ê) / sqrt(Var)`` where ``q`` holds, for each row at period
@@ -561,7 +596,7 @@ def _ab_ar_test(resid, unit_rows, eq_positions, order,
                 q[i] = resid[pos[p - order]]
 
     if not np.any(q):
-        return {'z': np.nan, 'pvalue': np.nan}
+        return {"z": np.nan, "pvalue": np.nan}
 
     num = float(q @ resid)
     # influence-function adjustment: c = q - Z weight (Z'W) Minv (W'q)
@@ -572,17 +607,18 @@ def _ab_ar_test(resid, unit_rows, eq_positions, order,
     if robust:
         var = float(sum((c[r] @ resid[r]) ** 2 for r in unit_rows))
     else:
-        var = float(sigma2 * sum(c[r] @ _ab_H(eq_positions[r]) @ c[r]
-                                 for r in unit_rows))
+        var = float(
+            sigma2 * sum(c[r] @ _ab_H(eq_positions[r]) @ c[r] for r in unit_rows)
+        )
 
     if not np.isfinite(var) or var <= 0:
-        return {'z': np.nan, 'pvalue': np.nan}
+        return {"z": np.nan, "pvalue": np.nan}
     z = num / np.sqrt(var)
-    return {'z': float(z), 'pvalue': float(2 * stats.norm.sf(abs(z)))}
+    return {"z": float(z), "pvalue": float(2 * stats.norm.sf(abs(z)))}
 
 
 # Citations
-CausalResult._CITATIONS['arellano_bond'] = (
+CausalResult._CITATIONS["arellano_bond"] = (
     "@article{arellano1991some,\n"
     "  title={Some Tests of Specification for Panel Data: Monte Carlo "
     "Evidence and an Application to Employment Equations},\n"
