@@ -11,10 +11,11 @@ mixed-effects, modern ML causal inference, the full three-school
 modules (bridging theorems, fairness, surrogates, PCMCI, TMLE survival,
 etc.), and publication-ready output in Word / Excel / LaTeX / HTML.
 
-> **Current release: v1.15.6 (2026-05-24)** — JOSS readiness update:
-> co-author and citation metadata, reviewer guide, validation dossier,
-> and paper/reference fixes for the 1,018-function registry. See the
-> [changelog](changelog.md) for detail.
+> **Current release: v1.16.0 (2026-05-29)** — correctness fixes
+> (`sp.qreg` √n standard-error fix and an `sp.xtabond` Arellano–Bond GMM
+> rebuild, both ⚠️ correctness — re-run affected analyses) plus a Track A
+> cross-language parity expansion from 36 to 50 R-aligned modules (Stata
+> reference for 43). See the [changelog](changelog.md) for detail.
 
 ```python
 import statspai as sp
@@ -165,7 +166,7 @@ reference — together with this package:
   title   = {StatsPAI: A Unified, Agent-Native Python Toolkit for
              Causal Inference and Applied Econometrics},
   year    = {2026},
-  version = {1.15.6},
+  version = {1.16.0},
   url     = {https://github.com/brycewang-stanford/StatsPAI}
 }
 ```

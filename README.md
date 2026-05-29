@@ -141,12 +141,15 @@ StatsPAI's focus is **causal inference** — and on this axis we aim to be the m
 
 **Validation tiers matter**: `stability="stable"` means the public API is SemVer-stable; it does not by itself mean R/Stata/paper parity. Use `sp.list_functions(validation_status="certified")` for cross-language or published-reference evidence, and inspect `sp.describe_function(name)["limitations"]` before production use. See [`docs/guides/stability.md`](docs/guides/stability.md).
 
-**📦 v1.15.6 (2026-05-24) — JOSS readiness and citation metadata**
+**📦 v1.16.0 (2026-05-29) — correctness fixes and cross-language parity expansion**
 
-StatsPAI now ships updated co-author and citation metadata, a JOSS reviewer
-guide, a validation dossier, and paper/reference fixes for the 1,018-function
-registry. Estimator numerical paths are unchanged. Full notes in
-[`CHANGELOG.md`](CHANGELOG.md) under `[1.15.6]`.
+StatsPAI 1.16.0 corrects the `sp.qreg` Powell sandwich standard error (was off
+by √n) and rebuilds `sp.xtabond` Arellano–Bond difference GMM to match Stata to
+machine precision — both flagged ⚠️ **Correctness**, so re-run affected
+analyses. The Track A cross-language parity harness grows from 36 to 50
+R-aligned modules (Stata reference for 43 of them), and the JOSS
+reviewer-facing docs are refreshed. Full notes in
+[`CHANGELOG.md`](CHANGELOG.md) under `[1.16.0]`.
 
 ---
 
@@ -1408,7 +1411,7 @@ resolves to the latest version):
   author       = {Wang, Biaoyue and Rozelle, Scott},
   title        = {StatsPAI: The Agent-Native Causal Inference \& Econometrics Toolkit for Python},
   year         = {2026},
-  version      = {1.15.6},
+  version      = {1.16.0},
   doi          = {10.5281/zenodo.19933900},
   url          = {https://doi.org/10.5281/zenodo.19933900},
   license      = {MIT},

@@ -4,6 +4,8 @@ All notable changes to StatsPAI will be documented in this file.
 
 ## [Unreleased]
 
+## [1.16.0] — 2026-05-29
+
 ### ⚠️ Correctness fix
 
 - **`sp.qreg` Powell sandwich SE was wrong by a factor of √n** — every
@@ -53,13 +55,16 @@ All notable changes to StatsPAI will be documented in this file.
 
 ### Added — Parity coverage expansion (2026-05-28 session)
 
-- 10 net-new parity modules (`tests/r_parity/{37–46}_*`) covering
+- 15 net-new parity modules (`tests/r_parity/{37–51}_*`) covering
   `sp.ppmlhdfe`, `sp.drdid`, `sp.arima`, `sp.qreg`, `sp.tobit`,
-  `sp.nbreg`, `sp.heckman`, `sp.mlogit`, `sp.ologit`, `sp.clogit`. The
-  3-way Track A table (`tests/r_parity/results/parity_table_3way.md`)
-  now covers 46 modules versus 36 previously, with Stata reference
-  available for 39 versus 21. The expansion surfaced the qreg fix
-  above and 10 further P1/P2 findings recorded in
+  `sp.nbreg`, `sp.heckman`, `sp.mlogit`, `sp.ologit`, `sp.clogit`,
+  `sp.probit`, `sp.oprobit`, `sp.xtabond`, `sp.newey`, and a 3-FE PPML
+  variant. The 3-way Track A table
+  (`tests/r_parity/results/parity_table_3way.md`) now covers 50
+  R-joined modules versus 36 previously, with a Stata reference for 43
+  versus 21 (`50_xtabond` is a Py-Stata-only migration check omitted
+  from the R-joined table). The expansion surfaced the qreg and newey
+  SE fixes above and further P1/P2 findings recorded in
   `tests/r_parity/PARITY_SESSION_2026-05-28.md`.
 
 ### Fixed

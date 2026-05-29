@@ -238,7 +238,7 @@ If you use this guide or StatsPAI in academic work, please cite both:
   author={Wang, Biaoyue and Rozelle, Scott},
   year={2026},
   url={https://github.com/brycewang-stanford/StatsPAI},
-  version={1.15.6}
+  version={1.16.0}
 }
 ```
 

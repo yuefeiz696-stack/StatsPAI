@@ -42,7 +42,7 @@ scikit-learn learners (`LassoCV(cv=5)` for regression,
 `LogisticRegressionCV(cv=5)` for binary propensity) under a fixed
 seed.
 
-| Model | `sp.dml` (StatsPAI 1.15.6) | `doubleml-for-py` 0.11.3 | `DoubleML` R 1.0.2 (cv.glmnet) |
+| Model | `sp.dml` (StatsPAI 1.16.0) | `doubleml-for-py` 0.11.3 | `DoubleML` R 1.0.2 (cv.glmnet) |
 | --- | --- | --- | --- |
 | **PLR** (continuous d) | **+0.5590 ± 0.0331** | **+0.5590 ± 0.0331** | +0.5368 ± 0.0335 |
 | **IRM** (binary d, AIPW) | -0.0191 ± 0.0766 | -0.0267 ± 0.0742 | +0.0066 ± 0.0744 |
