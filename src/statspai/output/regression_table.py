@@ -2073,6 +2073,24 @@ class RegtableResult:
             "columns": ["term"] + [str(c) for c in df.columns],
             "table": table_rows,
             "models": models,
+            # Render-controlling parameters so from_dict() can faithfully
+            # reconstruct a RegtableResult that re-renders identically for the
+            # common feature set (coefficients / SE / stats / labels / keep /
+            # drop / order / fmt). Exotic features (multi_se, eform,
+            # column_spanners, tests, apply_coef) are intentionally NOT in the
+            # payload and do not survive a round-trip — see from_dict().
+            "render_spec": {
+                "fmt": self.fmt,
+                "alpha": self._jsonable(self.alpha),
+                "panel_sizes": [len(p.models) for p in self.panels],
+                "add_rows": {str(k): [str(x) for x in v]
+                             for k, v in self.add_rows.items()},
+                "keep": list(self.keep) if self.keep else None,
+                "drop": sorted(str(x) for x in self.drop) if self.drop
+                        else None,
+                "order": list(self.order) if self.order else None,
+                "se_label": self._se_label_override,
+            },
         }
 
         if renders:
@@ -2109,6 +2127,100 @@ class RegtableResult:
         import json
         return json.dumps(
             self.to_dict(renders=renders), indent=indent, default=str
+        )
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "RegtableResult":
+        """Reconstruct a :class:`RegtableResult` from a :meth:`to_dict` payload.
+
+        The inverse of :meth:`to_dict`.  Rebuilds one normalised model per
+        entry in the ``models`` layer (coefficient estimates, SE, t, p, CI,
+        summary stats, dependent variable), re-splits them into panels per
+        ``render_spec.panel_sizes``, and restores the render-controlling
+        metadata (labels, ``fmt``, ``se_type``, stars / star levels, stats,
+        ``keep`` / ``drop`` / ``order``, ``add_rows``, ``alpha``, template).
+        For a table built without exotic options this round-trips exactly:
+
+        >>> import statspai as sp
+        >>> t = sp.regtable(m1, m2, template="aer")        # doctest: +SKIP
+        >>> RegtableResult.from_dict(t.to_dict()).to_latex() == t.to_latex()
+        True
+
+        Notes
+        -----
+        Exotic features that are not part of the ``to_dict`` payload —
+        stacked ``multi_se`` rows, ``eform`` transforms, ``column_spanners``,
+        ``tests`` rows, and custom ``apply_coef`` transforms — are NOT
+        preserved across the round-trip (they reconstruct as a plain table).
+        The serialised ``table`` / ``renders`` layers already capture their
+        rendered form if you only need to re-display, not re-compute.
+        """
+        if not isinstance(payload, dict) or \
+                payload.get("kind") != "regression_table":
+            raise ValueError(
+                "from_dict() expects a RegtableResult.to_dict() payload "
+                "(kind == 'regression_table')."
+            )
+
+        spec = payload.get("render_spec", {}) or {}
+
+        def _series(coefs: Dict[str, Any], field: str,
+                    terms: List[str]) -> pd.Series:
+            return pd.Series(
+                {t: coefs[t].get(field) for t in terms}, dtype=float
+            )
+
+        def _build_model(m: Dict[str, Any]) -> _ModelData:
+            coefs = m.get("coefficients", {}) or {}
+            terms = list(coefs.keys())
+            return _ModelData(
+                params=_series(coefs, "estimate", terms),
+                std_errors=_series(coefs, "std_error", terms),
+                tvalues=_series(coefs, "t_statistic", terms),
+                pvalues=_series(coefs, "p_value", terms),
+                conf_int_lower=_series(coefs, "conf_low", terms),
+                conf_int_upper=_series(coefs, "conf_high", terms),
+                stats=dict(m.get("stats", {}) or {}),
+                depvar=m.get("depvar") or "",
+                df_resid=m.get("df_resid"),
+            )
+
+        models = [_build_model(m) for m in payload.get("models", [])]
+        sizes = spec.get("panel_sizes") or [len(models)]
+        # Guard against a sizes/models mismatch (e.g. hand-edited payload):
+        # fall back to a single panel rather than silently dropping models.
+        if sum(int(s) for s in sizes) != len(models):
+            sizes = [len(models)]
+        panels: List[_PanelData] = []
+        cursor = 0
+        for sz in sizes:
+            sz = int(sz)
+            panels.append(_PanelData(models[cursor:cursor + sz]))
+            cursor += sz
+
+        star_levels = payload.get("star_levels")
+        return cls(
+            panels,
+            panel_labels=payload.get("panel_labels"),
+            model_labels=list(payload.get("model_labels", [])),
+            dep_var_labels=payload.get("dep_var_labels"),
+            coef_labels=dict(payload.get("coef_labels", {}) or {}),
+            keep=spec.get("keep"),
+            drop=spec.get("drop"),
+            order=spec.get("order"),
+            se_type=payload.get("se_type", "se"),
+            stars=bool(payload.get("stars", True)),
+            star_levels=(tuple(star_levels) if star_levels
+                         else (0.10, 0.05, 0.01)),
+            fmt=spec.get("fmt", "%.3f"),
+            title=payload.get("title"),
+            notes=list(payload.get("notes", []) or []),
+            add_rows={k: list(v)
+                      for k, v in (spec.get("add_rows", {}) or {}).items()},
+            stats=list(payload.get("requested_stats", []) or []) or None,
+            alpha=float(spec.get("alpha", 0.05) or 0.05),
+            se_label=spec.get("se_label"),
+            template=payload.get("template"),
         )
 
     # ═══════════════════════════════════════════════════════════════════════

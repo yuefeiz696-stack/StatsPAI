@@ -187,6 +187,18 @@ tbl.to_dict(renders=True)                   # latex + html + markdown + text
 NaN / Inf are coerced to `null`, so `json.dumps(tbl.to_dict())` is always
 strict-valid JSON.
 
+The payload is a faithful cache, not just a snapshot — `from_dict` rebuilds a
+table that re-renders byte-identically (for tables built without `multi_se` /
+`eform` / `column_spanners` / `tests`):
+
+```python
+from statspai.output.regression_table import RegtableResult
+
+cached = tbl.to_json()                       # store anywhere
+again = RegtableResult.from_dict(json.loads(cached))
+assert again.to_latex() == tbl.to_latex()    # exact round-trip
+```
+
 Single results carry the same idea: `sp.regress(...).to_dict(detail="agent")`
 adds `violations` / `next_steps` / `suggested_functions` for tool loops.
 
