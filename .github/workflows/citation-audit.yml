@@ -138,7 +138,27 @@ jobs:
         # Live verification against arXiv / NBER / Crossref. --strict:
         # unresolved IDs fail alongside mismatches, so a typo that
         # breaks primary-source lookup is caught early.
-        run: python tools/audit_citations.py --strict --out audit_report.md
+        #
+        # Exit-code contract (tools/audit_citations.py main()):
+        #   0 — clean.
+        #   1 — mismatch, or a GENUINE unresolved id (source reachable
+        #       but the id is absent) → a real §10 zero-hallucination
+        #       failure. Blocks the merge.
+        #   2 — soft failure: the ONLY unresolved ids were transient
+        #       upstream errors (arXiv / Crossref 429 rate-limit on the
+        #       shared runner IP, or a network blip). NOT a bad citation,
+        #       so it must not block a merge — we surface it as a warning
+        #       and pass. The auditor already retries 429/5xx with
+        #       back-off before giving up.
+        run: |
+          set +e
+          python tools/audit_citations.py --strict --out audit_report.md
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning title=Citation audit soft failure::Auditor could not reach arXiv/Crossref (rate limit / network); no mismatch detected — treating as a soft pass (exit 2)."
+            exit 0
+          fi
+          exit "$code"
 
       - name: Upload citation audit report
         if: always()

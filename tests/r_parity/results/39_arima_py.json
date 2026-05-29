@@ -1,0 +1,54 @@
+{
+  "module": "39_arima",
+  "side": "py",
+  "rows": [
+    {
+      "module": "39_arima",
+      "side": "py",
+      "statistic": "ar1",
+      "estimate": 0.7018913469353353,
+      "se": 0.04784543441281086,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    },
+    {
+      "module": "39_arima",
+      "side": "py",
+      "statistic": "ar2",
+      "estimate": -0.34289324080723854,
+      "se": 0.05372735783018966,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    },
+    {
+      "module": "39_arima",
+      "side": "py",
+      "statistic": "sigma2",
+      "estimate": 0.4143918597001537,
+      "se": 0.03353450058875001,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    },
+    {
+      "module": "39_arima",
+      "side": "py",
+      "statistic": "logLik",
+      "estimate": -291.58314136058783,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    }
+  ],
+  "extra": {
+    "order": "(2,0,0)",
+    "engine": "statsmodels"
+  }
+}

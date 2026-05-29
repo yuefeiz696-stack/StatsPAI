@@ -427,3 +427,179 @@ def test_cli_strict_flag_is_recognised():
     )
     assert result.returncode == 0
     assert "--strict" in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# _http_get — retry / back-off on 429 & 5xx
+#
+# arXiv's export API throttles GitHub's shared runner IP pool with HTTP
+# 429s that clear after a short back-off. A single un-retried 429 drops
+# a whole batch of ids and (under --strict) used to fail the §10 gate
+# with 0 mismatch / N unresolved. _http_get now retries 429/5xx.
+# ---------------------------------------------------------------------------
+
+
+class _FakeResp:
+    def __init__(self, data: bytes):
+        self._data = data
+
+    def read(self) -> bytes:
+        return self._data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def _stub_http_io(monkeypatch):
+    """Bypass the disk cache and never actually sleep."""
+    monkeypatch.setattr(ac, "_cache_get", lambda *a, **k: None)
+    monkeypatch.setattr(ac, "_cache_put", lambda *a, **k: None)
+    monkeypatch.setattr(ac.time, "sleep", lambda *_a, **_k: None)
+
+
+def test_http_get_retries_on_429_then_succeeds(monkeypatch):
+    calls = {"n": 0}
+
+    def fake_urlopen(req, timeout=None, context=None):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise ac.urllib.error.HTTPError(
+                "http://x", 429, "Too Many Requests", {}, None
+            )
+        return _FakeResp(b"PAYLOAD")
+
+    _stub_http_io(monkeypatch)
+    monkeypatch.setattr(ac.urllib.request, "urlopen", fake_urlopen)
+
+    assert ac._http_get("http://x", refresh=True) == b"PAYLOAD"
+    assert calls["n"] == 3  # two 429s + one success
+
+
+def test_http_get_gives_up_after_max_retries(monkeypatch):
+    def always_429(req, timeout=None, context=None):
+        raise ac.urllib.error.HTTPError(
+            "http://x", 429, "Too Many Requests", {}, None
+        )
+
+    _stub_http_io(monkeypatch)
+    monkeypatch.setattr(ac.urllib.request, "urlopen", always_429)
+
+    with pytest.raises(ac.urllib.error.HTTPError):
+        ac._http_get("http://x", refresh=True)
+
+
+def test_http_get_does_not_retry_404(monkeypatch):
+    """404 is a definitive miss, not a throttle — must not be retried."""
+    calls = {"n": 0}
+
+    def raise_404(req, timeout=None, context=None):
+        calls["n"] += 1
+        raise ac.urllib.error.HTTPError("http://x", 404, "Not Found", {}, None)
+
+    _stub_http_io(monkeypatch)
+    monkeypatch.setattr(ac.urllib.request, "urlopen", raise_404)
+
+    with pytest.raises(ac.urllib.error.HTTPError):
+        ac._http_get("http://x", refresh=True)
+    assert calls["n"] == 1  # no retry
+
+
+def test_parse_retry_after_seconds_and_garbage():
+    assert ac._parse_retry_after("5") == 5.0
+    assert ac._parse_retry_after("  12  ") == 12.0
+    assert ac._parse_retry_after(None) is None
+    assert ac._parse_retry_after("Wed, 21 Oct 2025 07:28:00 GMT") is None
+
+
+# ---------------------------------------------------------------------------
+# verify_* — transient-failure tracking (soft failure vs genuine miss)
+# ---------------------------------------------------------------------------
+
+
+def test_verify_arxiv_records_transient_on_network_error(monkeypatch):
+    def boom(*a, **k):
+        raise TimeoutError("read operation timed out")
+
+    monkeypatch.setattr(ac, "_http_get", boom)
+    transient: set[str] = set()
+    assert ac.verify_arxiv(["2408.12345", "2409.00001"],
+                           transient=transient) == {}
+    # Whole chunk failed to reach arXiv → every id is transient.
+    assert transient == {"2408.12345", "2409.00001"}
+
+
+def test_verify_crossref_404_is_genuine_not_transient(monkeypatch):
+    def raise_404(*a, **k):
+        raise ac.urllib.error.HTTPError("http://x", 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(ac, "_http_get", raise_404)
+    monkeypatch.setattr(ac, "_verify_datacite_one",
+                        lambda doi, refresh=False: None)
+    transient: set[str] = set()
+    assert ac.verify_crossref(["10.1234/x"], transient=transient) == {}
+    # A 404 means "Crossref definitively has no such DOI" — a genuine
+    # §10 miss, NOT an infrastructure hiccup.
+    assert transient == set()
+
+
+def test_verify_crossref_records_transient_on_5xx(monkeypatch):
+    def raise_503(*a, **k):
+        raise ac.urllib.error.HTTPError(
+            "http://x", 503, "Service Unavailable", {}, None
+        )
+
+    monkeypatch.setattr(ac, "_http_get", raise_503)
+    transient: set[str] = set()
+    assert ac.verify_crossref(["10.1234/x"], transient=transient) == {}
+    assert transient == {"10.1234/x"}
+
+
+# ---------------------------------------------------------------------------
+# main() — exit-code contract: 1 = genuine §10 failure, 2 = soft failure
+# ---------------------------------------------------------------------------
+
+
+def _seed_one_arxiv_citation(tmp_repo):
+    src = tmp_repo / "src"
+    src.mkdir()
+    (src / "mod.py").write_text(
+        "# Foo (2024) arXiv:2408.12345\n", encoding="utf-8"
+    )
+    (tmp_repo / "docs").mkdir()
+
+
+def test_main_strict_transient_unresolved_returns_2(tmp_repo, monkeypatch):
+    _seed_one_arxiv_citation(tmp_repo)
+
+    def throttled(ids, refresh=False, transient=None):
+        if transient is not None:
+            transient.update(ids)  # arXiv unreachable: all ids transient
+        return {}
+
+    monkeypatch.setattr(ac, "verify_arxiv", throttled)
+    rc = ac.main(["--roots", "src", "docs", "--kinds", "arxiv",
+                  "--strict", "--out", str(tmp_repo / "r.md")])
+    assert rc == 2  # soft failure — must not block a merge
+
+
+def test_main_strict_genuine_unresolved_returns_1(tmp_repo, monkeypatch):
+    _seed_one_arxiv_citation(tmp_repo)
+
+    # Source reachable, id genuinely absent → transient stays empty.
+    monkeypatch.setattr(ac, "verify_arxiv",
+                        lambda ids, refresh=False, transient=None: {})
+    rc = ac.main(["--roots", "src", "docs", "--kinds", "arxiv",
+                  "--strict", "--out", str(tmp_repo / "r.md")])
+    assert rc == 1  # genuine §10 failure — blocks the merge
+
+
+def test_main_nonstrict_unresolved_returns_0(tmp_repo, monkeypatch):
+    _seed_one_arxiv_citation(tmp_repo)
+    monkeypatch.setattr(ac, "verify_arxiv",
+                        lambda ids, refresh=False, transient=None: {})
+    rc = ac.main(["--roots", "src", "docs", "--kinds", "arxiv",
+                  "--out", str(tmp_repo / "r.md")])
+    assert rc == 0  # non-strict: unresolved alone never fails

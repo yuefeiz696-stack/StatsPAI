@@ -337,8 +337,40 @@ def _cache_put(key: str, data: bytes) -> None:
     (CACHE_DIR / f"{h}.bin").write_bytes(data)
 
 
+# HTTP status codes worth retrying: upstream throttling (429) and
+# transient server-side unavailability (5xx). arXiv's export API in
+# particular rate-limits GitHub's shared runner IP pool with 429s that
+# clear after a short back-off — without a retry a single 429 drops an
+# entire batch of ids and (under --strict) fails the §10 gate even
+# though no citation is actually wrong (0 mismatch / N unresolved).
+_RETRYABLE_HTTP_STATUS = frozenset({429, 500, 502, 503, 504})
+_HTTP_MAX_RETRIES = 3
+
+
+def _parse_retry_after(value: Optional[str]) -> Optional[float]:
+    """Parse a ``Retry-After`` header's delta-seconds form (e.g. ``"5"``).
+
+    The HTTP-date form is intentionally ignored (returns ``None``) so the
+    caller falls back to exponential back-off rather than parsing dates.
+    """
+    if not value:
+        return None
+    value = value.strip()
+    if value.isdigit():
+        return float(value)
+    return None
+
+
 def _http_get(url: str, *, refresh: bool = False, sleep: float = 0.0) -> bytes:
-    """GET with disk cache + user-agent. Returns bytes."""
+    """GET with disk cache + user-agent. Returns bytes.
+
+    Retries up to ``_HTTP_MAX_RETRIES`` times on a retryable HTTP status
+    (429 / 5xx) with ``Retry-After``-aware exponential back-off, so a
+    transient arXiv / Crossref rate-limit isn't mis-reported as a
+    citation that can't be verified. Non-retryable codes (e.g. 404 —
+    "DOI not found") propagate immediately so callers can distinguish a
+    genuine miss from a throttle.
+    """
     if not refresh:
         cached = _cache_get(url)
         if cached is not None:
@@ -346,10 +378,30 @@ def _http_get(url: str, *, refresh: bool = False, sleep: float = 0.0) -> bytes:
     if sleep:
         time.sleep(sleep)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30, context=_SSL_CONTEXT) as resp:
-        data = resp.read()
-    _cache_put(url, data)
-    return data
+    for attempt in range(_HTTP_MAX_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(
+                req, timeout=30, context=_SSL_CONTEXT
+            ) as resp:
+                data = resp.read()
+            _cache_put(url, data)
+            return data
+        except urllib.error.HTTPError as e:
+            if e.code not in _RETRYABLE_HTTP_STATUS or attempt == _HTTP_MAX_RETRIES:
+                raise
+            wait = _parse_retry_after(
+                e.headers.get("Retry-After") if e.headers else None
+            )
+            if wait is None:
+                wait = min(20.0, 2.0 * (2 ** attempt))  # 2s, 4s, 8s …
+            print(
+                f"[http] {e.code} for {url[:80]} — retry "
+                f"{attempt + 1}/{_HTTP_MAX_RETRIES} in {wait:.0f}s",
+                file=sys.stderr,
+            )
+            time.sleep(wait)
+    # Unreachable: the loop returns on success or raises on the last attempt.
+    raise RuntimeError("unreachable: _http_get retry loop exhausted")
 
 
 # ---------------------------------------------------------------------------
@@ -432,8 +484,19 @@ def extract_citations(roots: Iterable[Path]) -> list[Citation]:
 # ---------------------------------------------------------------------------
 
 
-def verify_arxiv(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
-    """Batch query arXiv API (max 100 per request)."""
+def verify_arxiv(
+    ids: list[str],
+    refresh: bool = False,
+    transient: Optional[set[str]] = None,
+) -> dict[str, PaperMeta]:
+    """Batch query arXiv API (max 100 per request).
+
+    ``transient``: if provided, ids belonging to a chunk whose HTTP call
+    failed with a transient/network error (e.g. arXiv 429 throttling)
+    are added here. The caller uses this to distinguish "couldn't reach
+    arXiv" (soft failure) from "arXiv returned a successful response that
+    simply doesn't contain this id" (a genuine, §10-gated miss).
+    """
     result: dict[str, PaperMeta] = {}
     ns = {"atom": "http://www.w3.org/2005/Atom"}
     for start in range(0, len(ids), 100):
@@ -450,6 +513,8 @@ def verify_arxiv(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
         except _TRANSIENT_NETWORK_ERRORS as e:
             print(f"[arxiv] HTTP/network error {e!r} for chunk starting {chunk[0]}",
                   file=sys.stderr)
+            if transient is not None:
+                transient.update(chunk)
             continue
         root = ET.fromstring(xml_bytes)
         for entry in root.findall("atom:entry", ns):
@@ -492,8 +557,17 @@ NBER_META_RE = re.compile(
 )
 
 
-def verify_nber(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
-    """Scrape NBER paper pages (they expose Google-Scholar citation meta)."""
+def verify_nber(
+    ids: list[str],
+    refresh: bool = False,
+    transient: Optional[set[str]] = None,
+) -> dict[str, PaperMeta]:
+    """Scrape NBER paper pages (they expose Google-Scholar citation meta).
+
+    ``transient``: see :func:`verify_arxiv` — ids whose page fetch failed
+    with a transient/network error are recorded here so the caller can
+    treat them as a soft failure rather than a genuine missing citation.
+    """
     result: dict[str, PaperMeta] = {}
     for wp in ids:
         url = f"https://www.nber.org/papers/w{wp}"
@@ -503,6 +577,8 @@ def verify_nber(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
             )
         except _TRANSIENT_NETWORK_ERRORS as e:
             print(f"[nber] HTTP/network error {e!r} for w{wp}", file=sys.stderr)
+            if transient is not None:
+                transient.add(wp)
             continue
         authors: list[str] = []
         title = ""
@@ -567,7 +643,19 @@ def _verify_datacite_one(doi: str, refresh: bool = False) -> Optional[PaperMeta]
     )
 
 
-def verify_crossref(dois: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
+def verify_crossref(
+    dois: list[str],
+    refresh: bool = False,
+    transient: Optional[set[str]] = None,
+) -> dict[str, PaperMeta]:
+    """Verify DOIs against Crossref (with a DataCite fallback on 404).
+
+    ``transient``: see :func:`verify_arxiv`. A Crossref **404** is a
+    definitive "not in Crossref" and is NOT transient — it falls through
+    to DataCite and, if still unresolved, is a genuine §10-gated miss.
+    Any other HTTP error (e.g. a 429/5xx that survived ``_http_get``'s
+    retries) or network error is recorded as transient.
+    """
     result: dict[str, PaperMeta] = {}
     for doi in dois:
         url = f"https://api.crossref.org/works/{urllib.parse.quote(doi, safe='')}"
@@ -579,9 +667,13 @@ def verify_crossref(dois: list[str], refresh: bool = False) -> dict[str, PaperMe
             if e.code == 404:
                 crossref_404 = True
             else:
+                if transient is not None:
+                    transient.add(doi)
                 continue
         except _TRANSIENT_NETWORK_ERRORS as e:
             print(f"[crossref] HTTP/network error {e!r} for {doi}", file=sys.stderr)
+            if transient is not None:
+                transient.add(doi)
             continue
         if crossref_404:
             # Fall through to DataCite — Zenodo / Figshare / Dryad
@@ -1008,26 +1100,35 @@ def main(argv: Optional[list[str]] = None) -> int:
               file=sys.stderr)
 
     truth: dict[tuple[str, str], PaperMeta] = {}
+    # Ids whose primary source couldn't be reached (rate limit / network)
+    # rather than genuinely missing. Keyed (kind, id) for the exit logic.
+    transient_keys: set[tuple[str, str]] = set()
     if "arxiv" in args.kinds and by_kind["arxiv"]:
         ids = sorted({c.id for c in by_kind["arxiv"]})
         print(f"verifying {len(ids)} arXiv ids …", file=sys.stderr)
-        t = verify_arxiv(ids, refresh=args.refresh)
+        transient_arxiv: set[str] = set()
+        t = verify_arxiv(ids, refresh=args.refresh, transient=transient_arxiv)
         for k, v in t.items():
             truth[("arxiv", k)] = v
+        transient_keys |= {("arxiv", i) for i in transient_arxiv}
         print(f"  resolved {len(t)}/{len(ids)}", file=sys.stderr)
     if "nber" in args.kinds and by_kind["nber"]:
         ids = sorted({c.id for c in by_kind["nber"]})
         print(f"verifying {len(ids)} NBER working papers …", file=sys.stderr)
-        t = verify_nber(ids, refresh=args.refresh)
+        transient_nber: set[str] = set()
+        t = verify_nber(ids, refresh=args.refresh, transient=transient_nber)
         for k, v in t.items():
             truth[("nber", k)] = v
+        transient_keys |= {("nber", i) for i in transient_nber}
         print(f"  resolved {len(t)}/{len(ids)}", file=sys.stderr)
     if "doi" in args.kinds and by_kind["doi"]:
         ids = sorted({c.id for c in by_kind["doi"]})
         print(f"verifying {len(ids)} DOIs …", file=sys.stderr)
-        t = verify_crossref(ids, refresh=args.refresh)
+        transient_doi: set[str] = set()
+        t = verify_crossref(ids, refresh=args.refresh, transient=transient_doi)
         for k, v in t.items():
             truth[("doi", k)] = v
+        transient_keys |= {("doi", i) for i in transient_doi}
         print(f"  resolved {len(t)}/{len(ids)}", file=sys.stderr)
 
     verdicts: list[Verdict] = []
@@ -1062,15 +1163,38 @@ def main(argv: Optional[list[str]] = None) -> int:
     n_mismatch = sum(1 for v in verdicts if v.status == "mismatch")
     n_unresolved = sum(1 for v in verdicts if v.status == "unresolved")
     n_ok = sum(1 for v in verdicts if v.status == "ok")
+    # Split unresolved into genuine misses (source reachable, id absent —
+    # a real §10 problem) vs transient (source unreachable / throttled —
+    # an infrastructure hiccup, not a fabricated citation).
+    n_unresolved_transient = sum(
+        1 for v in verdicts
+        if v.status == "unresolved"
+        and (v.citation.kind, v.citation.id) in transient_keys
+    )
+    n_unresolved_genuine = n_unresolved - n_unresolved_transient
     print(
-        f"summary: {n_ok} ok / {n_mismatch} mismatch / {n_unresolved} unresolved",
+        f"summary: {n_ok} ok / {n_mismatch} mismatch / {n_unresolved} unresolved "
+        f"({n_unresolved_genuine} genuine / {n_unresolved_transient} transient)",
         file=sys.stderr,
     )
 
     if n_mismatch:
         return 1
-    if args.strict and n_unresolved:
+    if args.strict and n_unresolved_genuine:
         return 1
+    if args.strict and n_unresolved_transient:
+        # Every unresolved id was a transient upstream failure (rate
+        # limit / network), not a citation defect. Signal a soft failure
+        # (exit 2) so CI can warn-and-pass instead of blocking a merge on
+        # an arXiv / Crossref outage — see the exit-code contract in
+        # tests/test_audit_citations.py.
+        print(
+            f"strict: {n_unresolved_transient} citation(s) unresolved due to "
+            "transient upstream errors (rate limit / network) — soft failure "
+            "(exit 2)",
+            file=sys.stderr,
+        )
+        return 2
     return 0
 
 
