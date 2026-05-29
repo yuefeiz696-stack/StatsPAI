@@ -35,6 +35,7 @@ using proxy variables to control for unobservables. Economics Letters,
 
 from __future__ import annotations
 
+import warnings
 from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -309,10 +310,26 @@ def wooldridge_prod(
                 boot_betas.append(res_b.x[:n_inputs])
             except Exception:
                 continue
-        if len(boot_betas) > 1:
+        n_success = len(boot_betas)
+        n_fail = int(boot_reps) - n_success
+        if n_success > 1:
             B = np.vstack(boot_betas)
             cov = np.cov(B.T, ddof=1)
             se = np.std(B, axis=0, ddof=1)
+            if n_fail > 0:
+                warnings.warn(
+                    f"Wooldridge production-function bootstrap: {n_fail}/"
+                    f"{int(boot_reps)} replications failed; SE computed over "
+                    f"{n_success} successes.",
+                    RuntimeWarning, stacklevel=2,
+                )
+        else:
+            warnings.warn(
+                f"Wooldridge production-function bootstrap: only {n_success}/"
+                f"{int(boot_reps)} replications succeeded (need >1); standard "
+                f"errors are NaN.",
+                RuntimeWarning, stacklevel=2,
+            )
 
     inputs = prob["inputs"]
     coef = {name: float(beta_hat[i]) for i, name in enumerate(inputs)}

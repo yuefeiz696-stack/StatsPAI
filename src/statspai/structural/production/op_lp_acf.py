@@ -320,10 +320,26 @@ def _estimate_proxy(
                 boot_betas.append(res_b.x)
             except Exception:
                 continue
-        if len(boot_betas) > 1:
+        n_success = len(boot_betas)
+        n_fail = int(boot_reps) - n_success
+        if n_success > 1:
             B = np.vstack(boot_betas)
             cov = np.cov(B.T, ddof=1)
             se = np.std(B, axis=0, ddof=1)
+            if n_fail > 0:
+                warnings.warn(
+                    f"Production-function bootstrap: {n_fail}/{int(boot_reps)} "
+                    f"firm-cluster replications failed (singular / non-converged "
+                    f"GMM); SE computed over {n_success} successes.",
+                    RuntimeWarning, stacklevel=2,
+                )
+        else:
+            warnings.warn(
+                f"Production-function bootstrap: only {n_success}/"
+                f"{int(boot_reps)} replications succeeded (need >1); standard "
+                f"errors are NaN. Inspect convergence / sample size.",
+                RuntimeWarning, stacklevel=2,
+            )
 
     # ---- Pack result ---------------------------------------------------
     coef = {name: float(beta_hat[i]) for i, name in enumerate(expanded_names)}
