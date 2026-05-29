@@ -427,3 +427,174 @@ def test_cli_strict_flag_is_recognised():
     )
     assert result.returncode == 0
     assert "--strict" in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# Retry and transient-upstream semantics
+# ---------------------------------------------------------------------------
+
+
+class _FakeResp:
+    def __init__(self, data: bytes):
+        self._data = data
+
+    def read(self) -> bytes:
+        return self._data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def _stub_http_io(monkeypatch):
+    monkeypatch.setattr(ac, "_cache_get", lambda *a, **k: None)
+    monkeypatch.setattr(ac, "_cache_put", lambda *a, **k: None)
+    monkeypatch.setattr(ac.time, "sleep", lambda *_a, **_k: None)
+
+
+def test_http_get_retries_on_429_then_succeeds(monkeypatch):
+    calls = {"n": 0}
+
+    def fake_urlopen(req, timeout=None, context=None):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise ac.urllib.error.HTTPError(
+                "http://x", 429, "Too Many Requests", {}, None
+            )
+        return _FakeResp(b"PAYLOAD")
+
+    _stub_http_io(monkeypatch)
+    monkeypatch.setattr(ac.urllib.request, "urlopen", fake_urlopen)
+
+    assert ac._http_get("http://x", refresh=True) == b"PAYLOAD"
+    assert calls["n"] == 3
+
+
+def test_http_get_gives_up_after_max_retries(monkeypatch):
+    calls = {"n": 0}
+
+    def always_429(req, timeout=None, context=None):
+        calls["n"] += 1
+        raise ac.urllib.error.HTTPError(
+            "http://x", 429, "Too Many Requests", {}, None
+        )
+
+    _stub_http_io(monkeypatch)
+    monkeypatch.setattr(ac.urllib.request, "urlopen", always_429)
+
+    with pytest.raises(ac.urllib.error.HTTPError):
+        ac._http_get("http://x", refresh=True)
+    assert calls["n"] == 3
+
+
+def test_http_get_does_not_retry_404(monkeypatch):
+    calls = {"n": 0}
+
+    def raise_404(req, timeout=None, context=None):
+        calls["n"] += 1
+        raise ac.urllib.error.HTTPError("http://x", 404, "Not Found", {}, None)
+
+    _stub_http_io(monkeypatch)
+    monkeypatch.setattr(ac.urllib.request, "urlopen", raise_404)
+
+    with pytest.raises(ac.urllib.error.HTTPError):
+        ac._http_get("http://x", refresh=True)
+    assert calls["n"] == 1
+
+
+def test_parse_retry_after_seconds_and_garbage():
+    assert ac._parse_retry_after("5") == 5.0
+    assert ac._parse_retry_after("  12  ") == 12.0
+    assert ac._parse_retry_after(None) is None
+    assert ac._parse_retry_after("Wed, 21 Oct 2025 07:28:00 GMT") is None
+
+
+def test_verify_arxiv_records_transient_on_network_error(monkeypatch):
+    def boom(*a, **k):
+        raise TimeoutError("read operation timed out")
+
+    monkeypatch.setattr(ac, "_http_get", boom)
+    transient: set[str] = set()
+
+    assert ac.verify_arxiv(
+        ["2408.12345", "2409.00001"], transient=transient
+    ) == {}
+    assert transient == {"2408.12345", "2409.00001"}
+
+
+def test_verify_crossref_404_is_genuine_not_transient(monkeypatch):
+    def raise_404(*a, **k):
+        raise ac.urllib.error.HTTPError("http://x", 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(ac, "_http_get", raise_404)
+    monkeypatch.setattr(ac, "_verify_datacite_one", lambda *a, **k: None)
+    transient: set[str] = set()
+
+    assert ac.verify_crossref(["10.1234/x"], transient=transient) == {}
+    assert transient == set()
+
+
+def test_verify_crossref_records_transient_on_5xx(monkeypatch):
+    def raise_503(*a, **k):
+        raise ac.urllib.error.HTTPError(
+            "http://x", 503, "Service Unavailable", {}, None
+        )
+
+    monkeypatch.setattr(ac, "_http_get", raise_503)
+    transient: set[str] = set()
+
+    assert ac.verify_crossref(["10.1234/x"], transient=transient) == {}
+    assert transient == {"10.1234/x"}
+
+
+def _seed_one_arxiv_citation(tmp_repo):
+    (tmp_repo / "src").mkdir()
+    (tmp_repo / "docs").mkdir()
+    (tmp_repo / "src" / "mod.py").write_text(
+        "# Foo (2024) arXiv:2408.12345\n", encoding="utf-8"
+    )
+
+
+def test_main_strict_transient_unresolved_returns_2(tmp_repo, monkeypatch):
+    _seed_one_arxiv_citation(tmp_repo)
+
+    def throttled(ids, refresh=False, transient=None):
+        if transient is not None:
+            transient.update(ids)
+        return {}
+
+    monkeypatch.setattr(ac, "verify_arxiv", throttled)
+    rc = ac.main([
+        "--roots", "src", "docs",
+        "--kinds", "arxiv",
+        "--strict",
+        "--out", str(tmp_repo / "report.md"),
+    ])
+    assert rc == 2
+
+
+def test_main_strict_genuine_unresolved_returns_1(tmp_repo, monkeypatch):
+    _seed_one_arxiv_citation(tmp_repo)
+    monkeypatch.setattr(ac, "verify_arxiv", lambda *a, **k: {})
+
+    rc = ac.main([
+        "--roots", "src", "docs",
+        "--kinds", "arxiv",
+        "--strict",
+        "--out", str(tmp_repo / "report.md"),
+    ])
+    assert rc == 1
+
+
+def test_main_nonstrict_unresolved_returns_0(tmp_repo, monkeypatch):
+    _seed_one_arxiv_citation(tmp_repo)
+    monkeypatch.setattr(ac, "verify_arxiv", lambda *a, **k: {})
+
+    rc = ac.main([
+        "--roots", "src", "docs",
+        "--kinds", "arxiv",
+        "--out", str(tmp_repo / "report.md"),
+    ])
+    assert rc == 0

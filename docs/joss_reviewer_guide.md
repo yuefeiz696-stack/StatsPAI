@@ -46,6 +46,20 @@ The smoke test should import the package, load a bundled dataset, fit a
 published-reference IV example, print a result summary, and return estimator
 software citation metadata.
 
+## Scripted Examples
+
+The repository includes standalone scripts under `examples/` for four canonical
+designs:
+
+```bash
+python examples/card_iv.py
+python examples/did_mpdta.py
+python examples/rd_lee.py
+python examples/synth_prop99.py
+```
+
+Each script uses bundled data and is intended to run offline.
+
 ## Representative Offline Examples
 
 These examples use bundled datasets under `sp.datasets` and do not require

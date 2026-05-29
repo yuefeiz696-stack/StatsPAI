@@ -77,6 +77,7 @@ _TRANSIENT_NETWORK_ERRORS = (
     http.client.HTTPException,
     ssl.SSLError,
 )
+_TRANSIENT_HTTP_STATUS = {408, 425, 429, 500, 502, 503, 504}
 
 ARXIV_RE = re.compile(
     r"""
@@ -337,17 +338,57 @@ def _cache_put(key: str, data: bytes) -> None:
     (CACHE_DIR / f"{h}.bin").write_bytes(data)
 
 
-def _http_get(url: str, *, refresh: bool = False, sleep: float = 0.0) -> bytes:
-    """GET with disk cache + user-agent. Returns bytes."""
+def _parse_retry_after(value: Optional[str]) -> Optional[float]:
+    """Parse a Retry-After header when it is expressed in seconds."""
+    if value is None:
+        return None
+    try:
+        delay = float(value.strip())
+    except (TypeError, ValueError):
+        return None
+    return max(delay, 0.0)
+
+
+def _http_get(
+    url: str,
+    *,
+    refresh: bool = False,
+    sleep: float = 0.0,
+    max_retries: int = 3,
+) -> bytes:
+    """GET with disk cache, user-agent, and bounded retry for throttles."""
     if not refresh:
         cached = _cache_get(url)
         if cached is not None:
             return cached
-    if sleep:
-        time.sleep(sleep)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30, context=_SSL_CONTEXT) as resp:
-        data = resp.read()
+    for attempt in range(max_retries):
+        if sleep and attempt == 0:
+            time.sleep(sleep)
+        try:
+            with urllib.request.urlopen(
+                req, timeout=30, context=_SSL_CONTEXT
+            ) as resp:
+                data = resp.read()
+            break
+        except urllib.error.HTTPError as e:
+            retryable = e.code in _TRANSIENT_HTTP_STATUS
+            if not retryable or attempt >= max_retries - 1:
+                raise
+            retry_after = _parse_retry_after(
+                e.headers.get("Retry-After") if e.headers else None
+            )
+            delay = retry_after
+            if delay is None:
+                delay = min(30.0, max(sleep, 1.0) * (2 ** attempt))
+            time.sleep(delay)
+        except _TRANSIENT_NETWORK_ERRORS:
+            if attempt >= max_retries - 1:
+                raise
+            delay = min(30.0, max(sleep, 1.0) * (2 ** attempt))
+            time.sleep(delay)
+    else:  # pragma: no cover - loop either breaks or raises
+        raise RuntimeError(f"unreachable retry state for {url}")
     _cache_put(url, data)
     return data
 
@@ -432,8 +473,18 @@ def extract_citations(roots: Iterable[Path]) -> list[Citation]:
 # ---------------------------------------------------------------------------
 
 
-def verify_arxiv(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
-    """Batch query arXiv API (max 100 per request)."""
+def verify_arxiv(
+    ids: list[str],
+    refresh: bool = False,
+    transient: Optional[set[str]] = None,
+) -> dict[str, PaperMeta]:
+    """Batch query arXiv API (max 100 per request).
+
+    If provided, ``transient`` receives ids from chunks whose upstream
+    request failed after retry. That lets strict mode distinguish a source
+    outage/rate-limit from an id that is genuinely absent in a successful
+    upstream response.
+    """
     result: dict[str, PaperMeta] = {}
     ns = {"atom": "http://www.w3.org/2005/Atom"}
     for start in range(0, len(ids), 100):
@@ -450,6 +501,8 @@ def verify_arxiv(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
         except _TRANSIENT_NETWORK_ERRORS as e:
             print(f"[arxiv] HTTP/network error {e!r} for chunk starting {chunk[0]}",
                   file=sys.stderr)
+            if transient is not None:
+                transient.update(chunk)
             continue
         root = ET.fromstring(xml_bytes)
         for entry in root.findall("atom:entry", ns):
@@ -492,7 +545,11 @@ NBER_META_RE = re.compile(
 )
 
 
-def verify_nber(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
+def verify_nber(
+    ids: list[str],
+    refresh: bool = False,
+    transient: Optional[set[str]] = None,
+) -> dict[str, PaperMeta]:
     """Scrape NBER paper pages (they expose Google-Scholar citation meta)."""
     result: dict[str, PaperMeta] = {}
     for wp in ids:
@@ -503,6 +560,8 @@ def verify_nber(ids: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
             )
         except _TRANSIENT_NETWORK_ERRORS as e:
             print(f"[nber] HTTP/network error {e!r} for w{wp}", file=sys.stderr)
+            if transient is not None:
+                transient.add(wp)
             continue
         authors: list[str] = []
         title = ""
@@ -567,7 +626,17 @@ def _verify_datacite_one(doi: str, refresh: bool = False) -> Optional[PaperMeta]
     )
 
 
-def verify_crossref(dois: list[str], refresh: bool = False) -> dict[str, PaperMeta]:
+def verify_crossref(
+    dois: list[str],
+    refresh: bool = False,
+    transient: Optional[set[str]] = None,
+) -> dict[str, PaperMeta]:
+    """Verify DOIs against Crossref with DataCite fallback for 404s.
+
+    Crossref 404 is not transient: it means the DOI is absent from Crossref
+    and should fall through to DataCite. Other HTTP/network errors are
+    transient after ``_http_get`` has exhausted bounded retry.
+    """
     result: dict[str, PaperMeta] = {}
     for doi in dois:
         url = f"https://api.crossref.org/works/{urllib.parse.quote(doi, safe='')}"
@@ -579,9 +648,13 @@ def verify_crossref(dois: list[str], refresh: bool = False) -> dict[str, PaperMe
             if e.code == 404:
                 crossref_404 = True
             else:
+                if transient is not None:
+                    transient.add(doi)
                 continue
         except _TRANSIENT_NETWORK_ERRORS as e:
             print(f"[crossref] HTTP/network error {e!r} for {doi}", file=sys.stderr)
+            if transient is not None:
+                transient.add(doi)
             continue
         if crossref_404:
             # Fall through to DataCite — Zenodo / Figshare / Dryad
@@ -1008,26 +1081,33 @@ def main(argv: Optional[list[str]] = None) -> int:
               file=sys.stderr)
 
     truth: dict[tuple[str, str], PaperMeta] = {}
+    transient_keys: set[tuple[str, str]] = set()
     if "arxiv" in args.kinds and by_kind["arxiv"]:
         ids = sorted({c.id for c in by_kind["arxiv"]})
         print(f"verifying {len(ids)} arXiv ids …", file=sys.stderr)
-        t = verify_arxiv(ids, refresh=args.refresh)
+        transient_arxiv: set[str] = set()
+        t = verify_arxiv(ids, refresh=args.refresh, transient=transient_arxiv)
         for k, v in t.items():
             truth[("arxiv", k)] = v
+        transient_keys |= {("arxiv", i) for i in transient_arxiv}
         print(f"  resolved {len(t)}/{len(ids)}", file=sys.stderr)
     if "nber" in args.kinds and by_kind["nber"]:
         ids = sorted({c.id for c in by_kind["nber"]})
         print(f"verifying {len(ids)} NBER working papers …", file=sys.stderr)
-        t = verify_nber(ids, refresh=args.refresh)
+        transient_nber: set[str] = set()
+        t = verify_nber(ids, refresh=args.refresh, transient=transient_nber)
         for k, v in t.items():
             truth[("nber", k)] = v
+        transient_keys |= {("nber", i) for i in transient_nber}
         print(f"  resolved {len(t)}/{len(ids)}", file=sys.stderr)
     if "doi" in args.kinds and by_kind["doi"]:
         ids = sorted({c.id for c in by_kind["doi"]})
         print(f"verifying {len(ids)} DOIs …", file=sys.stderr)
-        t = verify_crossref(ids, refresh=args.refresh)
+        transient_doi: set[str] = set()
+        t = verify_crossref(ids, refresh=args.refresh, transient=transient_doi)
         for k, v in t.items():
             truth[("doi", k)] = v
+        transient_keys |= {("doi", i) for i in transient_doi}
         print(f"  resolved {len(t)}/{len(ids)}", file=sys.stderr)
 
     verdicts: list[Verdict] = []
@@ -1062,15 +1142,30 @@ def main(argv: Optional[list[str]] = None) -> int:
     n_mismatch = sum(1 for v in verdicts if v.status == "mismatch")
     n_unresolved = sum(1 for v in verdicts if v.status == "unresolved")
     n_ok = sum(1 for v in verdicts if v.status == "ok")
+    n_unresolved_transient = sum(
+        1 for v in verdicts
+        if v.status == "unresolved"
+        and (v.citation.kind, v.citation.id) in transient_keys
+    )
+    n_unresolved_genuine = n_unresolved - n_unresolved_transient
     print(
-        f"summary: {n_ok} ok / {n_mismatch} mismatch / {n_unresolved} unresolved",
+        f"summary: {n_ok} ok / {n_mismatch} mismatch / {n_unresolved} unresolved "
+        f"({n_unresolved_genuine} genuine / {n_unresolved_transient} transient)",
         file=sys.stderr,
     )
 
     if n_mismatch:
         return 1
-    if args.strict and n_unresolved:
+    if args.strict and n_unresolved_genuine:
         return 1
+    if args.strict and n_unresolved_transient:
+        print(
+            f"strict: {n_unresolved_transient} citation(s) unresolved due to "
+            "transient upstream errors (rate limit / network) — soft failure "
+            "(exit 2)",
+            file=sys.stderr,
+        )
+        return 2
     return 0
 
 

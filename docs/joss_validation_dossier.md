@@ -12,6 +12,9 @@ research software. It is intentionally factual and reproducible.
 - Current release at the time of this dossier: `1.15.6`, released on
   2026-05-24.
 - Public GitHub repository creation date: 2025-07-26.
+- Public repository activity signals as of 2026-05-29: 210 stars, 37 forks,
+  23 GitHub releases, and 1 public external user issue in addition to
+  maintainer-created issue/PR activity.
 
 ## Software Scope
 
@@ -39,6 +42,7 @@ The repository includes several independent validation tracks:
 - Monte Carlo coverage checks under `tests/coverage_monte_carlo/`.
 - Snapshot tests for publication-table output under `tests/output_snapshots/`.
 - Citation and bibliography audits under `tools/`.
+- Reviewer-facing offline examples under `examples/`.
 
 The maintained local full-suite report records:
 
@@ -73,6 +77,21 @@ evaluation work. No peer-reviewed research article using StatsPAI has yet been
 published. The current impact claim is therefore based on credible near-term
 research use, reproducible validation materials, public package distribution,
 and reviewer-verifiable examples rather than published downstream citations.
+
+## Public Distribution And Community Signals
+
+StatsPAI is publicly distributed on PyPI and archived on Zenodo. The GitHub
+repository has public stars, forks, issue templates, discussions links,
+contribution instructions, support instructions, release notes, and CI status
+checks. These are treated as community-readiness and public-interest signals,
+not as evidence of independent scholarly adoption.
+
+The public fork list is available through GitHub at
+<https://github.com/brycewang-stanford/StatsPAI/forks>. As of 2026-05-29, the
+GitHub API reported 37 forks, all owned by normal GitHub `User` accounts. The
+project does not infer downstream research use from those forks unless a user
+opens an issue, pull request, citation, or reproducible report that documents
+such use.
 
 ## Commercial Downstream Disclosure
 

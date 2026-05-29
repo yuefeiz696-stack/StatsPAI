@@ -19,8 +19,8 @@ Makefile
 build_and_release.sh
 publish_to_pypi.sh
 
-# Examples (not shipped with the package)
-examples/
+# Generated example outputs
+examples/output/
 
 # mkdocs build output only — source lives under docs/ and IS tracked
 
