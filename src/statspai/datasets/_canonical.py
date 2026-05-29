@@ -33,7 +33,7 @@ def _load_bundled_csv(name: str) -> pd.DataFrame:
     installed as a wheel or run from a source checkout.
     """
     try:
-        ref = resources.files("statspai.datasets").joinpath("data", name)
+        ref = resources.files("statspai.datasets").joinpath("data").joinpath(name)
         with resources.as_file(ref) as path:
             return pd.read_csv(path)
     except (FileNotFoundError, ModuleNotFoundError):

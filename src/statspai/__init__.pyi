@@ -124,6 +124,7 @@ from .causal_rl.benchmarks import BanditBenchmarkResult as BanditBenchmarkResult
 from .causal_rl.benchmarks import causal_rl_benchmark as causal_rl_benchmark
 from .causal_rl.causal_dqn import CausalDQNResult as CausalDQNResult
 from .causal_rl.causal_dqn import causal_dqn as causal_dqn
+from .causal_rl.core import structural_mdp as structural_mdp
 from .causal_rl.offline_safe import OfflineSafeResult as OfflineSafeResult
 from .causal_rl.offline_safe import offline_safe_policy as offline_safe_policy
 from .causal_text.llm_annotator import LLMAnnotatorResult as LLMAnnotatorResult
@@ -197,6 +198,8 @@ from .decomposition.oaxaca import gelbach as gelbach
 from .decomposition.oaxaca import oaxaca as oaxaca
 from .decomposition.rif import rif_decomposition as rif_decomposition
 from .decomposition.rif import rifreg as rifreg
+from .decomposition.yu_elwert import YuElwertResult as YuElwertResult
+from .decomposition.yu_elwert import yu_elwert_decompose as yu_elwert_decompose
 from .deepiv.deep_iv import DeepIV as DeepIV
 from .deepiv.deep_iv import deepiv as deepiv
 from .diagnostics.battery import diagnose_result as diagnose_result
@@ -234,9 +237,9 @@ from .did.ddd_heterogeneous import ddd_heterogeneous as ddd_heterogeneous
 from .did.design_robust import design_robust_event_study as design_robust_event_study
 from .did.did_2x2 import did_2x2 as did_2x2
 from .did.did_bcf import did_bcf as did_bcf
-from .did.did_imputation import did_imputation as did_imputation
 from .did.did_imputation import did_imputation as bjs
 from .did.did_imputation import did_imputation as borusyak_jaravel_spiess
+from .did.did_imputation import did_imputation as did_imputation
 from .did.did_multiplegt import did_multiplegt as did_multiplegt
 from .did.did_multiplegt_dyn import did_multiplegt_dyn as did_multiplegt_dyn
 from .did.event_study import event_study as event_study
@@ -275,6 +278,10 @@ from .did.wooldridge_did import etwfe as etwfe
 from .did.wooldridge_did import etwfe_emfx as etwfe_emfx
 from .did.wooldridge_did import twfe_decomposition as twfe_decomposition
 from .did.wooldridge_did import wooldridge_did as wooldridge_did
+from .dml._diagnostics import DMLDiagnostics as DMLDiagnostics
+from .dml._diagnostics import dml_diagnostics as dml_diagnostics
+from .dml._sensitivity import DMLSensitivityResult as DMLSensitivityResult
+from .dml._sensitivity import dml_sensitivity as dml_sensitivity
 from .dml.double_ml import DoubleML as DoubleML
 from .dml.iivm import DoubleMLIIVM as DoubleMLIIVM
 from .dml.irm import DoubleMLIRM as DoubleMLIRM
@@ -328,14 +335,17 @@ from .experimental.design import balance_check as balance_check
 from .experimental.design import randomize as randomize
 from .experimental.optimal import OptimalDesignResult as OptimalDesignResult
 from .experimental.optimal import optimal_design as optimal_design
+from .fairness.core import orthogonal_to_bias as orthogonal_to_bias
 from .fixest.wrapper import etable as etable
 from .fixest.wrapper import feglm as feglm
 from .fixest.wrapper import feols as feols
 from .fixest.wrapper import fepois as fepois
 from .forest.causal_forest import CausalForest as CausalForest
 from .forest.causal_forest import causal_forest as causal_forest
+from .forest.forest_inference import average_treatment_effect as average_treatment_effect
 from .forest.forest_inference import calibration_test as calibration_test
 from .forest.forest_inference import calibration_test as test_calibration
+from .forest.forest_inference import forest_diagnostics as forest_diagnostics
 from .forest.forest_inference import honest_variance as honest_variance
 from .forest.forest_inference import rate as rate
 from .frontier.malmquist import MalmquistResult as MalmquistResult
@@ -401,6 +411,9 @@ from .interference.spillover import SpilloverEstimator as SpilloverEstimator
 from .interference.spillover import spillover as spillover
 from .iv.continuous_late import ContinuousLATEResult as ContinuousLATEResult
 from .iv.continuous_late import continuous_iv_late as continuous_iv_late
+from .iv.iv_diag import IVDiagResult as IVDiagResult
+from .iv.iv_diag import iv_compare as iv_compare
+from .iv.iv_diag import iv_diag as iv_diag
 from .iv.kernel_iv import KernelIVResult as KernelIVResult
 from .iv.kernel_iv import kernel_iv as kernel_iv
 from .longitudinal import analyze as longitudinal_analyze
@@ -423,7 +436,9 @@ from .matching.optimal import OptimalMatchResult as OptimalMatchResult
 from .matching.optimal import cardinality_match as cardinality_match
 from .matching.optimal import optimal_match as optimal_match
 from .matching.overlap_weights import overlap_weights as overlap_weights
+from .matching.ps_diagnostics import BalanceDiagnosticsResult as BalanceDiagnosticsResult
 from .matching.ps_diagnostics import PSBalanceResult as PSBalanceResult
+from .matching.ps_diagnostics import balance_diagnostics as balance_diagnostics
 from .matching.ps_diagnostics import love_plot as love_plot
 from .matching.ps_diagnostics import overlap_plot as overlap_plot
 from .matching.ps_diagnostics import propensity_score as propensity_score
@@ -472,9 +487,12 @@ from .mendelian.mr import mendelian_randomization as mendelian_randomization
 from .mendelian.mr import mr_egger as mr_egger
 from .mendelian.mr import mr_ivw as mr_ivw
 from .mendelian.mr import mr_median as mr_median
+from .mendelian.multivariable import mr_mediation as mr_mediation
 from .metalearners.auto_cate import AutoCATEResult as AutoCATEResult
 from .metalearners.auto_cate import auto_cate as auto_cate
 from .metalearners.auto_cate_tuned import auto_cate_tuned as auto_cate_tuned
+from .metalearners.cate_eval import CATEEvalResult as CATEEvalResult
+from .metalearners.cate_eval import cate_eval as cate_eval
 from .metalearners.cluster_cate import ClusterCATEResult as ClusterCATEResult
 from .metalearners.cluster_cate import cluster_cate as cluster_cate
 from .metalearners.diagnostics import blp_test as blp_test
@@ -518,18 +536,18 @@ from .multilevel.lmm import mixed as mixed
 from .neural_causal.cevae import CEVAE as CEVAE
 from .neural_causal.cevae import CEVAEResult as CEVAEResult
 from .neural_causal.cevae import cevae as cevae
-from .neural_causal.models import CFRNet as CFRNet
-from .neural_causal.models import DragonNet as DragonNet
-from .neural_causal.models import TARNet as TARNet
-from .neural_causal.models import cfrnet as cfrnet
-from .neural_causal.models import dragonnet as dragonnet
-from .neural_causal.models import tarnet as tarnet
 from .neural_causal.exports import neural_causal_to_excel as neural_causal_to_excel
 from .neural_causal.exports import neural_causal_to_html as neural_causal_to_html
 from .neural_causal.exports import neural_causal_to_markdown as neural_causal_to_markdown
 from .neural_causal.exports import neural_effects_frame as neural_effects_frame
 from .neural_causal.exports import neural_summary_frame as neural_summary_frame
 from .neural_causal.exports import neural_training_frame as neural_training_frame
+from .neural_causal.models import CFRNet as CFRNet
+from .neural_causal.models import DragonNet as DragonNet
+from .neural_causal.models import TARNet as TARNet
+from .neural_causal.models import cfrnet as cfrnet
+from .neural_causal.models import dragonnet as dragonnet
+from .neural_causal.models import tarnet as tarnet
 from .neural_causal.plots import neural_causal_plot as neural_causal_plot
 from .nonparametric.kdensity import KDensityResult as KDensityResult
 from .nonparametric.kdensity import kdensity as kdensity
@@ -601,7 +619,10 @@ from .plots.themes import list_themes as list_themes
 from .plots.themes import set_theme as set_theme
 from .plots.themes import use_chinese as use_chinese
 from .policy_learning.policy_tree import PolicyTree as PolicyTree
+from .policy_learning.policy_tree import PolicyTreeResult as PolicyTreeResult
 from .policy_learning.policy_tree import policy_value as policy_value
+from .postestimation.contract import postestimation_contract as postestimation_contract
+from .postestimation.contract import postestimation_contract as postestimation_report
 from .postestimation.hypothesis import lincom as lincom
 from .postestimation.hypothesis import test as test
 from .postestimation.margins import contrast as contrast
@@ -656,6 +677,10 @@ from .rd._aliases import multi_score_rd as multi_score_rd
 from .rd.bandwidth import rdbwselect as rdbwselect
 from .rd.bayes_hte import BayesRDHTEResult as BayesRDHTEResult
 from .rd.bayes_hte import rd_bayes_hte as rd_bayes_hte
+from .rd.bias_aware import rd_bias_aware_fuzzy as rd_bias_aware_fuzzy
+from .rd.dashboard import rd_compare as rd_compare
+from .rd.dashboard import rd_dashboard as rd_dashboard
+from .rd.dashboard import rd_robustness_table as rd_robustness_table
 from .rd.diagnostics import rdbalance as rdbalance
 from .rd.diagnostics import rdbwsensitivity as rdbwsensitivity
 from .rd.diagnostics import rdplacebo as rdplacebo
@@ -682,6 +707,8 @@ from .rd.multi_score import rd_multi_score as rd_multi_score
 from .rd.rd2d import rd2d as rd2d
 from .rd.rd2d import rd2d_bw as rd2d_bw
 from .rd.rd2d import rd2d_plot as rd2d_plot
+from .rd.rd_discrete import rd_discrete as rd_discrete
+from .rd.rd_flex import rd_flex as rd_flex
 from .rd.rdit import rdit as rdit
 from .rd.rdml import rd_boost as rd_boost
 from .rd.rdml import rd_cate_summary as rd_cate_summary
@@ -828,6 +855,7 @@ from .structural.production.op_lp_acf import levinsohn_petrin as levpet
 from .structural.production.op_lp_acf import olley_pakes as olley_pakes
 from .structural.production.op_lp_acf import olley_pakes as opreg
 from .structural.production.wooldridge import wooldridge_prod as wooldridge_prod
+from .surrogate.index import surrogate_index as surrogate_index
 from .survey.calibration import linear_calibration as linear_calibration
 from .survey.calibration import rake as rake
 from .survey.design import SurveyDesign as SurveyDesign
@@ -857,6 +885,9 @@ from .synth.discos import discos_plot as discos_plot
 from .synth.discos import discos_test as discos_test
 from .synth.discos import qqsynth as qqsynth
 from .synth.discos import stochastic_dominance as stochastic_dominance
+from .synth.exports import synth_to_excel as synth_to_excel
+from .synth.exports import synth_to_latex as synth_to_latex
+from .synth.exports import synth_to_markdown as synth_to_markdown
 from .synth.gsynth import gsynth as gsynth
 from .synth.mc import mc_synth as mc_synth
 from .synth.multi_outcome import multi_outcome_synth as multi_outcome_synth
@@ -930,6 +961,7 @@ from .tmle.tmle import TMLE as TMLE
 from .tmle.tmle import tmle as tmle
 from .transport import generalize as transport_generalize
 from .transport import weights as transport_weights_fn
+from .transport.evidence_synthesis import synthesise_evidence as synthesise_evidence
 from .transport.identify import TransportIdentificationResult as TransportIdentificationResult
 from .transport.identify import identify_transport as identify_transport
 from .transport.weighting import TransportWeightResult as TransportWeightResult
@@ -965,5 +997,17 @@ from .utils.labels import get_label as get_label
 from .utils.labels import get_labels as get_labels
 from .utils.labels import label_var as label_var
 from .utils.labels import label_vars as label_vars
+from .validation import ReproductionResult as ReproductionResult
+from .validation import ReproductionStep as ReproductionStep
+from .validation import ValidationReport as ValidationReport
+from .validation import coverage_matrix as coverage_matrix
+from .validation import parity_gap_report as parity_gap_report
+from .validation import reproduce_jss_tables as reproduce_jss_tables
+from .validation import validation_report as validation_report
+from .workflow.paper import paper as paper
 
 __all__: list[str]
+
+# Names without a discoverable source module — declared as Any
+from typing import Any
+VALIDATION_STATUSES: Any

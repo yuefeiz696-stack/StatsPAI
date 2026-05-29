@@ -748,9 +748,18 @@ def _build_registry():
             ParamSpec("g", "str", True, description="First-treatment-period column (0 = never-treated)"),
             ParamSpec("t", "str", True, description="Time period column"),
             ParamSpec("i", "str", True, description="Unit identifier"),
+            ParamSpec("x", "list", False, None,
+                      "Covariates for conditional parallel trends"),
+            ParamSpec("estimator", "str", False, "dr",
+                      "2x2 estimator", ["dr", "ipw", "reg"]),
             ParamSpec("control_group", "str", False, "nevertreated",
                       "Control group", ["nevertreated", "notyettreated"]),
+            ParamSpec("base_period", "str", False, "universal",
+                      "Base period", ["universal", "varying"]),
             ParamSpec("anticipation", "int", False, 0, "Number of anticipation periods"),
+            ParamSpec("alpha", "float", False, 0.05),
+            ParamSpec("panel", "bool", False, True,
+                      "False means repeated cross-sections"),
         ],
         returns="CausalResult",
         example='sp.callaway_santanna(df, y="earnings", g="first_treat", t="year", i="worker")',
@@ -814,6 +823,8 @@ def _build_registry():
             ParamSpec("fuzzy", "str", False, None, "Treatment variable for fuzzy RD"),
             ParamSpec("deriv", "int", False, 0, "Derivative order (0=RD, 1=RKD)"),
             ParamSpec("donut", "float", False, 0.0, "Donut-hole radius"),
+            ParamSpec("weights", "str", False, None,
+                      "Reserved; currently raises NotImplementedError"),
             ParamSpec("kernel", "str", False, "triangular", "Kernel type", ["triangular", "epanechnikov", "uniform"]),
         ],
         returns="CausalResult",
@@ -4571,9 +4582,10 @@ def _build_registry():
         category="causal",
         description=(
             "TMLE with Highly Adaptive Lasso (HAL) nuisance learners "
-            "(Qian & van der Laan 2025). Two variants: 'delta' plugs HAL into "
-            "standard TMLE; 'projection' shrinks the targeting step using "
-            "a tangent-space projection for reduced variance."
+            "(Qian & van der Laan 2025). The stable 'delta' variant plugs "
+            "HAL into standard TMLE. The reserved 'projection' variant "
+            "raises NotImplementedError until the Riesz-projection "
+            "targeting step has reference parity."
         ),
         params=[
             ParamSpec("data", "DataFrame", True),
@@ -6160,8 +6172,8 @@ def _build_registry():
         description=(
             "Aronow-Samii Horvitz-Thompson estimator for arbitrary "
             "interference via a user-supplied exposure mapping. Handles "
-            "Bernoulli / complete randomisation designs with simulated "
-            "conservative variance."
+            "Bernoulli randomisation designs with simulated conservative "
+            "variance."
         ),
         params=[
             ParamSpec("Y", "array", True, description="Outcome vector"),
@@ -6210,8 +6222,10 @@ def _build_registry():
         alternatives=["spillover", "peer_effects", "cluster_matched_pair"],
         typical_n_min=200,
         limitations=[
-            "design='complete' currently falls back to the bernoulli HT "
-            "implementation; only design='bernoulli' is fully supported",
+            "design='complete' is reserved but not implemented; passing it "
+            "raises NotImplementedError. Use design='bernoulli' with "
+            "p_treat=K/N as an approximation only if that matches the "
+            "assignment mechanism you are willing to assume",
         ],
     ))
 

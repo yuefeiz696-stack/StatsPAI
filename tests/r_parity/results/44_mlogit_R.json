@@ -1,0 +1,76 @@
+{
+  "module": "44_mlogit",
+  "side": "R",
+  "rows": [
+    {
+      "module": "44_mlogit",
+      "side": "R",
+      "statistic": "class1_intercept",
+      "estimate": 0.229356919865021,
+      "se": 0.0796492235641536,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "44_mlogit",
+      "side": "R",
+      "statistic": "class1_x1",
+      "estimate": 0.384485810377338,
+      "se": 0.0823360498961054,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "44_mlogit",
+      "side": "R",
+      "statistic": "class1_x2",
+      "estimate": -0.063247532432768,
+      "se": 0.0778291986445608,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "44_mlogit",
+      "side": "R",
+      "statistic": "class2_intercept",
+      "estimate": -0.115861169202998,
+      "se": 0.0877956568452389,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "44_mlogit",
+      "side": "R",
+      "statistic": "class2_x1",
+      "estimate": -0.37517348330213,
+      "se": 0.0897260711553695,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "44_mlogit",
+      "side": "R",
+      "statistic": "class2_x2",
+      "estimate": 0.50369419164619,
+      "se": 0.0873014249447067,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "base_class": [0],
+    "package": ["nnet::multinom"]
+  }
+}

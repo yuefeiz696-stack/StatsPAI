@@ -222,7 +222,7 @@ from .iv.kernel_iv import kernel_iv, KernelIVResult
 from .iv.continuous_late import continuous_iv_late, ContinuousLATEResult
 # Modern IV reporting bundle (post-2022 standard) — top-level for ergonomics.
 from .iv.iv_diag import iv_diag, iv_compare, IVDiagResult
-from .plots import binscatter, set_theme, list_themes, use_chinese, interactive, get_code
+from .plots import binscatter, set_theme, list_themes, use_chinese
 from .utils import (
     label_var, label_vars, get_label, get_labels, describe, pwcorr, winsor, read_data,
     rowmean, rowtotal, rowmax, rowmin, rowsd, rowcount, rank, outlier_indicator,
@@ -1306,6 +1306,7 @@ __all__ = [
     "question", "causal_question", "CausalQuestion",
     "IdentificationPlan", "EstimationResult",
     "preregister", "load_preregister",
+    "paper",
     # v0.9.17 additions (unified sensitivity; SensitivityDashboard already exported)
     "unified_sensitivity",
     # v0.9.17 additions (DAG UX)
@@ -1366,6 +1367,7 @@ __all__ = [
     "causal_dqn", "CausalDQNResult",
     "causal_rl_benchmark", "BanditBenchmarkResult",
     "offline_safe_policy", "OfflineSafeResult",
+    "structural_mdp",
     # Cluster RCT × interference
     "cluster_matched_pair", "MatchedPairResult",
     "cluster_cross_interference", "CrossClusterRCTResult",
@@ -1394,6 +1396,11 @@ __all__ = [
     "weighted_conformal_prediction",
     "conformal_counterfactual", "ConformalCounterfactualResult",
     "conformal_ite_interval", "ConformalITEResult",
+    # Registry/API surface consistency guards
+    "mr_mediation",
+    "orthogonal_to_bias",
+    "surrogate_index",
+    "synthesise_evidence",
 ]
 
 
@@ -1529,6 +1536,9 @@ def _register_lazy(modname, *names):
 
 _LAZY_ATTRS: dict = {}
 
+_register_lazy("plots.interactive",
+    "interactive", "get_code",
+)
 _register_lazy("bayes",
     "bayes_did", "bayes_rd", "bayes_iv", "bayes_fuzzy_rd", "bayes_hte_iv",
     "bayes_mte", "bayes_dml", "BayesianDMLResult",

@@ -6,7 +6,12 @@ from html import escape as _html_escape
 from typing import Dict, Any, Optional, List, Union
 import pandas as pd
 import numpy as np
-from scipy import stats
+
+
+def _scipy_stats():
+    """Lazily import ``scipy.stats`` for result-time inference only."""
+    from scipy import stats as _stats
+    return _stats
 
 
 class SummaryText(str):
@@ -145,6 +150,7 @@ class EconometricResults:
     
     def _compute_statistics(self):
         """Compute t-statistics, p-values, and confidence intervals"""
+        stats = _scipy_stats()
         self.tvalues = self.params / self.std_errors
         self.pvalues = 2 * (1 - stats.t.cdf(np.abs(self.tvalues), 
                                            self.data_info.get('df_resid', np.inf)))
@@ -219,6 +225,7 @@ class EconometricResults:
         pd.DataFrame
             Confidence intervals
         """
+        stats = _scipy_stats()
         t_crit = stats.t.ppf(1 - alpha/2, self.data_info.get('df_resid', np.inf))
         lower = self.params - t_crit * self.std_errors
         upper = self.params + t_crit * self.std_errors
@@ -277,6 +284,7 @@ class EconometricResults:
         """
         alpha = 1 - conf_level
         df_resid = self.data_info.get('df_resid', np.inf)
+        stats = _scipy_stats()
         t_crit = stats.t.ppf(1 - alpha/2, df_resid)
         lo = self.params - t_crit * self.std_errors
         hi = self.params + t_crit * self.std_errors
@@ -1256,6 +1264,7 @@ class CausalResult:
             # fall back to normal only when no df is available (e.g. CS /
             # synth results where influence-function SEs are asymptotic).
             df_resid = self.model_info.get('df_resid', None)
+            stats = _scipy_stats()
             if df_resid is not None and np.isfinite(df_resid) and df_resid > 0:
                 crit = stats.t.ppf(1 - alpha/2, df_resid)
             else:

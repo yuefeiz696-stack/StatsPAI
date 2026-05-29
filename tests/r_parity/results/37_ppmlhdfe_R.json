@@ -1,0 +1,33 @@
+{
+  "module": "37_ppmlhdfe",
+  "side": "R",
+  "rows": [
+    {
+      "module": "37_ppmlhdfe",
+      "side": "R",
+      "statistic": "beta_x1",
+      "estimate": 0.239846852262839,
+      "se": 0.0303570325931239,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    },
+    {
+      "module": "37_ppmlhdfe",
+      "side": "R",
+      "statistic": "beta_x2",
+      "estimate": -0.402933324938437,
+      "se": 0.0619900490486846,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "fe": ["origin"],
+    "vcov": ["HC1"],
+    "package": ["fixest::fepois"]
+  }
+}

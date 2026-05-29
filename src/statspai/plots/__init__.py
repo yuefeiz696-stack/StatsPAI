@@ -12,7 +12,19 @@ Provides publication-quality academic plots:
 
 from .binscatter import binscatter
 from .themes import set_theme, list_themes, use_chinese, _register_cjk_fallback
-from .interactive import interactive, get_code, FigureEditor
+
+
+def __getattr__(name):
+    if name in {"interactive", "get_code", "FigureEditor"}:
+        from .interactive import FigureEditor, get_code, interactive
+        bindings = {
+            "interactive": interactive,
+            "get_code": get_code,
+            "FigureEditor": FigureEditor,
+        }
+        globals().update(bindings)
+        return bindings[name]
+    raise AttributeError(f"module 'statspai.plots' has no attribute {name!r}")
 
 # Auto-register CJK font fallback at import time so Chinese plots work out of
 # the box. Appends detected CJK fonts to font.family list (matplotlib 3.6+

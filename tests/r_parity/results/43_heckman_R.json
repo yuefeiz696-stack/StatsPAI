@@ -1,0 +1,43 @@
+{
+  "module": "43_heckman",
+  "side": "R",
+  "rows": [
+    {
+      "module": "43_heckman",
+      "side": "R",
+      "statistic": "beta_intercept",
+      "estimate": 1.0878956411319,
+      "se": 0.145403749317852,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 600,
+      "extra": []
+    },
+    {
+      "module": "43_heckman",
+      "side": "R",
+      "statistic": "beta_x",
+      "estimate": 0.398176051703707,
+      "se": 0.0567810347790138,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 600,
+      "extra": []
+    },
+    {
+      "module": "43_heckman",
+      "side": "R",
+      "statistic": "lambda_imr",
+      "estimate": -0.294292477555876,
+      "se": 0.217171654992184,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 600,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "method": ["2-step Heckit"],
+    "package": ["sampleSelection::heckit"]
+  }
+}

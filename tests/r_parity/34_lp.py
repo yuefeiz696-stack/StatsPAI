@@ -36,9 +36,15 @@ def main() -> None:
     df = df.iloc[1:].reset_index(drop=True)
     dump_csv(df, MODULE)
 
+    # Post-2026-05-28: `controls` is honoured verbatim and `auto_lag`
+    # controls whether y_{t-1} and shock_{t-1} are auto-added. We pass
+    # `controls=["y_lag"]` (= y_{t-1}) and `auto_lag=False` to make
+    # the regression literally y_{t+h} ~ const + x_t + y_lag, which
+    # is the spec the .do / .R parity siblings reproduce.
     fit = sp.local_projections(
         data=df, outcome="y", shock="x",
         controls=["y_lag"], horizons=H_MAX,
+        auto_lag=False,
     )
 
     rows: list[ParityRecord] = []

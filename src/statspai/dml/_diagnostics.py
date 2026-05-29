@@ -69,6 +69,12 @@ class DMLDiagnostics:
     orth_stat: float = 0.0  # standardized E[ψ_a]
     orth_pvalue: float = 1.0
     orth_warning: Optional[str] = None
+    _overlap_values: np.ndarray = field(
+        default_factory=lambda: np.asarray([], dtype=float),
+        repr=False,
+    )
+    _overlap_label: str = ""
+    _score: Optional[np.ndarray] = field(default=None, repr=False)
 
     def summary(self) -> str:
         lines = [

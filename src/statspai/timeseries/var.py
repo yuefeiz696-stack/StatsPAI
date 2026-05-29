@@ -22,6 +22,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from ..exceptions import MethodIncompatibility
+
 
 class VARResult:
     """Results from VAR estimation."""
@@ -41,6 +43,10 @@ class VARResult:
         self.det_sigma = det_sigma
         self.log_likelihood = log_likelihood
         self._companion = None
+        self._B = None
+        self._k = len(var_names)
+        self._lags = lags
+        self._trend = None
 
     def summary(self) -> str:
         k = len(self.var_names)
@@ -260,7 +266,7 @@ def granger_causality(
     """
     if var_result is None:
         if data is None:
-            raise ValueError("Provide var_result or data")
+            raise MethodIncompatibility("Provide var_result or data")
         if lags is None:
             lags = 1
         var_result = var(data, variables=[caused, causing], lags=lags)

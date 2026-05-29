@@ -1,0 +1,58 @@
+{
+  "module": "39_arima",
+  "side": "Stata",
+  "rows": [
+    {
+      "module": "39_arima",
+      "side": "Stata",
+      "statistic": "ar1",
+      "estimate": 0.69821605644764095,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    }
+,
+    {
+      "module": "39_arima",
+      "side": "Stata",
+      "statistic": "ar2",
+      "estimate": -0.34164368667188161,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    }
+,
+    {
+      "module": "39_arima",
+      "side": "Stata",
+      "statistic": "sigma2",
+      "estimate": 0.41084348190052772,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    }
+,
+    {
+      "module": "39_arima",
+      "side": "Stata",
+      "statistic": "logLik",
+      "estimate": -292.52890208745248,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": {}
+    }
+  ],
+  "extra": {
+    "order": "(2,0,0)",
+    "method": "CMLE",
+    "stata_command": "arima y, ar(1/2)"
+  }
+}

@@ -19,6 +19,8 @@ public API is unchanged.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 try:  # pragma: no cover — import-time branch
@@ -34,12 +36,15 @@ except Exception:  # pragma: no cover
         return deco
 
 
+_NUMBA_CACHE = _HAS_NUMBA and Path(__file__).exists()
+
+
 # ======================================================================
 # Unweighted sweep
 # ======================================================================
 
 
-@njit(cache=True, fastmath=True)  # type: ignore[misc]
+@njit(cache=_NUMBA_CACHE, fastmath=True)  # type: ignore[misc]
 def _sweep_numba(col: np.ndarray, codes: np.ndarray, counts: np.ndarray) -> None:
     G = counts.shape[0]
     sums = np.zeros(G, dtype=np.float64)
@@ -79,7 +84,7 @@ def sweep(col: np.ndarray, codes: np.ndarray, counts: np.ndarray) -> None:
 # ======================================================================
 
 
-@njit(cache=True, fastmath=True)  # type: ignore[misc]
+@njit(cache=_NUMBA_CACHE, fastmath=True)  # type: ignore[misc]
 def _sweep_weighted_numba(
     col: np.ndarray,
     weights: np.ndarray,

@@ -83,11 +83,33 @@ jobs:
     - name: Lint with flake8
       run: |
         flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+        python scripts/quality_gate.py flake8
+
+    - name: Type baseline with mypy
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+      run: |
+        python scripts/quality_gate.py mypy
 
     - name: Test with pytest
       run: |
-        pytest tests/ -v --cov=src/statspai --cov-report=xml
+        pytest tests/ -v --cov=statspai --cov-report=xml --cov-report=term-missing --cov-fail-under=15
+
+    - name: Build and smoke installed wheel
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+      shell: bash
+      run: |
+        python -m build --sdist --wheel
+        python -m venv .wheel-smoke
+        .wheel-smoke/bin/python -m pip install --upgrade pip
+        .wheel-smoke/bin/python -m pip install dist/*.whl
+        .wheel-smoke/bin/python - <<'PY'
+        import statspai as sp
+        from statspai.cli import main
+
+        assert sp.__version__
+        assert "StatsPAI" in sp.citation("cff")
+        assert main(["version"]) == 0
+        PY
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'

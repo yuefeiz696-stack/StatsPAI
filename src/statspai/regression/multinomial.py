@@ -273,11 +273,12 @@ def mlogit(
     bic = -2 * ll + np.log(n) * n_params
 
     # --- Standard errors ---
-    # Inverse Hessian from BFGS
-    if hasattr(res, 'hess_inv'):
-        H_inv = np.asarray(res.hess_inv)
-    else:
-        H_inv = np.eye(n_params)
+    # Use the numerical observed-information matrix at theta_hat
+    # rather than `result.hess_inv` from BFGS, which is the quasi-
+    # Newton update for driving the optimiser, not a reliable
+    # Hessian estimate (parity finding #10 — 2026-05-28).
+    from ._optim_helpers import hessian_cov
+    H_inv = hessian_cov(neg_loglik, theta_hat)
 
     S_obs = score_obs(theta_hat)
     se = _compute_se(S_obs, H_inv, robust, cluster_vals)
@@ -633,10 +634,11 @@ def _ordered_model(
     bic = -2 * ll + np.log(n) * n_params
 
     # --- Standard errors ---
-    if hasattr(res, 'hess_inv'):
-        H_inv = np.asarray(res.hess_inv)
-    else:
-        H_inv = np.eye(n_params)
+    # Numerical observed-information matrix (see explanation in
+    # mlogit above). Replaces BFGS `hess_inv` which produced the
+    # 26 % SE inflation on beta_x flagged in parity finding #11.
+    from ._optim_helpers import hessian_cov
+    H_inv = hessian_cov(neg_loglik, theta_hat)
 
     S_obs = _score_obs_numerical(theta_hat)
     se_all = _compute_se(S_obs, H_inv, robust, cluster_vals)

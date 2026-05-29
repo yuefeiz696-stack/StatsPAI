@@ -1,0 +1,43 @@
+{
+  "module": "48_probit",
+  "side": "R",
+  "rows": [
+    {
+      "module": "48_probit",
+      "side": "R",
+      "statistic": "beta_intercept",
+      "estimate": 0.29879485254064,
+      "se": 0.0593642981716446,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "48_probit",
+      "side": "R",
+      "statistic": "beta_x1",
+      "estimate": 0.566364902503924,
+      "se": 0.0473817412794415,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "48_probit",
+      "side": "R",
+      "statistic": "beta_x2",
+      "estimate": -0.345986959860228,
+      "se": 0.0842825404341057,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "link": ["probit"],
+    "package": ["stats::glm"]
+  }
+}

@@ -587,15 +587,46 @@ def _ppml_hdfe_irls(y, X, fe_indices_list=None, weights=None,
         # Update mu: need to recover FE contributions
         if has_fe:
             eta_X = X @ beta_new
-            # Recover FE: weighted group mean of (log(y+delta) - X*beta_new)
-            # Use current working values: eta_fe = weighted mean of (z_full - X*beta) for each group
-            # More stable: just re-estimate FE from (y, mu_X) residual
+            # Solve the Poisson FOC for each FE block: at convergence,
+            # the score with respect to alpha_g must be
+            # Sigma_{i in g} w_i (y_i - mu_i) = 0 in EVERY FE dimension.
+            # With multiple FE dimensions (e.g. gravity's origin + dest
+            # + year), no closed-form per-dimension formula exists —
+            # we run a Gauss-Seidel inner loop, updating one FE
+            # dimension at a time (holding the others fixed) until the
+            # marginal sum-of-residuals score is zero in every block.
+            # The previous OLS-style mean(log y - X beta) recovery was
+            # both (a) the wrong functional form (OLS, not PPML) and
+            # (b) only kept the *last* FE dimension's contribution when
+            # multiple were absorbed (each loop iteration overwrote
+            # the previous eta_fe). This single bug produced both the
+            # HC1 SE inflation (finding #6) and the 3-way-FE
+            # non-convergence (finding #5) flagged on 2026-05-28.
             eta_fe = np.zeros(n)
-            resid_from_x = np.log(np.maximum(y, 0.1)) - eta_X
-            for fe_idx in fe_indices_list:
-                for g in np.unique(fe_idx):
-                    mask = fe_idx == g
-                    eta_fe[mask] = np.mean(resid_from_x[mask])
+            for _ in range(200):
+                max_score = 0.0
+                eta_total = eta_X + eta_fe
+                exp_total = _safe_exp(eta_total)
+                for fe_idx in fe_indices_list:
+                    for g in np.unique(fe_idx):
+                        mask = fe_idx == g
+                        w_g = weights[mask]
+                        y_sum = float((w_g * y[mask]).sum())
+                        exp_sum = float((w_g * exp_total[mask]).sum())
+                        if y_sum > 0 and exp_sum > 0:
+                            delta = float(np.log(y_sum / exp_sum))
+                        elif exp_sum > 0:
+                            delta = float(np.log(max(y_sum, 0.5) / exp_sum))
+                        else:
+                            delta = 0.0
+                        eta_fe[mask] += delta
+                        # Update exp_total in place so the next FE block
+                        # uses the corrected mu.
+                        exp_total[mask] *= np.exp(delta)
+                        if abs(delta) > max_score:
+                            max_score = abs(delta)
+                if max_score < 1e-12:
+                    break
 
             mu_new = _safe_exp(eta_X + eta_fe)
         else:
@@ -609,7 +640,35 @@ def _ppml_hdfe_irls(y, X, fe_indices_list=None, weights=None,
             converged = True
             break
 
-    return beta, mu, converged, it + 1
+    # For HDFE, recompute the FE-residualised design at the converged
+    # mu so the caller can build a Frisch-Waugh-Lovell-correct sandwich:
+    # the bread of the robust vcov must use (X' W X) with X projected
+    # onto the orthogonal complement of the FE column space, not the
+    # raw X. Without this, the (X'WX)^{-1} bread underweights the FE-
+    # absorbed variability and the HC1 SE is inflated relative to
+    # ppmlhdfe / fixest::fepois (parity finding #6, 2026-05-28).
+    if has_fe:
+        w_final = weights * mu
+        X_dm_final = X.copy()
+        for _ in range(500):
+            max_change = 0.0
+            for fe_idx in fe_indices_list:
+                for g in np.unique(fe_idx):
+                    mask = fe_idx == g
+                    w_g = w_final[mask]
+                    w_sum = w_g.sum()
+                    if w_sum < 1e-300:
+                        continue
+                    group_mean = (X_dm_final[mask] * w_g[:, None]).sum(axis=0) / w_sum
+                    change = float(np.max(np.abs(group_mean)))
+                    if change > max_change:
+                        max_change = change
+                    X_dm_final[mask] -= group_mean[None, :]
+            if max_change < 1e-10:
+                break
+        return beta, mu, converged, it + 1, X_dm_final
+
+    return beta, mu, converged, it + 1, None
 
 
 # ---------------------------------------------------------------------------
@@ -1392,7 +1451,7 @@ def ppmlhdfe(
             warnings.warn(sw)
 
     # Fit
-    beta, mu, converged, n_iter = _ppml_hdfe_irls(
+    beta, mu, converged, n_iter, X_dm = _ppml_hdfe_irls(
         y_arr, X,
         fe_indices_list=fe_indices_list if fe_indices_list else None,
         weights=w_arr,
@@ -1403,8 +1462,13 @@ def ppmlhdfe(
 
     residuals = y_arr - mu
 
-    # Variance-covariance (robust by default, as in Stata ppmlhdfe)
-    vcov = _poisson_vcov(X, mu, residuals, robust, cluster_arr)
+    # Variance-covariance: when FE are absorbed, the FWL-correct
+    # sandwich uses the FE-residualised design (X_dm), not the raw X.
+    # Using raw X would inflate (X'WX)^{-1} (more apparent regressor
+    # variability than is identifying β), yielding HC1 SE 50% larger
+    # than fixest::fepois / Stata ppmlhdfe (parity finding #6).
+    X_for_vcov = X_dm if (X_dm is not None) else X
+    vcov = _poisson_vcov(X_for_vcov, mu, residuals, robust, cluster_arr)
     se = np.sqrt(np.diag(vcov))
 
     # Log-likelihood (Poisson quasi-likelihood)

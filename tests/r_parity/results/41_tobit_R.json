@@ -1,0 +1,43 @@
+{
+  "module": "41_tobit",
+  "side": "R",
+  "rows": [
+    {
+      "module": "41_tobit",
+      "side": "R",
+      "statistic": "beta_intercept",
+      "estimate": 0.510049762730257,
+      "se": 0.0479175859239064,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    },
+    {
+      "module": "41_tobit",
+      "side": "R",
+      "statistic": "beta_x",
+      "estimate": 0.750983019737037,
+      "se": 0.0514150345272359,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    },
+    {
+      "module": "41_tobit",
+      "side": "R",
+      "statistic": "sigma",
+      "estimate": 0.954074489323468,
+      "se": 0.0393408655210519,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "left_censor": [0],
+    "package": ["censReg::censReg"]
+  }
+}

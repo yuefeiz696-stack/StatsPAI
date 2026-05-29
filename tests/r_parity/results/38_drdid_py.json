@@ -1,0 +1,46 @@
+{
+  "module": "38_drdid",
+  "side": "py",
+  "rows": [
+    {
+      "module": "38_drdid",
+      "side": "py",
+      "statistic": "att",
+      "estimate": 2.042405833556982,
+      "se": 0.11535905080655845,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1600,
+      "extra": {}
+    },
+    {
+      "module": "38_drdid",
+      "side": "py",
+      "statistic": "ci_lower",
+      "estimate": 1.8163062486854014,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1600,
+      "extra": {}
+    },
+    {
+      "module": "38_drdid",
+      "side": "py",
+      "statistic": "ci_upper",
+      "estimate": 2.268505418428563,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1600,
+      "extra": {}
+    }
+  ],
+  "extra": {
+    "method": "DR-DID (improved, Sant'Anna-Zhao 2020)",
+    "covariates": [
+      "x"
+    ],
+    "n_boot": 200
+  }
+}

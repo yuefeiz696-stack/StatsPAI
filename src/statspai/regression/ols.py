@@ -11,7 +11,17 @@ import warnings
 from ..core.base import BaseModel, BaseEstimator
 from ..core.results import EconometricResults
 from ..core.utils import parse_formula, create_design_matrices, prepare_data
-from ..core._numba_kernels import ols_fit as _fast_ols, sandwich_hc as _fast_sandwich_hc, cluster_meat as _fast_cluster_meat, hac_meat as _fast_hac_meat
+
+
+def _numba_kernels():
+    """Load accelerated kernels only when OLS is actually estimated."""
+    from ..core._numba_kernels import (
+        cluster_meat,
+        hac_meat,
+        ols_fit,
+        sandwich_hc,
+    )
+    return ols_fit, sandwich_hc, cluster_meat, hac_meat
 
 
 class OLSEstimator(BaseEstimator):
@@ -51,6 +61,12 @@ class OLSEstimator(BaseEstimator):
         n, k = X.shape
 
         # Fast OLS via Numba-accelerated kernel (graceful fallback)
+        (
+            _fast_ols,
+            _fast_sandwich_hc,
+            _fast_cluster_meat,
+            _fast_hac_meat,
+        ) = _numba_kernels()
         params, fitted_values, residuals = _fast_ols(X, y)
 
         try:
@@ -154,16 +170,18 @@ class OLSEstimator(BaseEstimator):
             # Automatic lag selection (Newey-West rule)
             lags = int(np.floor(4 * (n / 100)**(2/9)))
         
-        # Calculate centered moments
+        # Calculate centered moments.  The HAC meat is intentionally
+        # unnormalised so ``XtX_inv @ meat @ XtX_inv`` has the same scale as
+        # HC and clustered covariance estimators.
         moments = X * residuals[:, np.newaxis]
         
         # Gamma_0 (contemporaneous covariance)
-        gamma_0 = moments.T @ moments / n
+        gamma_0 = moments.T @ moments
         
         # Gamma_j for j = 1, ..., lags
         gamma_sum = gamma_0.copy()
         for j in range(1, lags + 1):
-            gamma_j = moments[j:].T @ moments[:-j] / n
+            gamma_j = moments[j:].T @ moments[:-j]
             weight = 1 - j / (lags + 1)  # Bartlett kernel
             gamma_sum += weight * (gamma_j + gamma_j.T)
         

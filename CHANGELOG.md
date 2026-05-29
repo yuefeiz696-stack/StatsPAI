@@ -4,6 +4,64 @@ All notable changes to StatsPAI will be documented in this file.
 
 ## [Unreleased]
 
+### ⚠️ Correctness fix
+
+- **`sp.qreg` Powell sandwich SE was wrong by a factor of √n** — every
+  pre-fix p-value, z-statistic, and confidence interval emitted by
+  `sp.qreg` was unusable. The closed-form Koenker (2005, eq. 3.7) iid
+  kernel sandwich is `V = τ(1−τ) / f̂(0)² · (X'X)⁻¹`. `_qreg_se` had an
+  extra factor of `n` in the denominator (`/ (n * f0**2)`), so the
+  reported SE was the correct SE divided by √n — on n = 500 the SE
+  was ~20× too small. The fix removes the spurious `n`. After the fix
+  the three-way parity at the median tolerance (`tests/r_parity/40_qreg`)
+  matches `quantreg::rq` within 1.4–6.8 % and Stata `qreg` within 2.9 %,
+  consistent with the documented kernel-vs-Koenker-Bassett SE method
+  gap. **Action**: any analysis that previously used `sp.qreg` SE,
+  z-statistic, p-value, or CI must be re-run; point estimates are
+  unaffected. See [`MIGRATION.md` § sp-qreg-se-fix](MIGRATION.md#sp-qreg-se-fix)
+  for the per-call impact and rerun recipe.
+
+- **`sp.xtabond` (Arellano-Bond difference GMM) point estimates AND SEs
+  were wrong** — finding #12. The estimator built a *flat, fixed* set of
+  lagged-level instrument columns (`gmm_lags=(2,5)`) and then dropped
+  every row missing any of them, which on a short panel discards most of
+  the sample; it also used `W = (Z'Z)⁻¹` as the one-step weight. The
+  correct Arellano-Bond estimator uses a **block-diagonal** GMM
+  instrument matrix (every available deeper lag is a period-specific
+  moment, missing lags filled with 0, *no* rows dropped) and the
+  one-step weight `W = (Σᵢ Zᵢ'H Zᵢ)⁻¹` where `H` carries the MA(1)
+  structure of the differenced errors (2 on the diagonal, −1 on the
+  first off-diagonals). On the parity DGP the old code gave
+  `β_{y₋₁}=0.264 (se 0.224)` vs Stata's `0.391 (se 0.046)` — a 48 %
+  estimate gap and an 80 % SE gap. After the rewrite the one-step robust
+  estimates match Stata's `xtabond y x, lags(1) vce(robust)` to **machine
+  precision** (`tests/r_parity/50_xtabond`, rel ≈ 1e-15 on both β and
+  SE). The default `gmm_lags` is now `(2, None)` (all available deeper
+  lags, matching Stata's default; pass an explicit max to cap). Two-step
+  GMM now applies the Windmeijer (2005) finite-sample SE correction.
+  **Action**: re-run any analysis that used `sp.xtabond` — both point
+  estimates and SEs change. See
+  [`MIGRATION.md` § sp-xtabond-fix](MIGRATION.md#sp-xtabond-fix).
+
+- **`sp.xtabond(method='system')` / `sp.panel(method='system')` now raise
+  `NotImplementedError`** instead of returning an unvalidated (and, after
+  the difference-GMM rewrite, badly distorted) estimate. Proper
+  Blundell-Bond system GMM requires a stacked level equation and its own
+  Stata `xtdpdsys` parity reference, which is planned for a future
+  release. **Action**: use `method='difference'` (Arellano-Bond), now
+  validated to machine precision.
+
+### Added — Parity coverage expansion (2026-05-28 session)
+
+- 10 net-new parity modules (`tests/r_parity/{37–46}_*`) covering
+  `sp.ppmlhdfe`, `sp.drdid`, `sp.arima`, `sp.qreg`, `sp.tobit`,
+  `sp.nbreg`, `sp.heckman`, `sp.mlogit`, `sp.ologit`, `sp.clogit`. The
+  3-way Track A table (`tests/r_parity/results/parity_table_3way.md`)
+  now covers 46 modules versus 36 previously, with Stata reference
+  available for 39 versus 21. The expansion surfaced the qreg fix
+  above and 10 further P1/P2 findings recorded in
+  `tests/r_parity/PARITY_SESSION_2026-05-28.md`.
+
 ### Fixed
 
 - Cleaned up JOSS review follow-ups: removed two uncited duplicate BibTeX
@@ -12,6 +70,10 @@ All notable changes to StatsPAI will be documented in this file.
   reviewer-facing docs and README release callouts.
 - `tools/audit_citations.py` now treats transient HTTP/socket/SSL timeouts as
   unresolved citation lookups instead of leaking Python tracebacks.
+- `tests/r_parity/36_mediation.py` referenced `model_info["n_boot"]`,
+  but `sp.mediation`'s schema renamed this to `n_boot_requested` /
+  `n_boot_successful` / `n_boot_failed`. The parity script crashed
+  before producing JSON; pinned it to the new key.
 
 ## [1.15.6] — 2026-05-24
 

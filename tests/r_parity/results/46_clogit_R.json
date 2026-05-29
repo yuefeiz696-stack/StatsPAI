@@ -1,0 +1,20 @@
+{
+  "module": "46_clogit",
+  "side": "R",
+  "rows": [
+    {
+      "module": "46_clogit",
+      "side": "R",
+      "statistic": "beta_x",
+      "estimate": 0.924710414938396,
+      "se": 0.10036126388126,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 900,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "package": ["survival::clogit"]
+  }
+}

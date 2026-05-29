@@ -1,0 +1,55 @@
+{
+  "module": "39_arima",
+  "side": "R",
+  "rows": [
+    {
+      "module": "39_arima",
+      "side": "R",
+      "statistic": "ar1",
+      "estimate": 0.698156606393015,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": []
+    },
+    {
+      "module": "39_arima",
+      "side": "R",
+      "statistic": "ar2",
+      "estimate": -0.341645824568728,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": []
+    },
+    {
+      "module": "39_arima",
+      "side": "R",
+      "statistic": "sigma2",
+      "estimate": 0.414984492586016,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": []
+    },
+    {
+      "module": "39_arima",
+      "side": "R",
+      "statistic": "logLik",
+      "estimate": -292.528901334206,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 300,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "order": ["(2,0,0)"],
+    "method": ["CSS-ML"],
+    "package": ["forecast::Arima"]
+  }
+}

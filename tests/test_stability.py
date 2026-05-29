@@ -68,6 +68,24 @@ class TestStabilityFlowsThroughRegistry:
             "two-layer setup is not yet implemented"
         )
 
+    @pytest.mark.parametrize(
+        ("name", "needle"),
+        [
+            ("callaway_santanna", "panel=False"),
+            ("rdrobust", "weights"),
+            ("network_exposure", "design='complete'"),
+            ("continuous_did", "method='cgs'"),
+            ("etwfe", "panel=False"),
+            ("did_multiplegt_dyn", "switch-off"),
+        ],
+    )
+    def test_high_priority_limitations_are_machine_readable(self, name, needle):
+        from statspai import describe_function
+
+        d = describe_function(name)
+        limitations = " ".join(d["limitations"])
+        assert needle in limitations
+
     def test_agent_card_includes_stability_and_limitations(self):
         from statspai import agent_card
 

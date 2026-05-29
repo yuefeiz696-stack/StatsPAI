@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from ..exceptions import DataInsufficient
+
 
 # --------------------------------------------------------------------- #
 #  Newey-West HAC for a single regression
@@ -114,6 +116,7 @@ def local_projections(
     nw_lags: Optional[int] = None,
     alpha: float = 0.05,
     cumulative: bool = False,
+    auto_lag: bool = True,
 ) -> LocalProjectionsResult:
     """Estimate impulse responses via Jordà (2005) local projections.
 
@@ -124,11 +127,16 @@ def local_projections(
     outcome : str
         Column name of the outcome variable y.
     shock : str
-        Column name of the shock / treatment variable. Its own lagged
-        value (shock_{t-1}) is added automatically as a pre-treatment
-        control.
+        Column name of the shock / treatment variable.
     controls : list of str, optional
-        Additional pre-treatment controls (measured at time t-1).
+        Additional regressors taken **verbatim** from ``data``: the
+        column values at time t are used directly, without re-lagging.
+        If you want the lag of a control, lag it yourself before
+        passing it in (e.g. ``df["unemp_lag"] = df["unemp"].shift(1)``
+        and then ``controls=["unemp_lag"]``). The pre-1.16 behaviour
+        silently re-lagged controls a second time on top of an auto-
+        added ``y_{t-1}``, producing collinear columns and surprising
+        impulse responses; see ``MIGRATION.md`` for context.
     horizons : int, default 20
         Number of horizons h = 0, 1, …, H to estimate.
     nw_lags : int, optional
@@ -140,6 +148,11 @@ def local_projections(
         If ``True``, return the cumulative response
         ``y_{t+h} - y_{t-1}``. Default (False) returns ``y_{t+h}``
         directly.
+    auto_lag : bool, default True
+        If ``True`` (the legacy default), also adds ``y_{t-1}`` and
+        ``shock_{t-1}`` as automatic regressors. Set ``False`` for a
+        bare ``y_{t+h} ~ const + shock_t + controls`` specification.
+        These two auto-controls were silent in the pre-1.16 docstring.
     """
     if controls is None:
         controls = []
@@ -150,15 +163,19 @@ def local_projections(
 
     y = df[outcome].to_numpy(dtype=float)
     s = df[shock].to_numpy(dtype=float)
-    # Pre-treatment: y_{t-1}, s_{t-1}, controls_{t-1}
+    # Auto-added pre-treatment controls (y_{t-1}, shock_{t-1}) — only
+    # used when auto_lag is True. User-supplied controls are taken at
+    # face value (no re-lagging) so the design matrix matches what a
+    # reader of the docstring would expect; see the docstring note
+    # above and tests/r_parity/34_lp for the parity contract.
     lag_y = np.concatenate([[np.nan], y[:-1]])
     lag_s = np.concatenate([[np.nan], s[:-1]])
-    extra_lags = []
+    extra_cols = []
     extra_names = []
     for c in controls:
         col = df[c].to_numpy(dtype=float)
-        extra_lags.append(np.concatenate([[np.nan], col[:-1]]))
-        extra_names.append(f"lag_{c}")
+        extra_cols.append(col)
+        extra_names.append(c)
 
     irf = np.empty(horizons + 1)
     se = np.empty(horizons + 1)
@@ -170,13 +187,16 @@ def local_projections(
             y_lhs = y[h:]
             lhs = y_lhs - lag_y[h:] if cumulative else y_lhs
         else:
-            raise RuntimeError("too few observations for horizon")
+            raise DataInsufficient("too few observations for horizon")
         shock_t = s[:t_end]
-        lag_y_t = lag_y[:t_end]
-        lag_s_t = lag_s[:t_end]
-        extras_t = [arr[:t_end] for arr in extra_lags]
+        extras_t = [arr[:t_end] for arr in extra_cols]
 
-        X = np.column_stack([np.ones(t_end), shock_t, lag_y_t, lag_s_t, *extras_t])
+        cols = [np.ones(t_end), shock_t]
+        if auto_lag:
+            cols.append(lag_y[:t_end])
+            cols.append(lag_s[:t_end])
+        cols.extend(extras_t)
+        X = np.column_stack(cols)
         valid = ~np.isnan(lhs) & ~np.any(np.isnan(X), axis=1)
         X_use = X[valid]
         lhs_use = lhs[valid]
@@ -213,6 +233,7 @@ def local_projections(
                 "horizons": horizons,
                 "nw_lags": nw_lags,
                 "alpha": alpha, "cumulative": cumulative,
+                "auto_lag": auto_lag,
             },
             data=data,
             overwrite=False,

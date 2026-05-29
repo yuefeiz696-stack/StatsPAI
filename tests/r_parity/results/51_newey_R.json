@@ -1,0 +1,33 @@
+{
+  "module": "51_newey",
+  "side": "R",
+  "rows": [
+    {
+      "module": "51_newey",
+      "side": "R",
+      "statistic": "beta_intercept",
+      "estimate": 0.0286618145541452,
+      "se": 0.12186937251378,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 200,
+      "extra": []
+    },
+    {
+      "module": "51_newey",
+      "side": "R",
+      "statistic": "beta_x",
+      "estimate": 0.308565263148507,
+      "se": 0.106210662695378,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 200,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "vcov": ["NeweyWest"],
+    "lag": [4],
+    "package": ["sandwich::NeweyWest"]
+  }
+}

@@ -13,6 +13,8 @@ Usage inside StatsPAI
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 # --------------------------------------------------------------------------- #
@@ -44,6 +46,9 @@ except ImportError:  # pragma: no cover
     prange = _FakePrange  # type: ignore[assignment,misc]
 
 
+_NUMBA_CACHE = HAS_NUMBA and Path(__file__).exists()
+
+
 # --------------------------------------------------------------------------- #
 #  Optional Rust HDFE backend — provides cluster_meat with Rayon parallelism
 #  over clusters. Falls through to the numba kernel below if the wheel is not
@@ -62,7 +67,7 @@ except ImportError:  # pragma: no cover
 #  Core OLS kernel
 # --------------------------------------------------------------------------- #
 
-@njit(cache=True)
+@njit(cache=_NUMBA_CACHE)
 def _xtx(X: np.ndarray) -> np.ndarray:
     """Compute X'X using explicit loops (cache-friendly for tall X)."""
     n, k = X.shape
@@ -78,7 +83,7 @@ def _xtx(X: np.ndarray) -> np.ndarray:
     return out
 
 
-@njit(cache=True)
+@njit(cache=_NUMBA_CACHE)
 def _xty(X: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Compute X'y."""
     n, k = X.shape
@@ -117,7 +122,7 @@ def ols_fit(
 #  Sandwich (HC) covariance helpers
 # --------------------------------------------------------------------------- #
 
-@njit(cache=True)
+@njit(cache=_NUMBA_CACHE)
 def _sandwich_meat_hc0(X: np.ndarray, residuals: np.ndarray) -> np.ndarray:
     """Meat of HC0 sandwich: X' diag(e^2) X."""
     n, k = X.shape
@@ -179,7 +184,7 @@ def sandwich_hc(
 #  Clustered standard errors (fast path)
 # --------------------------------------------------------------------------- #
 
-@njit(cache=True)
+@njit(cache=_NUMBA_CACHE)
 def _cluster_meat_sorted(
     X: np.ndarray,
     residuals: np.ndarray,
@@ -291,12 +296,21 @@ def hac_meat(
     if max_lags is None:
         max_lags = int(np.floor(4 * (n / 100) ** (2 / 9)))
 
+    # The Newey-West HAC meat is the unnormalised autocovariance sum
+    # S = sum_t m_t m_t' + sum_{j=1..L} w_j * (sum_t m_t m_{t-j}'
+    # + sum_t m_{t-j} m_t'), so the sandwich V = (X'X)^{-1} S (X'X)^{-1}
+    # is on the same scale as OLS/HC. The pre-fix kernel divided Gamma_j
+    # by n, which made V too small by a factor of n and SE too small by
+    # sqrt(n) — on n = 200 the parity test against R sandwich::NeweyWest
+    # and Stata `newey` showed sp HAC SE ~14x smaller than the textbook
+    # answer (parity finding #13, 2026-05-28). Same family of bug as
+    # the sp.qreg Powell sandwich (finding #8).
     moments = X * residuals[:, None]
-    gamma0 = moments.T @ moments / n
+    gamma0 = moments.T @ moments
     total = gamma0.copy()
 
     for j in range(1, max_lags + 1):
-        gamma_j = moments[j:].T @ moments[:-j] / n
+        gamma_j = moments[j:].T @ moments[:-j]
         w = 1 - j / (max_lags + 1)
         total += w * (gamma_j + gamma_j.T)
 

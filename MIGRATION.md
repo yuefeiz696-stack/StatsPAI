@@ -5,6 +5,90 @@ Internal version-to-version migrations are at the top; the long-form
 
 ---
 
+<a id="sp-xtabond-fix"></a>
+
+## Unreleased — ⚠️ `sp.xtabond` Arellano-Bond GMM correctness fix
+
+**What broke.** `sp.xtabond` (and `sp.panel(method='ab')`) used a flat,
+fixed block of lagged-level instrument columns and then dropped every
+row that was missing any of them — on a short panel this discards most
+of the sample — and weighted with `W = (Z'Z)⁻¹`. The correct
+Arellano-Bond estimator uses a **block-diagonal** GMM instrument matrix
+(each available deeper lag `Y_{i,s}`, `s ≤ t-2`, is a period-specific
+moment; missing lags are zero-filled, no rows dropped) and the one-step
+weight `W = (Σᵢ Zᵢ'H Zᵢ)⁻¹`, with `H` the first-difference MA(1)
+structure (2 on the diagonal, −1 on the first off-diagonals). The old
+code returned `β_{y₋₁}=0.264 (se 0.224)` where Stata returns
+`0.391 (se 0.046)` — a 48 % estimate gap and an 80 % SE gap.
+
+**Who is affected.** Anyone who called `sp.xtabond(...)` or
+`sp.panel(..., method='ab'|'system')` on an earlier release. **Both the
+point estimates and the standard errors change** — point estimates are
+*not* preserved here (unlike the qreg fix).
+
+**What to do.**
+
+| Surface | Pre-fix | Action |
+| --- | --- | --- |
+| `res.estimate`, `detail["coefficient"]` | biased (instrument set wrong) | Rerun |
+| `res.se`, `detail["se"]`, `res.ci`, `res.pvalue` | wrong | Rerun |
+| `gmm_lags` default | `(2, 5)` | now `(2, None)` = all deeper lags (Stata default); pass an explicit max to cap |
+| `method='system'` | returned a number | now raises `NotImplementedError`; use `method='difference'` |
+| `twostep=True` SEs | uncorrected | now Windmeijer (2005)-corrected when `robust=True` |
+
+**Verification.** One-step robust `sp.xtabond` now matches Stata
+`xtabond y x, lags(1) vce(robust)` to machine precision on the parity
+DGP (`tests/r_parity/50_xtabond`, rel ≈ 1e-15 on both β and SE);
+guarded by `tests/test_gmm.py::TestArellanoBond::test_parity_matches_stata_xtabond`.
+
+---
+
+<a id="sp-qreg-se-fix"></a>
+
+## Unreleased — ⚠️ `sp.qreg` Powell sandwich SE correctness fix
+
+**What broke.** The Powell (1991) kernel sandwich for quantile
+regression standard errors was implemented with an extra factor of
+`n` in the denominator: `V = τ(1−τ) / (n · f̂(0)²) · (X'X)⁻¹`. The
+textbook formula (Koenker 2005, eq. 3.7) is
+`V = τ(1−τ) / f̂(0)² · (X'X)⁻¹` — no `n`. The reported SE was
+therefore the correct SE divided by √n. On the parity dataset with
+n = 500 (`tests/r_parity/40_qreg`), the bug under-reported SE by
+~20× and produced z-statistics in the 6–30 range for null
+covariates.
+
+**Who is affected.** Anyone who used the `se`, `pvalue`, `ci`, or
+`z` columns of `sp.qreg(...).detail` (or the top-level `res.se` /
+`res.pvalue` / `res.ci`) on an earlier release. Point estimates
+(`res.estimate`, `detail["coefficient"]`) are **unchanged at machine
+precision** and do not need to be rerun.
+
+**What to do.** Pull the patch, then rerun any analysis that
+referenced an `sp.qreg` standard error. Concretely:
+
+| Surface | Pre-fix value | Action |
+| --- | --- | --- |
+| `res.se`                                       | SE / √n   | Multiply by √n to recover, or just rerun |
+| `res.pvalue`                                   | ~0        | Rerun — most pre-fix p-values were spuriously zero |
+| `res.ci`                                       | too narrow | Rerun |
+| `res.detail["se" / "z" / "pvalue"]`            | as above  | Rerun |
+| `res.estimate`, `res.detail["coefficient"]`    | correct   | No change needed |
+
+**Verification.** The cross-language parity table in
+`tests/r_parity/results/parity_table_3way.md` for module `40_qreg`
+shows the post-fix SE matching `quantreg::rq` (Powell `nid` kernel)
+within 1.4–6.8 % and Stata `qreg` (Koenker-Bassett) within 2.9 %.
+This is the expected residual gap between three different
+implementations of the same sandwich.
+
+**Why was it not caught earlier.** No 3-way Stata parity test
+existed for quantile regression before the 2026-05-28 session, and
+the unit tests in `tests/test_quantile.py` checked only point
+estimates and that SEs were finite — never against an external
+reference value.
+
+---
+
 <a id="sp-rdrobust-bwselect-cct-r-parity-opt-in"></a>
 
 ## v1.15.2 → v1.15.3 — doc-only PyPI hero-banner fix

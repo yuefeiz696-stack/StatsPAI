@@ -1,0 +1,44 @@
+{
+  "module": "40_qreg",
+  "side": "R",
+  "rows": [
+    {
+      "module": "40_qreg",
+      "side": "R",
+      "statistic": "beta_intercept",
+      "estimate": 0.999400914591039,
+      "se": 0.0702303117015553,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    },
+    {
+      "module": "40_qreg",
+      "side": "R",
+      "statistic": "beta_x1",
+      "estimate": 0.531078549291644,
+      "se": 0.0711291177499363,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    },
+    {
+      "module": "40_qreg",
+      "side": "R",
+      "statistic": "beta_x2",
+      "estimate": -0.357120881880993,
+      "se": 0.0651500944551048,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 500,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "quantile": [0.5],
+    "se_method": ["nid_Powell"],
+    "package": ["quantreg::rq"]
+  }
+}

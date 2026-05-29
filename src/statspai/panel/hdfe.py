@@ -59,10 +59,14 @@ from typing import List, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 
-from . import _hdfe_kernels as _kernels
-
 
 _VALID_SOLVERS = ("map", "lsmr", "lsqr")
+
+
+def _hdfe_kernels():
+    """Load Numba HDFE kernels on first HDFE use, not on package import."""
+    from . import _hdfe_kernels as _kernels
+    return _kernels
 
 
 # ======================================================================
@@ -96,24 +100,25 @@ def _group_mean_sweep(
     to a pure-NumPy ``bincount`` path. Weighted and unweighted variants
     share the same dispatch.
     """
+    kernels = _hdfe_kernels()
     if x.ndim == 1:
         col = np.ascontiguousarray(x)
         if weights is None:
-            _kernels.sweep(col, codes, counts)
+            kernels.sweep(col, codes, counts)
         else:
-            _kernels.sweep_weighted(col, weights, codes, wsum)
+            kernels.sweep_weighted(col, weights, codes, wsum)
         if col is not x:
             x[:] = col
     else:
         if weights is None:
             for j in range(x.shape[1]):
                 col = np.ascontiguousarray(x[:, j])
-                _kernels.sweep(col, codes, counts)
+                kernels.sweep(col, codes, counts)
                 x[:, j] = col
         else:
             for j in range(x.shape[1]):
                 col = np.ascontiguousarray(x[:, j])
-                _kernels.sweep_weighted(col, weights, codes, wsum)
+                kernels.sweep_weighted(col, weights, codes, wsum)
                 x[:, j] = col
 
 
@@ -488,13 +493,14 @@ def _group_mean_sweep_seq(
 
     Dispatches to :mod:`_hdfe_kernels` for Numba-accelerated kernels.
     """
+    kernels = _hdfe_kernels()
     K = len(fe_codes)
     if weights is None:
         for k in range(K):
-            _kernels.sweep(col, fe_codes[k], counts_list[k])
+            kernels.sweep(col, fe_codes[k], counts_list[k])
     else:
         for k in range(K):
-            _kernels.sweep_weighted(col, weights, fe_codes[k], wsum_list[k])
+            kernels.sweep_weighted(col, weights, fe_codes[k], wsum_list[k])
 
 
 # ======================================================================

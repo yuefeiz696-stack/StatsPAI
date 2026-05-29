@@ -684,10 +684,11 @@ class CausalWorkflow:
                 self.data, y=self.y, g=self.cohort, t=self.time, i=self.id))
             _safe_call("Borusyak–Jaravel–Spiess (imputation)",
                        lambda: sp.did_imputation(
-                           self.data, y=self.y, g=self.cohort,
-                           t=self.time, i=self.id))
+                           self.data, y=self.y, first_treat=self.cohort,
+                           time=self.time, group=self.id))
             _safe_call("Wooldridge (2021)", lambda: sp.wooldridge_did(
-                self.data, y=self.y, g=self.cohort, t=self.time, i=self.id))
+                self.data, y=self.y, first_treat=self.cohort,
+                time=self.time, group=self.id))
         elif d == "did":
             _safe_call("2x2 DiD",
                        lambda: sp.did(self.data, y=self.y,
@@ -818,14 +819,21 @@ class CausalWorkflow:
         try:
             from ..diagnostics.rosenbaum import rosenbaum_gamma
             d = self.design
-            if d in ("observational",) and self.treatment and self.covariates:
+            pair_id = next(
+                (
+                    col for col in ("pair_id", "match_id", "matched_pair", "pair")
+                    if col in self.data.columns
+                ),
+                None,
+            )
+            if d in ("observational",) and self.treatment and pair_id:
                 gamma = rosenbaum_gamma(
-                    self.data, y=self.y, treat=self.treatment,
-                    covariates=list(self.covariates),
+                    data=self.data, y=self.y, treat=self.treatment,
+                    pair_id=pair_id,
                 )
-                val = getattr(gamma, "gamma", None)
+                val = getattr(gamma, "gamma_critical", None)
                 if val is None and isinstance(gamma, dict):
-                    val = gamma.get("gamma")
+                    val = gamma.get("gamma_critical")
                 if val is not None:
                     rows.append({
                         "method": "Rosenbaum Γ (bound)",

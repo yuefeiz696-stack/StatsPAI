@@ -378,9 +378,15 @@ def _re_estimator(df, y, x, id_col):
     except np.linalg.LinAlgError:
         beta_full = np.linalg.lstsq(XtX, XtY, rcond=None)[0]
 
-    resid_gls = Y_gls - X_gls @ beta_full
-    sigma2_gls = np.sum(resid_gls ** 2) / (n - k - 1)
-    vcov_full = sigma2_gls * np.linalg.pinv(XtX)
+    # Use the idiosyncratic-error variance sigma2_e (computed from the
+    # FE-within residuals) as the scale of the GLS sandwich, not the
+    # residual variance of the theta-transformed regression. After the
+    # Swamy-Arora theta transform, E[u_it*^2 | X] = sigma2_e by
+    # construction, so the textbook RE vcov is sigma2_e * (X*'X*)^{-1}
+    # (Baltagi 2008, eq. 2.39; this matches plm::plm(model="random") at
+    # rel < 1e-6 and is required for the Hausman test statistic to align
+    # with plm::phtest and Stata `hausman`).
+    vcov_full = sigma2_e * np.linalg.pinv(XtX)
 
     beta_re = beta_full[1:]
     vcov_re = vcov_full[1:, 1:]

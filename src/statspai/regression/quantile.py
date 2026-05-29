@@ -27,6 +27,7 @@ from scipy import stats
 from scipy.optimize import linprog
 
 from ..core.results import CausalResult
+from ..exceptions import MethodIncompatibility
 
 
 def qreg(
@@ -85,7 +86,9 @@ def qreg(
     See Koenker & Bassett (1978, *Econometrica*).
     """
     if not (0 < quantile < 1):
-        raise ValueError(f"quantile must be in (0, 1), got {quantile}")
+        raise MethodIncompatibility(
+            f"quantile must be in (0, 1), got {quantile}"
+        )
 
     # Parse inputs
     if formula is not None:
@@ -93,7 +96,7 @@ def qreg(
     elif y is not None and x is not None:
         y_name, x_names = y, x
     else:
-        raise ValueError("Provide either formula or (y, x)")
+        raise MethodIncompatibility("Provide either formula or (y, x)")
 
     df = data[[y_name] + x_names].dropna()
     Y = df[y_name].values.astype(float)
@@ -265,9 +268,14 @@ def _qreg_se(Y, X, beta, resid, tau):
     f0 = np.mean(stats.norm.pdf(resid / h)) / h
     f0 = max(f0, 1e-6)
 
-    # Sandwich: V = tau(1-tau) / (n f0²) * (X'X)^{-1}
+    # Powell (1991) iid kernel sandwich for QR:
+    #   V = tau(1-tau) / f0² * (X'X)^{-1}
+    # Reference: Koenker (2005, eq. 3.7); matches Stata qreg's default
+    # and quantreg::summary(rq, se="iid"). Earlier versions of this
+    # file divided by an extra factor of n, producing SE that were
+    # smaller by sqrt(n) (~20x at n=500) and meaningless inference.
     XtX_inv = np.linalg.pinv(X.T @ X)
-    vcov = tau * (1 - tau) / (n * f0 ** 2) * XtX_inv
+    vcov = tau * (1 - tau) / (f0 ** 2) * XtX_inv
 
     return np.sqrt(np.maximum(np.diag(vcov), 1e-20))
 

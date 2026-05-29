@@ -1,0 +1,43 @@
+{
+  "module": "45_ologit",
+  "side": "R",
+  "rows": [
+    {
+      "module": "45_ologit",
+      "side": "R",
+      "statistic": "beta_x",
+      "estimate": 0.703921206332797,
+      "se": 0.0677818049328656,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "45_ologit",
+      "side": "R",
+      "statistic": "beta_cut1",
+      "estimate": -0.54223293898333,
+      "se": 0.0682408160256492,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "45_ologit",
+      "side": "R",
+      "statistic": "beta_cut2",
+      "estimate": 0.433399984179017,
+      "se": 0.0675743761163543,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "package": ["MASS::polr"],
+    "method": ["logistic"]
+  }
+}

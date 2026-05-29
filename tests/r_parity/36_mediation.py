@@ -52,7 +52,7 @@ def main() -> None:
     ]
 
     write_results(MODULE, "py", rows,
-                  extra={"n_boot": int(mi["n_boot"])})
+                  extra={"n_boot": int(mi["n_boot_requested"])})
 
 
 if __name__ == "__main__":

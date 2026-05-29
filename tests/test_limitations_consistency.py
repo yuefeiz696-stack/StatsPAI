@@ -46,7 +46,7 @@ LIMITATIONS_DESCRIPTIVE_ONLY: Dict[str, List[str]] = {
         "method='cgs' is an MVP",
     ],
     "network_exposure": [
-        "design='complete' currently falls back",
+        "design='complete' is reserved but not implemented",
     ],
     "text_treatment_effect": [
         "embedder='sbert' requires the optional sentence-transformers",

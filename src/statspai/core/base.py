@@ -1,11 +1,12 @@
-"""
-Core base classes and interfaces for StatsPAI
-"""
+"""Core base classes and interfaces for StatsPAI."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Union
+from typing import TYPE_CHECKING, Optional, Dict, Any
 import pandas as pd
 import numpy as np
+
+if TYPE_CHECKING:
+    from .results import EconometricResults
 
 
 class BaseModel(ABC):
@@ -18,7 +19,7 @@ class BaseModel(ABC):
         self._results = None
     
     @abstractmethod
-    def fit(self, **kwargs) -> 'EconometricResults':  # noqa: F821
+    def fit(self, **kwargs) -> "EconometricResults":
         """
         Fit the econometric model
         

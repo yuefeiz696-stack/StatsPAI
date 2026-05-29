@@ -1,0 +1,43 @@
+{
+  "module": "49_oprobit",
+  "side": "R",
+  "rows": [
+    {
+      "module": "49_oprobit",
+      "side": "R",
+      "statistic": "beta_x",
+      "estimate": 0.641383728267669,
+      "se": 0.0422337416779281,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "49_oprobit",
+      "side": "R",
+      "statistic": "beta_cut1",
+      "estimate": -0.448385854302943,
+      "se": 0.0435644415066932,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    },
+    {
+      "module": "49_oprobit",
+      "side": "R",
+      "statistic": "beta_cut2",
+      "estimate": 0.564811168023409,
+      "se": 0.0443916129028647,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1000,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "link": ["probit"],
+    "package": ["MASS::polr"]
+  }
+}

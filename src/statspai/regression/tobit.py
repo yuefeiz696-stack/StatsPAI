@@ -25,6 +25,7 @@ import pandas as pd
 from scipy import stats, optimize
 
 from ..core.results import CausalResult
+from ..exceptions import DataInsufficient
 
 
 def tobit(
@@ -105,7 +106,7 @@ def tobit(
     n_uncensored = uncensored.sum()
 
     if n_uncensored < k + 1:
-        raise ValueError("Not enough uncensored observations.")
+        raise DataInsufficient("Not enough uncensored observations.")
 
     # Initial values from OLS on uncensored
     beta_init = np.linalg.lstsq(X[uncensored], Y[uncensored], rcond=None)[0]
@@ -148,13 +149,16 @@ def tobit(
     beta = theta_hat[:k]
     sigma = np.exp(theta_hat[k])
 
-    # Standard errors from inverse Hessian
+    # Standard errors from the observed-information matrix (numerical
+    # central-difference Hessian of the negative log-likelihood at the
+    # optimum). Earlier versions used `result.hess_inv` from BFGS,
+    # which is a quasi-Newton update for driving the optimiser, not
+    # a reliable Hessian estimate — it produced SE 13-30% off versus
+    # R censReg::censReg and Stata `tobit` (parity finding #9).
+    from ._optim_helpers import hessian_cov
     try:
-        hess = result.hess_inv if hasattr(result, 'hess_inv') else np.eye(k + 1)
-        if isinstance(hess, np.ndarray):
-            se_full = np.sqrt(np.maximum(np.diag(hess), 1e-20))
-        else:
-            se_full = np.sqrt(np.maximum(np.diag(hess.todense()), 1e-20))
+        V_full = hessian_cov(neg_loglik, theta_hat)
+        se_full = np.sqrt(np.maximum(np.diag(V_full), 1e-20))
     except Exception:
         se_full = np.full(k + 1, np.nan)
 

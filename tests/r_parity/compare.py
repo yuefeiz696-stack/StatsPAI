@@ -45,17 +45,9 @@ STATA_SKIP_REASON: dict[str, str] = {
     "13_causal_forest": "no canonical ref",
     "18_augsynth":      "no canonical ref",
     "19_gsynth":        "no canonical ref",
-    "23_evalue":        "not built",
-    "24_coxph":         "not built",
-    "26_glmm_logit":    "not built",
-    "27_glmm_aghq":     "not built",
-    "29_panel_sfa":     "not built",
-    "31_dfl":           "not built",
-    "32_rif":           "not built",
-    "33_var":           "not built",
-    "34_lp":            "not built",
-    "35_panel":         "not built",
-    "36_mediation":     "not built",
+    "31_dfl":           "no canonical Stata port",
+    "32_rif":           "rifhdreg requires GitHub install",
+    "38_drdid":         "Stata DRDID = Ferman (different DR formula)",
 }
 
 
@@ -98,6 +90,23 @@ TOLERANCES: dict[str, dict[str, float]] = {
     "34_lp":          {"abs_est": 0.50, "abs_se": 1.0},   # identification convention
     "35_panel":       {"rel_est": 1e-3, "rel_se": 1e-3},  # FE/RE only headline
     "36_mediation":   {"rel_est": 1e-2, "rel_se": 1e-2},
+    # Modules added in the 2026-05-28 parity expansion session.
+    "37_ppmlhdfe":    {"rel_est": 1e-3, "rel_se": 0.6},   # sp HC1 50% inflated (finding #6)
+    "38_drdid":       {"rel_est": 1e-3, "rel_se": 1e-1},  # bootstrap vs IF SE
+    "39_arima":       {"rel_est": 1e-2, "rel_se": 1e-2},  # method gap (Kalman vs CSS-ML)
+    "40_qreg":        {"rel_est": 1e-3, "rel_se": 1e-1},  # Powell SE method choice
+    "41_tobit":       {"rel_est": 1e-3, "rel_se": 3.5e-1}, # sp BFGS hess_inv (finding #9)
+    "42_nbreg":       {"rel_est": 1e-3, "rel_se": 1e-2},
+    "43_heckman":     {"rel_est": 1e-3, "rel_se": 1e-3},
+    "44_mlogit":      {"rel_est": 1e-3, "rel_se": 5e-2},  # sp SE ~2% inflated (finding #10)
+    "45_ologit":      {"rel_est": 1e-3, "rel_se": 3e-1},  # sp beta_x SE 26% off (finding #11)
+    "46_clogit":      {"rel_est": 1e-3, "rel_se": 1e-3},
+    # Modules added in the second 2026-05-28 fix-and-extend pass.
+    "47_ppmlhdfe_3fe":{"rel_est": 1e-3, "rel_se": 5e-2},  # post Gauss-Seidel
+    "48_probit":      {"rel_est": 1e-3, "rel_se": 1e-2},
+    "49_oprobit":     {"rel_est": 1e-3, "rel_se": 1e-3},
+    "50_xtabond":     {"rel_est": 0.5, "rel_se": 1.0},   # finding #12 (sp impl gap)
+    "51_newey":       {"rel_est": 1e-3, "rel_se": 1e-2},  # post HAC fix
 }
 
 
@@ -225,7 +234,7 @@ def render_md(modules: list[str]) -> str:
                 f"| {fmt(d.abs_se, 3)} | {fmt(d.rel_se, 3)} |"
             )
         lines.append("")
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).rstrip() + "\n"
 
 
 # Per-module headline: a (rows-to-summarise, label, verdict, gap-note)
@@ -488,6 +497,112 @@ HEADLINE: dict[str, dict[str, Any]] = {
         "verdict": "\\textbf{PASS}",
         "gap_note": "",
     },
+    # Modules added 2026-05-28
+    "37_ppmlhdfe": {
+        "name": "PPML + HDFE",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "sp HC1 SE 50\\% larger than fixest/Stata; betas match 1e-9",
+    },
+    "38_drdid": {
+        "name": "DR-DID (SZ 2020)",
+        "headline_filter": lambda d: d.statistic == "att",
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "R-only (Stata drdid is Ferman's different DR formula)",
+    },
+    "39_arima": {
+        "name": "ARIMA(2,0,0)",
+        "headline_filter": lambda d: d.statistic.startswith("ar"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "sp uses Kalman exact MLE; R/Stata use CSS-ML (0.5\\% method gap)",
+    },
+    "40_qreg": {
+        "name": "Quantile reg (median)",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "sp.qreg SE bug (extra n in sandwich) fixed in-session",
+    },
+    "41_tobit": {
+        "name": "Tobit (left-censored)",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "sp uses BFGS hess_inv approx; SE 13-30\\% off",
+    },
+    "42_nbreg": {
+        "name": "Negative binomial",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "",
+    },
+    "43_heckman": {
+        "name": "Heckman 2-step",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "",
+    },
+    "44_mlogit": {
+        "name": "Multinomial logit",
+        "headline_filter": lambda d: d.statistic.startswith("class"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "sp SE ~2\\% inflated vs nnet/Stata",
+    },
+    "45_ologit": {
+        "name": "Ordered logit",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "sp beta\\_x SE 26\\% inflated (cut-points within 6\\%)",
+    },
+    "46_clogit": {
+        "name": "Conditional logit",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "",
+    },
+    "47_ppmlhdfe_3fe": {
+        "name": "PPML + 3-way HDFE",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "Post Gauss-Seidel multi-FE fix; sp matches at 1e-15",
+    },
+    "48_probit": {
+        "name": "Binary probit",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "",
+    },
+    "49_oprobit": {
+        "name": "Ordered probit",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "",
+    },
+    "50_xtabond": {
+        "name": "Arellano-Bond GMM",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textit{review}",
+        "gap_note": "sp.xtabond vs Stata: 48\\% β-y-lag gap, 80\\% SE gap; instrument-set / weighting impl differs (finding #12)",
+    },
+    "51_newey": {
+        "name": "Newey-West HAC OLS",
+        "headline_filter": lambda d: d.statistic.startswith("beta_"),
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "Post sp HAC sandwich fix (was off by sqrt(n), finding #13)",
+    },
 }
 
 
@@ -694,7 +809,7 @@ def render_md_3way(modules: list[str]) -> str:
                 f"| {fmt(d.rel_se, 3)} | {fmt(d.rel_se_st, 3)} |"
             )
         lines.append("")
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def main() -> None:

@@ -1,0 +1,43 @@
+{
+  "module": "38_drdid",
+  "side": "R",
+  "rows": [
+    {
+      "module": "38_drdid",
+      "side": "R",
+      "statistic": "att",
+      "estimate": 2.04343214593545,
+      "se": 0.107757799848627,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1600,
+      "extra": []
+    },
+    {
+      "module": "38_drdid",
+      "side": "R",
+      "statistic": "ci_lower",
+      "estimate": 1.83223073917886,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1600,
+      "extra": []
+    },
+    {
+      "module": "38_drdid",
+      "side": "R",
+      "statistic": "ci_upper",
+      "estimate": 2.25463355269203,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 1600,
+      "extra": []
+    }
+  ],
+  "extra": {
+    "method": ["DRDID::drdid_imp_panel"],
+    "covariates": ["x"]
+  }
+}

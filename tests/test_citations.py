@@ -192,6 +192,13 @@ class TestJsonPayload:
         json.dumps(j)
 
 
+class TestPackageCitation:
+    def test_package_cff_is_available_from_installed_package(self):
+        cff = sp.citation("cff")
+        assert "cff-version: 1.2.0" in cff
+        assert "StatsPAI" in cff
+
+
 # ---------------------------------------------------------------------------
 #  CausalResult.cite(format=...)
 # ---------------------------------------------------------------------------

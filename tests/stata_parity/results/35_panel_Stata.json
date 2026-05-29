@@ -1,0 +1,82 @@
+{
+  "module": "35_panel",
+  "side": "Stata",
+  "rows": [
+    {
+      "module": "35_panel",
+      "side": "Stata",
+      "statistic": "fe_beta_x1",
+      "estimate": 0.44380246881646651,
+      "se": 0.0194081649711332,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 800,
+      "extra": {}
+    }
+,
+    {
+      "module": "35_panel",
+      "side": "Stata",
+      "statistic": "fe_beta_x2",
+      "estimate": -0.30377112623139257,
+      "se": 0.0187499514624213,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 800,
+      "extra": {}
+    }
+,
+    {
+      "module": "35_panel",
+      "side": "Stata",
+      "statistic": "re_beta_x1",
+      "estimate": 0.44262660120666147,
+      "se": 0.019362649908401999,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 800,
+      "extra": {}
+    }
+,
+    {
+      "module": "35_panel",
+      "side": "Stata",
+      "statistic": "re_beta_x2",
+      "estimate": -0.30287490090861902,
+      "se": 0.0187047257148375,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 800,
+      "extra": {}
+    }
+,
+    {
+      "module": "35_panel",
+      "side": "Stata",
+      "statistic": "hausman_chi2",
+      "estimate": 1.5682359528158289,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 800,
+      "extra": {}
+    }
+,
+    {
+      "module": "35_panel",
+      "side": "Stata",
+      "statistic": "hausman_pvalue",
+      "estimate": 0.45652218759832691,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 800,
+      "extra": {}
+    }
+  ],
+  "extra": {
+    "method_fe": "within",
+    "method_re": "SwArora_GLS",
+    "stata_command": "xtreg ..., fe/re + hausman"
+  }
+}

@@ -11,6 +11,7 @@ different function with a different purpose.
 
 from __future__ import annotations
 
+from importlib import resources
 from pathlib import Path
 from typing import Optional
 
@@ -52,11 +53,17 @@ _PLAIN_TEMPLATE = (
 
 
 def _read_cff() -> Optional[str]:
-    """Return CITATION.cff contents if reachable from an editable install."""
+    """Return CITATION.cff contents from package data or source checkout."""
+    try:
+        ref = resources.files("statspai").joinpath("CITATION.cff")
+        if ref.is_file():
+            return ref.read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError, OSError):
+        pass
+
     here = Path(__file__).resolve()
     candidates = (
         here.parent.parent.parent / "CITATION.cff",  # repo root, editable install
-        here.parent / "CITATION.cff",                # in-package copy, if shipped
     )
     for path in candidates:
         try:
