@@ -105,6 +105,12 @@ All notable changes to StatsPAI will be documented in this file.
   result (`EconometricResults` / `CausalResult` / `PanelResults` /
   `FrontierResult`) and round-trips, so a future non-exportable result fails
   loudly. Guide §7–§8 document coefplots and the table/non-table boundary.
+- **`Collection.to_dict()` / `.to_json()` and `PaperTables.to_dict()` /
+  `.to_json()`** — agent-native serialisation extended to the multi-table
+  containers. Each regression-table item/panel reuses
+  `RegtableResult.to_dict()` (and stays `from_dict`-round-trippable);
+  DataFrame items round-trip through `DataFrame.to_json` (NaN → null);
+  text/heading carry their string. Both `to_json()` emit strict JSON.
 
 ### Fixed
 
