@@ -57,6 +57,18 @@ statspai describe rdrobust
 3. Promote `validated` to `certified` when the function enters the cross-language or published-reference parity harness.
 4. Remove a `limitation` only when the unsupported variant lands with its own test.
 
+## Current Limitation Hotspots
+
+These are machine-readable through `sp.describe_function(name)["limitations"]` and should be treated as the priority backlog for production hardening:
+
+- `callaway_santanna`: repeated cross-sections currently support only `estimator="reg"` with `control_group="nevertreated"`.
+- `rdrobust`: observation-level weights are reserved and raise `NotImplementedError`.
+- `hal_tmle`: `variant="projection"` is reserved and raises `NotImplementedError`.
+- `network_exposure`: only `design="bernoulli"` is implemented.
+- `etwfe`: `panel=False` with `cgroup="nevertreated"` is not implemented.
+- `continuous_did`: `method="cgs"` is an MVP without full CGS parity.
+- `did_multiplegt_dyn`: experimental MVP; switch-off events, analytical IF variance, and heteroskedastic weights are not implemented.
+
 ## Auditing
 
 ```bash
