@@ -92,8 +92,8 @@ def _sandwich_se(score_i, H_inv):
     -------
     se : ndarray (p,)
     """
-    B = score_i.T @ score_i  # meat
-    V = H_inv @ B @ H_inv
+    from ..core._vcov import sandwich_vcov
+    V = sandwich_vcov(H_inv, score_i, correction="none")
     return np.sqrt(np.maximum(np.diag(V), 1e-20))
 
 
@@ -101,25 +101,17 @@ def _clustered_se(score_i, H_inv, clusters):
     """
     Clustered sandwich SE (Cameron & Miller, 2015).
 
+    Correction G/(G-1) * (n-1)/(n-p) = core._vcov ``'cr1'`` factor; bread is
+    the MLE inverse-Hessian. Byte-identical for G >= 2.
+
     Parameters
     ----------
     score_i : ndarray (n, p)
     H_inv : ndarray (p, p)
     clusters : ndarray (n,)
     """
-    unique_clusters = np.unique(clusters)
-    G = len(unique_clusters)
-    n = len(clusters)
-    p = score_i.shape[1]
-
-    meat = np.zeros((p, p))
-    for g in unique_clusters:
-        s_g = score_i[clusters == g].sum(axis=0, keepdims=True)  # (1, p)
-        meat += s_g.T @ s_g
-
-    # Small-sample correction: G/(G-1) * (n-1)/(n-p)
-    correction = (G / (G - 1)) * ((n - 1) / max(n - p, 1))
-    V = correction * H_inv @ meat @ H_inv
+    from ..core._vcov import sandwich_vcov
+    V = sandwich_vcov(H_inv, score_i, clusters=clusters, correction="cr1")
     return np.sqrt(np.maximum(np.diag(V), 1e-20))
 
 
