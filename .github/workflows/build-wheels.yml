@@ -2,13 +2,17 @@ name: Build wheels (cibuildwheel — Rust Phase 2)
 
 # Phase-2 gate for the Rust HDFE kernel spike.
 #
-# The Rust kernel lives on `feat/rust-hdfe`. On `main` the repository
-# is Rust-free, so this workflow is INERT on `main`: the
-# `rust/statspai_hdfe/Cargo.toml` file does not exist there, and the
-# per-job guard step below exits early with a no-op status. The
-# purpose of committing the workflow to `main` is so that when the
-# rust branch merges, the cibuildwheel matrix is already defined and
-# `feat/rust-hdfe`'s CI just turns green.
+# The Rust HDFE crate lives under `rust/statspai_hdfe/` and its
+# `Cargo.toml` IS present on `main`. But cibuildwheel can only emit a
+# platform wheel when the project's PEP 517 build-backend is maturin,
+# so the PyO3 extension gets compiled into the wheel. Today
+# `pyproject.toml` uses `setuptools.build_meta` (no `[tool.maturin]`),
+# which yields a pure-Python `py3-none-any` wheel that cibuildwheel
+# rejects with exit 5 (NonPlatformWheelError). The `check_rust_present`
+# guard below therefore gates on the maturin backend — NOT on Cargo.toml
+# presence — so this workflow stays INERT until the native wheel
+# pipeline is actually wired. When a PR switches the build-backend to
+# maturin, the guard opens and the cibuildwheel matrix runs.
 #
 # Matrix coverage mirrors the contract in `rust/README.md`:
 #   - macOS arm64 (macos-14) + x86_64 (macos-13)
@@ -53,14 +57,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: detect
-        name: Look for rust/statspai_hdfe/Cargo.toml
+        name: Detect a maturin (PyO3) build backend
         run: |
-          if [ -f rust/statspai_hdfe/Cargo.toml ]; then
+          # cibuildwheel can only build a platform wheel when the PEP 517
+          # backend is maturin (so the Rust extension is compiled in).
+          # Gate on that — Cargo.toml presence alone is NOT sufficient:
+          # with the setuptools backend a pure-Python wheel is produced
+          # and cibuildwheel exits 5 (NonPlatformWheelError). This keeps
+          # the workflow inert until the native build is really wired,
+          # while still re-triggering (via the pyproject.toml path filter)
+          # the moment a PR adopts the maturin backend.
+          if grep -Eq '^[[:space:]]*build-backend[[:space:]]*=[[:space:]]*"maturin' pyproject.toml \
+             && [ -f rust/statspai_hdfe/Cargo.toml ]; then
             echo "has_rust=true" >> "$GITHUB_OUTPUT"
-            echo "Rust crate present — cibuildwheel matrix will run."
+            echo "maturin backend + Rust crate present — cibuildwheel matrix will run."
           else
             echo "has_rust=false" >> "$GITHUB_OUTPUT"
-            echo "Rust crate absent on this ref — wheel jobs skip."
+            echo "No maturin build-backend on this ref — wheel jobs skip (pure-Python build)."
           fi
 
   build_wheels:
