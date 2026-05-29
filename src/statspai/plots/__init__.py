@@ -26,6 +26,7 @@ def __getattr__(name):
         return bindings[name]
     raise AttributeError(f"module 'statspai.plots' has no attribute {name!r}")
 
+
 # --------------------------------------------------------------------------
 # CJK font fallback — registered LAZILY, the first time matplotlib.pyplot is
 # imported anywhere in the process.
