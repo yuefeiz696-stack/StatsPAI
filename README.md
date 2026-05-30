@@ -14,9 +14,9 @@
 [![status](https://joss.theoj.org/papers/9f1c837b1b1df7adfcdd538c3698e332/status.svg)](https://joss.theoj.org/papers/9f1c837b1b1df7adfcdd538c3698e332)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19933900.svg)](https://doi.org/10.5281/zenodo.19933900)
 
-StatsPAI is the **first agent-native** Python platform for causal inference and applied econometrics. One `import`, **1,000+ registered functions** across **80 submodules** (live count: `python scripts/registry_stats.py`), covering the complete empirical research workflow — from classical econometrics to cutting-edge ML/AI causal methods to publication-ready tables in Word, Excel, and LaTeX.
+StatsPAI is an **agent-native** Python platform for causal inference and applied econometrics. One `import`, **1,000+ registered functions** across **80+ submodules** (live count: `python scripts/registry_stats.py`), covering the empirical research workflow — from classical econometrics to ML/AI causal methods to publication-ready tables in Word, Excel, and LaTeX.
 
-**Built for AI agents**: every function returns structured result objects with machine-readable schemas (`list_functions()`, `describe_function()`, `function_schema()`) and is numerically validated against R and Stata reference implementations — purpose-built for LLM-driven research workflows while remaining fully ergonomic for human researchers.
+**Built for AI agents**: every registered function has machine-readable discovery metadata (`list_functions()`, `describe_function()`, `function_schema()`), and parity-backed functions expose an explicit `validation_status` so agents and humans can distinguish certified numerical evidence from API-stable breadth.
 
 It brings R's [Causal Inference Task View](https://cran.r-project.org/web/views/CausalInference.html) (fixest, did, rdrobust, gsynth, DoubleML, MatchIt, CausalImpact, ...) and Stata's core econometrics commands into a single, consistent Python API.
 
@@ -115,7 +115,7 @@ Every result object exposes the same interface — `.summary()` / `.tidy()` / `.
 
 ## 📊 Causal Inference Coverage at a Glance
 
-StatsPAI's focus is **causal inference** — and on this axis we aim to be the most complete single package in any language. "Stata" = official + major SSC packages. "R" = CRAN. "sm+lm" = statsmodels + linearmodels.
+StatsPAI's focus is **causal inference**. The grid below summarizes method-family breadth; it is not a validation certificate for every option. "Stata" = official + major SSC packages. "R" = CRAN. "sm+lm" = statsmodels + linearmodels.
 
 | Method family                                                 | Stata | R | sm+lm | DoubleML | **StatsPAI** |
 | ------------------------------------------------------------- | :---: | :---: | :---: | :---: | :---: |
@@ -137,7 +137,7 @@ StatsPAI's focus is **causal inference** — and on this axis we aim to be the m
 
 **Legend**: 🏆 most complete across ecosystems · ✅ full coverage · ⚠️ partial / scattered / single algorithm · ❌ not available.
 
-**StatsPAI at a glance**: 1,018 registered functions in the live agent registry · 80 submodules · ~249k LOC (core) + ~86k LOC (tests). All four numbers are reproducible from the canonical generator (`python scripts/registry_stats.py`); the per-module table in [`docs/stats.md`](docs/stats.md) is regenerated from the same script. For the full coverage matrix (23 method families) and cross-ecosystem line-count comparison, see [`docs/stats.md`](docs/stats.md).
+**StatsPAI at a glance**: 1,020 registered functions in the live agent registry · 81 submodules · 266k LOC (core) + 93k LOC (tests). All four numbers are reproducible from the canonical generator (`python scripts/registry_stats.py`); the per-module table in [`docs/stats.md`](docs/stats.md) is regenerated from the same script. For the full coverage matrix (23 method families) and cross-ecosystem line-count comparison, see [`docs/stats.md`](docs/stats.md).
 
 **Validation tiers matter**: `stability="stable"` means the public API is SemVer-stable; it does not by itself mean R/Stata/paper parity. Use `sp.list_functions(validation_status="certified")` for cross-language or published-reference evidence, and inspect `sp.describe_function(name)["limitations"]` before production use. See [`docs/guides/stability.md`](docs/guides/stability.md).
 
@@ -146,8 +146,9 @@ StatsPAI's focus is **causal inference** — and on this axis we aim to be the m
 StatsPAI 1.16.0 corrects the `sp.qreg` Powell sandwich standard error (was off
 by √n) and rebuilds `sp.xtabond` Arellano–Bond difference GMM to match Stata to
 machine precision — both flagged ⚠️ **Correctness**, so re-run affected
-analyses. The Track A cross-language parity harness grows from 36 to 50
-R-aligned modules (Stata reference for 43 of them), and the JOSS
+analyses. The Track A cross-language parity harness grows from 36 to 51
+R-aligned modules (Stata reference for 43 of them, plus one
+Py-Stata-only `xtabond` migration check), and the JSS
 reviewer-facing docs are refreshed. Full notes in
 [`CHANGELOG.md`](CHANGELOG.md) under `[1.16.0]`.
 
@@ -428,7 +429,7 @@ StatsPAI 1.4.0 is Sprint 2 of the 知识地图 v3 roadmap. Closes the four secon
 | **Particle-filter assimilation** | **`sp.assimilation.particle_filter`** — bootstrap-SIR particle filter with systematic resampling (Gordon-Salmond-Smith 1993; Douc-Cappé 2005). Non-Gaussian priors, heavy-tailed observation noise, nonlinear dynamics via pluggable callbacks. Agrees with exact Kalman to ~0.003 under Gaussian DGPs. **`sp.assimilative_causal(..., backend='particle')`** routes the end-to-end wrapper. |
 | **Documentation (v3 frontier guides)** | `docs/guides/synth_experimental.md` (Abadie-Zhao inverse-SC workflow), `docs/guides/harvest_did.md` (Borusyak-Hull-Jaravel harvesting DID), `docs/guides/assimilative_ci.md` (Nature Comms 2026 streaming CI, Kalman + particle backends). Wired into `mkdocs.yml` nav. |
 | **v1.3 stable foundation (carried forward)** | 11 2025-2026 frontier methods from Sprint 1: `synth_experimental_design`, `rdrobust(..., bootstrap='rbc')`, `evidence_without_injustice`, `target_trial.to_paper(fmt='jama'/'bmj')`, `harvest_did`, `bcf_ordinal`, `bcf_factor_exposure`, `causal_mas`, `shift_share_political`, `causal_kalman`. All v1.0 capstone surfaces (`sp.bridge`, `sp.fairness`, `sp.surrogate`, `sp.epi`, `sp.longitudinal`, `sp.question`, full MR suite, TARGET checklist) remain intact. |
-| **Agent-native platform** | `sp.list_functions()` / `sp.describe_function()` / `sp.function_schema()` expose OpenAI/Anthropic tool-calling schemas for 1,018 registered public functions. 145 curated or explicitly inherited `FunctionSpec` entries carry at least one of assumptions, preconditions, failure modes, limitations, `typical_n_min`, and validation tiers for the flagship surface. `sp.agent.mcp_server` MCP scaffold lets external LLMs call every StatsPAI function via natural-language tool invocation. |
+| **Agent-native platform** | `sp.list_functions()` / `sp.describe_function()` / `sp.function_schema()` expose OpenAI/Anthropic tool-calling schemas for 1,020 registered public functions. 362 curated or explicitly inherited `FunctionSpec` entries carry at least one of assumptions, preconditions, failure modes, limitations, `typical_n_min`, and validation tiers for the flagship surface. `validation_status` distinguishes certified/validated evidence from API-stable breadth. `sp.agent.mcp_server` MCP scaffold lets external LLMs call every StatsPAI function via natural-language tool invocation. |
 | **CI/CD hygiene** | `tabulate` hard-dep from v1.3.0 carried forward. Deflaked `test_forest_ate_recovers_average_tau` by seeding the forest explicitly (`random_state=0`, `n_estimators=300`, larger `n`). 2 699+ tests passing across all OS × Python matrix entries. |
 
 **Previously in v0.9.2 — Decomposition Analysis**: **18 first-class decomposition methods across 13 modules (~6,200 LOC, 54 tests)**, unified under `sp.decompose(method=...)`. Mean (Blinder-Oaxaca/Gelbach/Fairlie/Bauer-Sinning/Yun), distributional (RIF/FFL/DFL/Machado-Mata/Melly/CFM), inequality (Theil/Atkinson/Dagum/Shapley/Lerman-Yitzhaki), demographic (Kitagawa/Das-Gupta), and causal (gap_closing/mediation_decompose/disparity_decompose). Closed-form influence functions for Theil/Atkinson, weighted O(n log n) Dagum Gini, cross-method consistency checks.
@@ -653,7 +654,7 @@ wrappers, no runtime dependencies on upstream DID packages.
 | --- | --- | --- |
 | `rdrobust()` | Sharp/Fuzzy RD with robust bias-corrected inference | Calonico, Cattaneo & Titiunik (2014) |
 | `rdplot()` | RD visualization with binned scatter | — |
-| `rddensity()` | McCrary density manipulation test | McCrary (2008) |
+| `rddensity()` | CJM density manipulation test; optional `backend="r"` bridge to `rddensity::rddensity` | Cattaneo, Jansson & Ma (2020) |
 | `rdmc()` | Multi-cutoff RD | Cattaneo et al. (2024) |
 | `rdms()` | Geographic / multi-score RD | Keele & Titiunik (2015) |
 | `rkd()` | Regression Kink Design | Card et al. (2015) |

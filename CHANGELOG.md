@@ -4,6 +4,56 @@ All notable changes to StatsPAI will be documented in this file.
 
 ## [Unreleased]
 
+### Added — RD density parity escape hatch
+
+- **`sp.rddensity` now accepts side-specific manual bandwidths and an optional
+  R reference backend.** The native dependency-light implementation remains
+  the default, but `h=(h_left, h_right)` now records matched left/right
+  bandwidths explicitly, and `backend="r"` delegates to
+  `rddensity::rddensity` through `Rscript` when R plus the `rddensity` and
+  `jsonlite` packages are installed. This does not pretend the native
+  bandwidth selector is identical to the R package; it gives users and
+  reviewers a clear path to canonical selector/test-statistic parity when
+  that exact comparison matters. Guarded by `tests/test_rddensity_io.py`;
+  the R backend test is skipped automatically when R is unavailable.
+
+### ⚠️ Correctness fix — causal-forest ATE/ATT now doubly-robust (AIPW)
+
+- **`CausalForest.average_treatment_effect` (and the `target_sample`
+  `"all"`/`"treated"`/`"control"`/`"overlap"` aggregations) now returns
+  the doubly-robust AIPW influence-function mean** — the estimand
+  `grf::average_treatment_effect` reports — instead of a plug-in average
+  of the regularisation-shrunk CATE predictions. The plug-in average
+  overshoots the true effect (≈ 15 % on a clean-overlap DGP) and
+  disagreed with `grf` by an order of magnitude on overlap-pathological
+  samples. The AIPW score reuses the forest's own cross-fitted nuisances
+  `m̂(X)=Ê[Y|X]`, `ê(X)=Ê[T|X]` and the CATE `τ̂(X)`:
+  `Γ_i = τ̂ + (T−ê)/(ê(1−ê))·(Y − m̂ − (T−ê)τ̂)`. **Numbers change** for
+  any code reading `average_treatment_effect(...)['estimate']`; the SE is
+  now the influence-function SE `sd(Γ)/√n`. The plug-in `cf.ate()` /
+  `cf.att()` convenience methods are unchanged and retained, but are no
+  longer the validation estimand. Users who reported a causal-forest ATE
+  from `average_treatment_effect` should re-run.
+  - On a clean-overlap DGP (`e(X)∈[0.30,0.70]`, known ATE = 1) the AIPW
+    ATE recovers the truth within 1.5 SE and agrees with `grf` at
+    `rel = 0.037` (`z = 0.69` combined SE); the R-parity module
+    `13_causal_forest` verdict moves from GAP (500 % band) to PASS
+    (10 % band).
+  - Guards: `tests/reference_parity/test_causal_forest_aipw_recovery.py`
+    (recovery against truth, no R needed) and the tightened
+    `tests/reference_parity/test_grf_parity.py` (combined-SE parity vs a
+    committed `grf` fixture).
+- **Synthetic-control solver certified on identified problems.** Added
+  `tests/reference_parity/test_scm_recovery.py` and the cross-language
+  module `tests/r_parity/52_scm_unique`: on a DGP whose synthetic-control
+  weights are uniquely identified (treated unit exactly a convex
+  combination of donors in the pre-period), `sp.synth(method="classic")`
+  recovers the exact weights and gap (pre-RMSE = 0) and agrees with
+  `Synth::synth` to 0.7 %; the classical/augmented/generalised/MC
+  variants each recover a known factor-model ATT within 3 %. No
+  estimator numerics change — this is added validation isolating the
+  Basque-data SCM gap (module `07`) as genuine weight non-uniqueness.
+
 ### Added — MCP protocol modernization
 
 - **Protocol version negotiation + bump to `2025-06-18`
@@ -53,15 +103,15 @@ All notable changes to StatsPAI will be documented in this file.
   than only frozen.
 - **`sp.validation_report(collect_tests=True)`** — shells out to
   `pytest --collect-only` and returns the authoritative, parametrize-expanded
-  parity test counts (114 reference-parity, 50 external-parity, 12 coverage
-  Monte Carlo on the 1.16.0 tree); a regression test pins those three to the
+  parity test counts (124 reference-parity, 50 external-parity, 12 coverage
+  Monte Carlo on the current source snapshot); a regression test pins those three to the
   JSS manuscript headline so a parity test added/removed without updating the
   paper fails CI. Default `validation_report()` path is unchanged (fast,
   metadata-only).
 - **Strictness-tier breakdown in the Track A parity tables
   (`tests/r_parity/compare.py`)** — each module is classified by its
   registered point-estimate tolerance into machine / iterative / moderate /
-  methodological tiers (6 / 26 / 9 / 9 on the 50 R-rendered modules), shown
+  methodological tiers (6 / 26 / 10 / 9 on the 51 R-joined modules), shown
   in the Markdown ledger and the LaTeX appendix caption so a machine-precision
   match is not flattened together with a deliberately loose
   methodological-difference tolerance.
@@ -82,13 +132,15 @@ All notable changes to StatsPAI will be documented in this file.
 
 ### Changed — Track A R golden values regenerated under the locked environment
 
-- The 50 committed `results/*_R.json` were regenerated under R 4.5.2 with
+- The current R parity ledger covers 51 `results/*_R.json` modules under R 4.5.2 with
   the `renv.lock` package set so each is self-describing. The only material
   numerical movement is `07_scm` (classical SCM), whose headline estimate
   shifted by 2.18e-8 — L-BFGS-B / Apple-Accelerate-BLAS non-associativity,
-  far inside that module's 0.20 SCM non-uniqueness parity tolerance. All
-  cross-language verdicts are unchanged (42 PASS / 10 GAP). This is a
-  reference-fixture refresh, not a `statspai` estimator-output change.
+  far inside that module's 0.20 SCM non-uniqueness parity tolerance. The
+  ledger also adds `52_scm_unique`, an identified synthetic-control DGP that
+  separates solver correctness from the Basque non-uniqueness gap. This is
+  primarily a reference-fixture and evidence refresh, not a broad
+  `statspai` estimator-output change.
 - The 44 committed `results/*_Stata.json` were likewise refreshed to embed
   the engine `provenance` block; their numbers are **unchanged** (every
   module reproduces at exactly 0 under the locked Stata 18 MP environment).

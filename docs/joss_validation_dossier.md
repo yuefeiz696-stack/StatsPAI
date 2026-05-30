@@ -19,8 +19,8 @@ research software. It is intentionally factual and reproducible.
 ## Software Scope
 
 StatsPAI exposes a unified Python interface for causal inference and applied
-econometrics. As of release `1.16.0`, the registry reports 1,018 public
-functions across 80 submodules:
+econometrics. As of release `1.16.0`, the registry reports 1,020 public
+functions across 81 submodules:
 
 ```bash
 python scripts/registry_stats.py --check
