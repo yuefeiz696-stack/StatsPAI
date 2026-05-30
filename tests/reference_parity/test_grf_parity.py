@@ -1,22 +1,23 @@
 """Reference parity: ``sp.causal_forest`` ATE vs R ``grf::causal_forest``.
 
-Caveat — these are not byte-identical algorithms.  R ``grf`` is the
-canonical Athey-Tibshirani-Wager 2019 implementation with honest
-splitting + R-learner orthogonalisation.  ``sp.causal_forest`` is
-built on EconML's ``CausalForestDML`` which uses the same family
-of ideas (honest splitting + DML residualisation) but a different
-software stack (scikit-learn vs the bespoke C++ in grf).
+Both engines report the **AIPW doubly-robust** average treatment effect
+(``grf::average_treatment_effect`` on the R side;
+``sp.causal_forest.average_treatment_effect`` on the Python side), so
+the comparison is like-for-like.  The two implementations use different
+RNGs and different nuisance learners, so the estimates are not
+bit-identical; the principled parity criterion is therefore that the
+two AIPW point estimates agree **within combined Monte Carlo error**
+(``|sp - grf| < 3 * sqrt(se_sp^2 + se_grf^2)``), the same combined-SE
+standard the package uses for cross-estimator parity, rather than an
+arbitrary fixed relative band.
 
-ATE drift between the two on a fixed seed is dominated by:
-  • bootstrap sampling differences (different RNG paths)
-  • internal nuisance learners (grf uses regression forests for both;
-    EconML defaults to LassoCV for binary W)
-  • honest split / leaf size choices
-
-Empirically: on this DGP (true mean τ ≈ 0.91) we see grf ~ 0.98 and
-EconML CF ~ 1.14.  Tolerance is therefore wide (25% relative),
-intended to **catch order-of-magnitude bugs**, not to certify
-implementation equivalence.
+This replaces the previous test, which compared the *plug-in* mean of
+the CATE predictions (``cf.ate()``) against grf's AIPW estimate with a
+25% tolerance.  The plug-in average is biased (forest regularisation
+shrinks the CATE predictions), so that comparison both used the wrong
+estimator and needed a band too wide to be called validation.  The
+plug-in path is still exercised below as a documented sanity check, not
+as the parity claim.
 
 References
 ----------
@@ -27,6 +28,7 @@ References
 from __future__ import annotations
 
 import json
+import math
 import pathlib
 
 import pandas as pd
@@ -51,7 +53,7 @@ def r_reference():
 
 @pytest.fixture(scope="module")
 def fitted_cf(grf_data):
-    """Fit once per module — causal forests are slow."""
+    """Fit once per module -- causal forests are slow."""
     return sp.causal_forest(
         "y ~ W | X1 + X2 + X3 + X4 + X5",
         data=grf_data,
@@ -61,37 +63,66 @@ def fitted_cf(grf_data):
     )
 
 
-def test_grf_ate_within_tolerance(fitted_cf, r_reference):
-    """ATE point estimate should be within 25% of R grf reference."""
-    py_ate = float(fitted_cf.ate())
-    r_ate = r_reference["ate"]["estimate"]
-    rel = abs(py_ate - r_ate) / abs(r_ate)
-    assert rel < 0.25, (
-        f"sp.causal_forest ATE drifted from R grf by {rel:.1%} "
-        f"(Python={py_ate:.4f}, R={r_ate:.4f}). "
-        f"Tolerance: 25% — intended to catch order-of-magnitude bugs, "
-        f"not certify byte-identical agreement.  See module docstring "
-        f"for why exact agreement is not expected."
+def test_grf_ate_aipw_within_combined_se(fitted_cf, r_reference):
+    """sp AIPW ATE must agree with grf AIPW ATE within 3 combined SE.
+
+    This is the headline causal-forest parity claim: same estimand
+    (doubly-robust AIPW ATE), agreement within combined Monte Carlo
+    error.
+    """
+    aipw = fitted_cf.average_treatment_effect(target_sample="all")
+    assert aipw["method"] == "aipw", "headline ATE must use the AIPW score"
+    py_ate, py_se = float(aipw["estimate"]), float(aipw["se"])
+    r_ate, r_se = r_reference["ate"]["estimate"], r_reference["ate"]["se"]
+    combined_se = math.sqrt(py_se ** 2 + r_se ** 2)
+    z = abs(py_ate - r_ate) / combined_se
+    assert z < 3.0, (
+        f"sp AIPW ATE={py_ate:.4f} (SE {py_se:.4f}) vs grf AIPW "
+        f"ATE={r_ate:.4f} (SE {r_se:.4f}): {z:.2f} combined SE apart "
+        f"(threshold 3). The two doubly-robust estimates are not within "
+        f"combined Monte Carlo error -- investigate the AIPW score or "
+        f"the nuisance cross-fitting."
     )
 
 
 def test_grf_ate_sign_agreement(fitted_cf, r_reference):
-    """Both engines should agree on the sign — true τ ≈ 0.91 > 0."""
-    py_ate = float(fitted_cf.ate())
+    """Both engines agree on the sign of the AIPW ATE."""
+    py_ate = float(fitted_cf.average_treatment_effect(target_sample="all")["estimate"])
     r_ate = r_reference["ate"]["estimate"]
     assert (py_ate > 0) == (r_ate > 0), (
         f"Sign disagreement is a serious red flag: "
-        f"Python ATE={py_ate:.4f}, R ATE={r_ate:.4f}"
+        f"Python AIPW ATE={py_ate:.4f}, R AIPW ATE={r_ate:.4f}"
     )
 
 
-def test_grf_ate_close_to_truth(fitted_cf):
-    """Both engines should land close to the true mean τ ≈ 0.91."""
-    py_ate = float(fitted_cf.ate())
-    # Truth is mean(1 + 2*X1) ≈ 0.91 (sample mean of standard normal)
-    # Tolerance: ±0.5 absolute (roughly 1 SE on the ATE in this DGP)
-    assert abs(py_ate - 0.91) < 0.5, (
-        f"sp.causal_forest ATE={py_ate:.4f} far from true τ̄=0.91"
+def test_grf_aipw_recovers_grf_ci(fitted_cf, r_reference):
+    """sp AIPW point estimate lies inside grf's 95% CI (and vice versa).
+
+    A weaker, asymmetric cross-check that does not depend on the sp SE.
+    """
+    py_ate = float(fitted_cf.average_treatment_effect(target_sample="all")["estimate"])
+    r_ate, r_se = r_reference["ate"]["estimate"], r_reference["ate"]["se"]
+    lo, hi = r_ate - 1.96 * r_se, r_ate + 1.96 * r_se
+    assert lo <= py_ate <= hi, (
+        f"sp AIPW ATE={py_ate:.4f} outside grf 95% CI [{lo:.4f}, {hi:.4f}]"
+    )
+
+
+def test_grf_plugin_is_documented_biased(fitted_cf, r_reference):
+    """Documents (does not validate) the plug-in CATE average bias.
+
+    ``cf.ate()`` is the mean of the CATE predictions, which is biased by
+    forest regularisation; it is retained as a convenience but is NOT the
+    parity estimand. This test asserts the documented direction of the
+    bias so a regression that silently changes ``ate()`` semantics is
+    caught, without treating the plug-in mean as validated.
+    """
+    plug_in = float(fitted_cf.ate())
+    aipw = float(fitted_cf.average_treatment_effect(target_sample="all")["estimate"])
+    # On this DGP the plug-in mean overshoots the doubly-robust estimate.
+    assert plug_in > aipw, (
+        f"plug-in mean ({plug_in:.4f}) is expected to exceed the AIPW "
+        f"estimate ({aipw:.4f}) on this DGP; semantics may have changed."
     )
 
 

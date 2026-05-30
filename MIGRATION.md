@@ -5,7 +5,37 @@ Internal version-to-version migrations are at the top; the long-form
 
 ---
 
-<a id="sp-xtabond-fix"></a>
+<a id="sp-causal-forest-aipw-fix"></a>
+
+## Unreleased — ⚠️ Causal-forest ATE/ATT now doubly-robust (AIPW)
+
+**What changed.** `CausalForest.average_treatment_effect(...)` previously
+returned a plug-in average of the forest's CATE predictions. Forest
+regularisation shrinks those predictions, so the plug-in mean is biased
+(≈ 15 % high on a clean-overlap design) and is *not* the estimand
+`grf::average_treatment_effect` reports. It now returns the doubly-robust
+AIPW influence-function mean built from the forest's own cross-fitted
+nuisances (`Γ_i = τ̂ + (T−ê)/(ê(1−ê))·(Y − m̂ − (T−ê)τ̂)`), with the
+influence-function standard error `sd(Γ)/√n`.
+
+**Who is affected.** Anyone reading
+`cf.average_treatment_effect(...)['estimate']` or `['se']` (any
+`target_sample`: `all`/`treated`/`control`/`overlap`). The plug-in
+convenience methods `cf.ate()` / `cf.att()` are **unchanged**.
+
+**What to do.** Re-run any analysis that reported a causal-forest ATE/ATT
+from `average_treatment_effect`. The new estimate is closer to truth and
+agrees with `grf` within combined Monte Carlo error.
+
+```python
+ate = cf.average_treatment_effect(target_sample="all")  # ['method']=='aipw'
+ate_plugin = cf.ate()                                   # still available, plug-in
+```
+
+Guarded by `tests/reference_parity/test_causal_forest_aipw_recovery.py`
+and `tests/reference_parity/test_grf_parity.py`.
+
+---
 
 ## Unreleased — ⚠️ `sp.xtabond` Arellano-Bond GMM correctness fix
 

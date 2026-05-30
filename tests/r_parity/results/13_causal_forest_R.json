@@ -5,29 +5,30 @@
     {
       "module": "13_causal_forest",
       "side": "R",
-      "statistic": "att_causal_forest",
-      "estimate": 826.840112859877,
-      "se": 945.258145276614,
-      "ci_lo": -1025.83180797542,
-      "ci_hi": 2679.51203369517,
-      "n": 2675,
+      "statistic": "ate_causal_forest",
+      "estimate": 1.01174155159403,
+      "se": 0.0354464023023701,
+      "ci_lo": 0.942267879699866,
+      "ci_hi": 1.08121522348819,
+      "n": 4000,
       "extra": []
     },
     {
       "module": "13_causal_forest",
       "side": "R",
-      "statistic": "ate_causal_forest",
-      "estimate": -954.407451882677,
-      "se": 145.282691529564,
-      "ci_lo": -1239.15629485767,
-      "ci_hi": -669.658608907689,
-      "n": 2675,
+      "statistic": "att_causal_forest",
+      "estimate": 1.00588506749913,
+      "se": 0.0374379495509512,
+      "ci_lo": 0.932508034724242,
+      "ci_hi": 1.07926210027403,
+      "n": 4000,
       "extra": []
     }
   ],
   "extra": {
     "num.trees": [2000],
-    "seed": [42]
+    "seed": [42],
+    "estimator": ["AIPW doubly-robust (grf)"]
   },
   "provenance": {
     "r_version": "R version 4.5.2 (2025-10-31)",

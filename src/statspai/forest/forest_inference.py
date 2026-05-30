@@ -429,12 +429,37 @@ def average_treatment_effect(
     T: Optional[np.ndarray] = None,
     target_sample: str = "all",
     alpha: float = 0.05,
+    clip: float = 0.01,
 ) -> Dict[str, float]:
     """Aggregate CATE predictions into ATE/ATT/ATC/ATO targets.
 
     This mirrors the most-used ``grf::average_treatment_effect`` targets:
     ``"all"`` (ATE), ``"treated"`` (ATT), ``"control"`` (ATC), and
     ``"overlap"`` (ATO, weighted by ``e(X)(1-e(X))``).
+
+    The estimate is the **doubly-robust AIPW influence-function mean**
+    (the estimator grf reports), not a plug-in average of the CATE
+    predictions.  Using the forest's own cross-fitted nuisances
+    :math:`\\hat m(X)=\\hat E[Y\\mid X]` and :math:`\\hat e(X)=\\hat
+    E[T\\mid X]`, the ATE score is
+
+    .. math::
+        \\Gamma_i = \\hat\\tau(X_i)
+            + \\frac{T_i-\\hat e(X_i)}{\\hat e(X_i)(1-\\hat e(X_i))}
+              \\bigl(Y_i-\\hat m(X_i)-(T_i-\\hat e(X_i))\\hat\\tau(X_i)\\bigr),
+
+    and the ATT/ATC scores use the analogous Robins doubly-robust
+    weighting.  ``se`` is the influence-function standard error
+    :math:`\\mathrm{sd}(\\Gamma)/\\sqrt n`.  When the score cannot be
+    formed (out-of-sample ``X`` with no stored nuisances) the function
+    falls back to the plug-in CATE average and sets ``method='plug_in'``.
+
+    Parameters
+    ----------
+    clip : float, default 0.01
+        Propensity scores are clipped to ``[clip, 1-clip]`` before the
+        inverse-propensity term to stabilise the score under near-overlap
+        violations.
     """
     if not forest.fitted_:
         raise ValueError("Forest must be fitted.")
@@ -457,25 +482,107 @@ def average_treatment_effect(
             "or 'overlap'"
         )
 
+    use_insample = X is None and T is None
     X_ = np.asarray(X if X is not None else forest._X_original, dtype=np.float64)
     tau = np.asarray(forest.effect(X_), dtype=np.float64).ravel()
     T_ = np.asarray(
         T if T is not None else getattr(forest, "_T_original", None),
         dtype=np.float64,
     ).ravel()
+    Y_ = np.asarray(getattr(forest, "_Y_original", None), dtype=np.float64).ravel()
     if len(T_) != len(tau):
         raise ValueError("T must have the same length as X/effect predictions.")
 
-    _m_hat, e_hat = _get_nuisances(
-        forest,
-        X_,
-        np.asarray(getattr(forest, "_Y_original", np.zeros_like(T_)), dtype=float),
-        T_,
-    )
-    e_hat = np.clip(np.asarray(e_hat, dtype=np.float64).ravel(), 1e-6, 1 - 1e-6)
-    if len(e_hat) != len(tau):
-        e_hat = np.full(len(tau), float(np.mean(T_)))
+    # Outcome and propensity nuisances.  When aggregating on the training
+    # sample we reuse the forest's own cross-fitted (cv=3) out-of-fold
+    # nuisances m̂ = Ê[Y|X] and ê = Ê[T|X] -- the same quantities grf
+    # uses for ``average_treatment_effect`` -- so the ATE/ATT scores are
+    # honest doubly-robust influence functions rather than a plug-in mean
+    # of the (regularisation-shrunk) CATE predictions.
+    m_insample = getattr(forest, "_m_insample", None)
+    e_insample = getattr(forest, "_e_insample", None)
+    if use_insample and m_insample is not None and e_insample is not None:
+        m_hat = np.asarray(m_insample, dtype=np.float64).ravel()
+        e_hat = np.asarray(e_insample, dtype=np.float64).ravel()
+    else:
+        m_hat, e_hat = _get_nuisances(forest, X_, Y_, T_)
+        m_hat = np.asarray(m_hat, dtype=np.float64).ravel()
+        e_hat = np.asarray(e_hat, dtype=np.float64).ravel()
+    e_hat = np.clip(e_hat, clip, 1.0 - clip)
+    if len(e_hat) != len(tau) or len(m_hat) != len(tau) or len(Y_) != len(tau):
+        # AIPW score is unavailable (out-of-sample without nuisances or a
+        # length mismatch); fall back to the plug-in CATE average and flag it.
+        return _plug_in_average(tau, T_, e_hat, target, alpha)
 
+    n = int(len(tau))
+    z = float(stats.norm.ppf(1 - alpha / 2))
+    # Reconstruct the per-arm outcome regressions from (m̂, ê, τ̂):
+    #   m = e·μ1 + (1-e)·μ0,  μ1 - μ0 = τ  ⇒  μ0 = m - e·τ,  μ1 = m + (1-e)·τ.
+    mu0 = m_hat - e_hat * tau
+    mu1 = m_hat + (1.0 - e_hat) * tau
+    m_full = m_hat + (T_ - e_hat) * tau  # = E[Y|X,T] under the model
+
+    if target == "all":
+        estimand = "ATE"
+        psi = tau + (T_ - e_hat) / (e_hat * (1.0 - e_hat)) * (Y_ - m_full)
+        estimate = float(psi.mean())
+        se = float(psi.std(ddof=1) / np.sqrt(n))
+        ess = float(n)
+    elif target == "treated":
+        estimand = "ATT"
+        p1 = float(max(T_.mean(), 1e-8))
+        psi = (T_ * (Y_ - mu0) - (1.0 - T_) * (e_hat / (1.0 - e_hat)) * (Y_ - mu0)) / p1
+        estimate = float(psi.mean())
+        se = float(psi.std(ddof=1) / np.sqrt(n))
+        ess = float(T_.sum())
+    elif target == "control":
+        estimand = "ATC"
+        p0 = float(max((1.0 - T_).mean(), 1e-8))
+        psi = ((1.0 - T_) * (mu1 - Y_) - T_ * ((1.0 - e_hat) / e_hat) * (mu1 - Y_)) / p0
+        estimate = float(psi.mean())
+        se = float(psi.std(ddof=1) / np.sqrt(n))
+        ess = float((1.0 - T_).sum())
+    else:  # overlap (ATO): overlap-weighted average of the AIPW pointwise scores
+        estimand = "ATO"
+        w = e_hat * (1.0 - e_hat)
+        if float(w.sum()) <= 0:
+            raise ValueError(
+                f"No observations contribute to target_sample={target_sample!r}."
+            )
+        psi_pt = tau + (T_ - e_hat) / (e_hat * (1.0 - e_hat)) * (Y_ - m_full)
+        estimate = float(np.average(psi_pt, weights=w))
+        norm_w = w / w.sum()
+        se = float(np.sqrt(np.sum((norm_w ** 2) * (psi_pt - estimate) ** 2)))
+        ess = float((w.sum() ** 2) / np.sum(w ** 2))
+
+    return {
+        "estimate": estimate,
+        "se": se,
+        "ci_low": estimate - z * se,
+        "ci_high": estimate + z * se,
+        "target_sample": target,
+        "estimand": estimand,
+        "method": "aipw",
+        "effective_sample_size": ess,
+        "n": n,
+        "alpha": float(alpha),
+        "pscore_min": float(e_hat.min()),
+        "pscore_max": float(e_hat.max()),
+    }
+
+
+def _plug_in_average(
+    tau: np.ndarray,
+    T_: np.ndarray,
+    e_hat: np.ndarray,
+    target: str,
+    alpha: float,
+) -> Dict[str, float]:
+    """Fallback weighted average of CATE predictions (no AIPW score).
+
+    Used only when the doubly-robust influence function cannot be formed
+    (out-of-sample ``X`` with no stored nuisances, or a length mismatch).
+    """
     if target == "all":
         weights = np.ones_like(tau)
         estimand = "ATE"
@@ -488,15 +595,12 @@ def average_treatment_effect(
     else:
         weights = e_hat * (1.0 - e_hat)
         estimand = "ATO"
-
     if float(weights.sum()) <= 0:
-        raise ValueError(f"No observations contribute to target_sample={target_sample!r}.")
-
+        raise ValueError("No observations contribute to the requested target_sample.")
     estimate = float(np.average(tau, weights=weights))
     norm_w = weights / weights.sum()
-    var = float(np.sum((norm_w ** 2) * (tau - estimate) ** 2))
-    se = float(np.sqrt(max(var, 0.0)))
-    z = stats.norm.ppf(1 - alpha / 2)
+    se = float(np.sqrt(np.sum((norm_w ** 2) * (tau - estimate) ** 2)))
+    z = float(stats.norm.ppf(1 - alpha / 2))
     ess = float((weights.sum() ** 2) / np.sum(weights ** 2))
     return {
         "estimate": estimate,
@@ -505,11 +609,12 @@ def average_treatment_effect(
         "ci_high": estimate + z * se,
         "target_sample": target,
         "estimand": estimand,
+        "method": "plug_in",
         "effective_sample_size": ess,
         "n": int(len(tau)),
         "alpha": float(alpha),
-        "pscore_min": float(e_hat.min()),
-        "pscore_max": float(e_hat.max()),
+        "pscore_min": float(e_hat.min()) if len(e_hat) else float("nan"),
+        "pscore_max": float(e_hat.max()) if len(e_hat) else float("nan"),
     }
 
 
