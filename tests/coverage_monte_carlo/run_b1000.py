@@ -114,9 +114,112 @@ def coverage_iv() -> dict:
             "covered": covered, "rate": covered / B}
 
 
+def coverage_cs() -> dict:
+    """Callaway--Sant'Anna simple ATT on a homogeneous staggered DGP.
+
+    Same DGP as ``test_cs_staggered_ci_coverage`` (n_units=200, 8 periods,
+    cohorts {3,5,7,never}); promoted from the B=200 pytest cap to a full
+    B=1000 materialised audit.
+    """
+    truth = 1.5
+    covered = 0
+    cohorts = [3, 5, 7, 0]
+    for seed in range(B):
+        rng = np.random.default_rng(seed)
+        n_units = 200
+        rows = []
+        for i in range(n_units):
+            g = cohorts[i % 4]
+            ui = rng.normal(scale=0.5)
+            for t in range(1, 9):
+                post = 1 if (g > 0 and t >= g) else 0
+                y = 0.2 * t + truth * post + ui + rng.normal(scale=0.8)
+                rows.append({"i": i, "t": t, "g": g, "y": y})
+        df = pd.DataFrame(rows)
+        r = sp.callaway_santanna(df, y="y", g="g", t="t", i="i",
+                                 estimator="reg")
+        if r.ci[0] <= truth <= r.ci[1]:
+            covered += 1
+    return {"name": "sp.callaway_santanna simple ATT (staggered)", "B": B,
+            "covered": covered, "rate": covered / B}
+
+
+def coverage_ebalance() -> dict:
+    """Entropy balancing on a CIA DGP (same DGP as the pytest row)."""
+    truth = 2.0
+    covered = 0
+    for seed in range(B):
+        rng = np.random.default_rng(seed)
+        n = 500
+        X1 = rng.normal(size=n)
+        X2 = rng.normal(size=n)
+        p = 1 / (1 + np.exp(-(-0.3 + 0.5 * X1 - 0.3 * X2)))
+        d = (rng.uniform(0, 1, n) < p).astype(int)
+        y = 1.0 + 1.5 * X1 - 0.8 * X2 + truth * d + rng.normal(scale=0.8, size=n)
+        df = pd.DataFrame({"y": y, "d": d, "X1": X1, "X2": X2})
+        r = sp.ebalance(df, y="y", treat="d", covariates=["X1", "X2"])
+        if r.ci[0] <= truth <= r.ci[1]:
+            covered += 1
+    return {"name": "sp.ebalance (CIA, ATT)", "B": B,
+            "covered": covered, "rate": covered / B}
+
+
+def coverage_dml() -> dict:
+    """DML IRM ATE via ``sp.causal_question(design='dml')`` (binary D)."""
+    truth = 1.0
+    covered = 0
+    for seed in range(B):
+        rng = np.random.default_rng(seed)
+        n = 500
+        x1 = rng.normal(size=n)
+        x2 = rng.normal(size=n)
+        p = 1 / (1 + np.exp(-(0.4 * x1 - 0.2 * x2)))
+        d = rng.binomial(1, p)
+        y = 0.5 + truth * d + 0.6 * x1 + 0.3 * x2 + rng.normal(size=n)
+        df = pd.DataFrame({"y": y, "d": d, "x1": x1, "x2": x2})
+        q = sp.causal_question(treatment="d", outcome="y", design="dml",
+                               covariates=["x1", "x2"], data=df)
+        r = q.estimate()
+        if r.ci[0] <= truth <= r.ci[1]:
+            covered += 1
+    return {"name": "sp.causal_question(design='dml') IRM ATE", "B": B,
+            "covered": covered, "rate": covered / B}
+
+
+def coverage_causal_forest() -> dict:
+    """Causal-forest population ATE via cross-fit AIPW-IF (binary D).
+
+    Same DGP as ``test_causal_forest_aipw_ci_coverage``; the ATE summary
+    is the doubly-robust AIPW influence-function mean -- the same
+    estimator grf::average_treatment_effect reports.
+    """
+    truth = 1.0
+    covered = 0
+    for seed in range(B):
+        rng = np.random.default_rng(seed)
+        n = 500
+        x1 = rng.normal(size=n)
+        x2 = rng.normal(size=n)
+        p = 1 / (1 + np.exp(-(0.5 * x1)))
+        d = rng.binomial(1, p)
+        y = 0.5 + truth * d + 0.7 * x1 + 0.3 * x2 + rng.normal(size=n)
+        df = pd.DataFrame({"y": y, "d": d, "x1": x1, "x2": x2})
+        q = sp.causal_question(treatment="d", outcome="y",
+                               design="causal_forest",
+                               covariates=["x1", "x2"], data=df)
+        r = q.estimate(n_estimators=30, random_state=seed)
+        if r.ci[0] <= truth <= r.ci[1]:
+            covered += 1
+    return {"name": "sp.causal_question(design='causal_forest') AIPW ATE",
+            "B": B, "covered": covered, "rate": covered / B}
+
+
 def main() -> None:
     out: list[dict] = []
-    for fn in [coverage_ols, coverage_did_2x2, coverage_iv]:
+    fns = [coverage_ols, coverage_did_2x2, coverage_iv,
+           coverage_cs, coverage_ebalance, coverage_dml,
+           coverage_causal_forest]
+    for fn in fns:
         t0 = time.time()
         rec = fn()
         rec["wall_s"] = round(time.time() - t0, 1)
