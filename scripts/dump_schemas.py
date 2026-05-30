@@ -27,7 +27,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 PACKAGE_SCHEMA_DIR = REPO_ROOT / "src" / "statspai" / "schemas"
-RUNTIME_SCHEMA_FILES = {"index.json", "tools.json", "functions.json"}
+RUNTIME_SCHEMA_FILES = {
+    "index.json",
+    "tools.json",
+    "functions.json",
+    "agent_cards.json",
+    "result.schema.json",
+}
 
 from statspai._schema_export import (  # noqa: E402
     build_schemas,
@@ -36,7 +42,7 @@ from statspai._schema_export import (  # noqa: E402
 
 
 def _runtime_snapshot(files: dict[str, str]) -> dict[str, str]:
-    """Subset bundled inside the wheel for the MCP cold-start fast path."""
+    """Subset bundled inside the wheel for import-free agent discovery."""
     return {k: v for k, v in files.items() if k in RUNTIME_SCHEMA_FILES}
 
 

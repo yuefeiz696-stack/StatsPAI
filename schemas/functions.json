@@ -435,7 +435,7 @@
     }
   },
   {
-    "description": "Workflow wrapper that runs a full DiD pipeline: auto-detects 2\u00d72 vs. staggered, runs the right estimator (CS by default), optionally runs Bacon decomposition, event study, and Rambachan-Roth sensitivity, and aggregates into a DIDAnalysis report object. Validation: validated.",
+    "description": "Workflow wrapper that runs a full DiD pipeline: auto-detects 2x2 vs. staggered, runs the right estimator (CS by default), optionally runs Bacon decomposition, event study, and Rambachan-Roth sensitivity, and aggregates into a DIDAnalysis report object. Validation: validated.",
     "name": "did_analysis",
     "parameters": {
       "properties": {
@@ -498,7 +498,7 @@
     }
   },
   {
-    "description": "Callaway-Sant'Anna (2021) staggered DID with group-time ATTs. Robust to heterogeneous treatment effects and staggered adoption. Validation: certified parity evidence. Known limitations: panel=False (repeated cross-sections) currently requires estimator='reg' and control_group='nevertreated'; the IPW and DR variants for RCS are planned for a future release.",
+    "description": "Callaway-Sant'Anna (2021) staggered DID with group-time ATTs. Robust to heterogeneous treatment effects and staggered adoption. Validation: certified evidence with scoped limitations. Known limitations: panel=False (repeated cross-sections) currently requires estimator='reg' and control_group='nevertreated'; the IPW and DR variants for RCS are planned for a future release.",
     "name": "callaway_santanna",
     "parameters": {
       "properties": {
@@ -584,7 +584,7 @@
     }
   },
   {
-    "description": "RD estimation: sharp, fuzzy, kink, and donut-hole designs with robust inference. Validation: certified parity evidence. Known limitations: observation-level weights are not yet supported \u2014 passing a weight column raises NotImplementedError.",
+    "description": "RD estimation: sharp, fuzzy, kink, and donut-hole designs with robust inference. Validation: certified evidence with scoped limitations. Known limitations: observation-level weights are not yet supported -- passing a weight column raises NotImplementedError; R-parity certification applies to bwselect='cct' or manually matched h/b bandwidths; the dependency-light default bwselect='mserd' uses StatsPAI's calibrated selector and can differ from rdrobust::rdrobust defaults.",
     "name": "rdrobust",
     "parameters": {
       "properties": {
@@ -722,7 +722,7 @@
     }
   },
   {
-    "description": "Unified synthetic control estimator. method= selects variant: 'classic', 'demeaned', 'detrended', 'unconstrained', 'elastic_net', 'augmented', 'sdid', 'gsynth', 'staggered'. inference= selects: 'placebo', 'conformal', 'bootstrap', 'jackknife'. Validation: certified parity evidence.",
+    "description": "Unified synthetic control estimator. method= selects variant: 'classic', 'demeaned', 'detrended', 'unconstrained', 'elastic_net', 'augmented', 'sdid', 'gsynth', 'staggered'. inference= selects: 'placebo', 'conformal', 'bootstrap', 'jackknife'. Validation: certified evidence with scoped limitations. Known limitations: Classical SCM certification is specification-specific: ADH/Synth parity requires passing the same special_predictors recipe; the default outcome-only V=I path is a documented Kaul-style convention; SDID, augmented SCM, and generalized SCM parity rows include regularisation or local-optimum convention gaps; inspect model_info and parity_gap_report() before claiming exact cross-language equivalence.",
     "name": "synth",
     "parameters": {
       "properties": {
@@ -774,7 +774,7 @@
     }
   },
   {
-    "description": "Double/Debiased Machine Learning for treatment effect estimation. Supports partially linear (PLR), interactive regression (IRM, binary D), partially linear IV (PLIV), and interactive IV (IIVM, binary D/binary Z \u2192 LATE). Validation: certified parity evidence.",
+    "description": "Double/Debiased Machine Learning for treatment effect estimation. Supports partially linear (PLR), interactive regression (IRM, binary D), partially linear IV (PLIV), and interactive IV (IIVM, binary D/binary Z -> LATE). Validation: certified parity evidence.",
     "name": "dml",
     "parameters": {
       "properties": {
@@ -1118,7 +1118,7 @@
     }
   },
   {
-    "description": "Causal Forest for heterogeneous treatment effect estimation (CATE). Validation: certified parity evidence.",
+    "description": "Causal Forest for heterogeneous treatment effect estimation (CATE). Validation: certified evidence with scoped limitations. Known limitations: The AIPW ATE/ATT are validated against grf on clean-overlap designs only; under severe propensity-overlap loss the AIPW influence function inflates the standard error (conservative, over-covering inference), so inspect the sp.audit overlap diagnostic before interpreting the ATE on that kind of sample.",
     "name": "causal_forest",
     "parameters": {
       "properties": {
@@ -1582,7 +1582,7 @@
           "type": "boolean"
         },
         "estimate": {
-          "description": "Top-line cell template \u2014 placeholders {estimate} {stars} {std_error} {t_value} {p_value} {conf_low} {conf_high}",
+          "description": "Top-line cell template -- placeholders {estimate} {stars} {std_error} {t_value} {p_value} {conf_low} {conf_high}",
           "type": "string"
         },
         "filename": {
@@ -1691,7 +1691,7 @@
     }
   },
   {
-    "description": "Stata-style esttab clone \u2014 tabulate one or more model results (or models stored via sp.eststo) into text/LaTeX/HTML/Markdown/CSV. Validation: validated.",
+    "description": "Stata-style esttab clone -- tabulate one or more model results (or models stored via sp.eststo) into text/LaTeX/HTML/Markdown/CSV. Validation: validated.",
     "name": "esttab",
     "parameters": {
       "properties": {
@@ -1778,7 +1778,7 @@
     }
   },
   {
-    "description": "Inline coefficient citation \u2014 formats one term as e.g. '0.234*** (0.041)' for embedding directly in manuscript prose, Jupyter Markdown cells, or Quarto inline expressions. Mirrors regtable's formatting conventions (stars, SE/CI brackets) for cross-table consistency. Validation: validated.",
+    "description": "Inline coefficient citation -- formats one term as e.g. '0.234*** (0.041)' for embedding directly in manuscript prose, Jupyter Markdown cells, or Quarto inline expressions. Mirrors regtable's formatting conventions (stars, SE/CI brackets) for cross-table consistency. Validation: validated.",
     "name": "cite",
     "parameters": {
       "properties": {
@@ -1831,7 +1831,7 @@
     }
   },
   {
-    "description": "Balance / mean-comparison table \u2014 Mean (SD) per group, difference, and t-test/ranksum/chi\u00b2 p-value. Renders to text/LaTeX/HTML/Markdown/Excel/Word. Validation: validated.",
+    "description": "Balance / mean-comparison table -- Mean (SD) per group, difference, and t-test/ranksum/chi2 p-value. Renders to text/LaTeX/HTML/Markdown/Excel/Word. Validation: validated.",
     "name": "mean_comparison",
     "parameters": {
       "properties": {
@@ -1923,7 +1923,7 @@
     }
   },
   {
-    "description": "Specification curve analysis \u2014 run many model specifications and visualise robustness. Validation: validated.",
+    "description": "Specification curve analysis -- run many model specifications and visualise robustness. Validation: validated.",
     "name": "spec_curve",
     "parameters": {
       "properties": {
@@ -2038,7 +2038,7 @@
     }
   },
   {
-    "description": "Traditional OLS event-study with entity and time FEs. Generates relative-time dummies around the treatment date, omits a reference period, and estimates via TWFE + optional clustered SE. Exposed for users who want the classical specification alongside CS / SA / BJS; not robust to staggered-effect heterogeneity \u2014 use sp.sun_abraham for that. Validation: validated.",
+    "description": "Traditional OLS event-study with entity and time FEs. Generates relative-time dummies around the treatment date, omits a reference period, and estimates via TWFE + optional clustered SE. Exposed for users who want the classical specification alongside CS / SA / BJS; not robust to staggered-effect heterogeneity -- use sp.sun_abraham for that. Validation: validated.",
     "name": "event_study",
     "parameters": {
       "properties": {
@@ -2147,7 +2147,7 @@
     }
   },
   {
-    "description": "Spatial Autoregressive (Lag) Model: Y = \u03c1WY + X\u03b2 + \u03b5 via ML. Validation: validated.",
+    "description": "Spatial Autoregressive (Lag) Model: Y = rhoWY + Xbeta + epsilon via ML. Validation: validated.",
     "name": "sar",
     "parameters": {
       "properties": {
@@ -2173,7 +2173,7 @@
     }
   },
   {
-    "description": "Spatial Error Model: Y = X\u03b2 + u, u = \u03bbWu + \u03b5 via ML. Validation: validated.",
+    "description": "Spatial Error Model: Y = Xbeta + u, u = lambdaWu + epsilon via ML. Validation: validated.",
     "name": "sem",
     "parameters": {
       "properties": {
@@ -2199,7 +2199,7 @@
     }
   },
   {
-    "description": "Spatial Durbin Model: Y = \u03c1WY + X\u03b2 + WX\u03b8 + \u03b5 with direct/indirect effects. Validation: validated.",
+    "description": "Spatial Durbin Model: Y = rhoWY + Xbeta + WXtheta + epsilon with direct/indirect effects. Validation: validated.",
     "name": "sdm",
     "parameters": {
       "properties": {
@@ -2406,7 +2406,7 @@
           "type": "array"
         },
         "data": {
-          "description": "Long-format panel (unit \u00d7 time)",
+          "description": "Long-format panel (unit x time)",
           "type": "string"
         },
         "exposure": {
@@ -2576,7 +2576,7 @@
     }
   },
   {
-    "description": "Principal Stratification (Frangakis & Rubin 2002). 'monotonicity' method identifies the complier PCE (= LATE) and reports Zhang-Rubin sharp bounds on the always-survivor SACE. 'principal_score' uses Ding-Lu covariate weighting to point-identify stratum-specific effects under principal ignorability. Validation: validated. Known limitations: Always-survivor SACE under encouragement design (Mealli & Pacini 2013, partial identification) is not yet implemented; only AIR / Wald LATE point estimates (\u03c4_Y on outcome, \u03c4_S on the post-treatment stratum) are reported when an instrument is supplied.",
+    "description": "Principal Stratification (Frangakis & Rubin 2002). 'monotonicity' method identifies the complier PCE (= LATE) and reports Zhang-Rubin sharp bounds on the always-survivor SACE. 'principal_score' uses Ding-Lu covariate weighting to point-identify stratum-specific effects under principal ignorability. Validation: validated. Known limitations: Always-survivor SACE under encouragement design (Mealli & Pacini 2013, partial identification) is not yet implemented; only AIR / Wald LATE point estimates (tau_Y on outcome, tau_S on the post-treatment stratum) are reported when an instrument is supplied.",
     "name": "principal_strat",
     "parameters": {
       "properties": {
@@ -2597,7 +2597,7 @@
           "type": "string"
         },
         "instrument": {
-          "description": "Binary instrument column. When supplied, switches to the AIR / Wald LATE estimator: under random Z, monotonicity, and exclusion, reports two LATEs among Z-compliers \u2014 \u03c4_Y for the effect of the treatment on the outcome, and \u03c4_S for the effect on the post-treatment stratum variable. method= is ignored on this path.",
+          "description": "Binary instrument column. When supplied, switches to the AIR / Wald LATE estimator: under random Z, monotonicity, and exclusion, reports two LATEs among Z-compliers -- tau_Y for the effect of the treatment on the outcome, and tau_S for the effect on the post-treatment stratum variable. method= is ignored on this path.",
           "type": "string"
         },
         "method": {
@@ -2689,7 +2689,7 @@
     }
   },
   {
-    "description": "Bartik / shift-share IV estimator (Ad\u00e3o-Koles\u00e1r-Morales 2019; Borusyak-Hull-Jaravel 2022). Uses pre-period industry / group shares \u00d7 exogenous shocks as an instrument for local outcome exposure. Validation: validated.",
+    "description": "Bartik / shift-share IV estimator (Adao-Kolesar-Morales 2019; Borusyak-Hull-Jaravel 2022). Uses pre-period industry / group shares x exogenous shocks as an instrument for local outcome exposure. Validation: validated.",
     "name": "bartik",
     "parameters": {
       "properties": {
@@ -2736,7 +2736,7 @@
     }
   },
   {
-    "description": "Bayesian sharp Regression Discontinuity \u2014 full posterior over the RD jump via local polynomial with prior regularisation on bandwidth and bias-correction slopes. Reports HDI, rhat, ESS, divergences. Validation: validated.",
+    "description": "Bayesian sharp Regression Discontinuity -- full posterior over the RD jump via local polynomial with prior regularisation on bandwidth and bias-correction slopes. Reports HDI, rhat, ESS, divergences. Validation: validated.",
     "name": "bayes_rd",
     "parameters": {
       "properties": {
@@ -3857,7 +3857,7 @@
     }
   },
   {
-    "description": "Drop-one IVW sensitivity \u2014 per-SNP table of estimates when each SNP is removed in turn. Validation: validated.",
+    "description": "Drop-one IVW sensitivity -- per-SNP table of estimates when each SNP is removed in turn. Validation: validated.",
     "name": "mr_leave_one_out",
     "parameters": {
       "properties": {
@@ -3895,7 +3895,7 @@
     }
   },
   {
-    "description": "Steiger directionality test \u2014 verifies that the SNPs explain more variance in the exposure than the outcome, supporting the assumed causal direction. Validation: validated.",
+    "description": "Steiger directionality test -- verifies that the SNPs explain more variance in the exposure than the outcome, supporting the assumed causal direction. Validation: validated.",
     "name": "mr_steiger",
     "parameters": {
       "properties": {
@@ -4143,7 +4143,7 @@
     }
   },
   {
-    "description": "Build a dynamic or static treatment regime from a string DSL, list, callable, or scalar. Supports 'if <cond> then <a> else <b>', 'always_treat', 'never_treat', and arbitrary safe expressions. Parsed via a whitelisted AST walker \u2014 no dynamic code execution. Validation: validated.",
+    "description": "Build a dynamic or static treatment regime from a string DSL, list, callable, or scalar. Supports 'if <cond> then <a> else <b>', 'always_treat', 'never_treat', and arbitrary safe expressions. Parsed via a whitelisted AST walker -- no dynamic code execution. Validation: validated.",
     "name": "regime",
     "parameters": {
       "properties": {
@@ -4337,7 +4337,7 @@
     }
   },
   {
-    "description": "Weighted or simple mode-based MR estimator (Hartwig 2017). Consistent under the ZEMPA (zero-mode pleiotropy) assumption \u2014 more permissive than the median's 50% rule. Validation: validated.",
+    "description": "Weighted or simple mode-based MR estimator (Hartwig 2017). Consistent under the ZEMPA (zero-mode pleiotropy) assumption -- more permissive than the median's 50% rule. Validation: validated.",
     "name": "mr_mode",
     "parameters": {
       "properties": {
@@ -4416,7 +4416,7 @@
     }
   },
   {
-    "description": "Sensitivity, specificity, PPV, NPV, LR+ / LR- with Wilson score CIs.  Accepts either raw binary labels or pre-computed confusion counts. Validation: validated.",
+    "description": "Sensitivity, specificity, PPV, NPV, LR+ / LR- with Wilson score CIs. Accepts either raw binary labels or pre-computed confusion counts. Validation: validated.",
     "name": "sensitivity_specificity",
     "parameters": {
       "properties": {
@@ -4517,7 +4517,7 @@
     }
   },
   {
-    "description": "Write a pre-analysis plan (CausalQuestion) to YAML / JSON for OSF, AEA RCT Registry, or a repo-local PAP.  Includes a metadata block with timestamp and statspai version. Validation: validated.",
+    "description": "Write a pre-analysis plan (CausalQuestion) to YAML / JSON for OSF, AEA RCT Registry, or a repo-local PAP. Includes a metadata block with timestamp and statspai version. Validation: validated.",
     "name": "preregister",
     "parameters": {
       "properties": {
@@ -4778,7 +4778,7 @@
     }
   },
   {
-    "description": "DerSimonian-Laird tau\u00b2 / Q / I\u00b2 heterogeneity statistics for multi-study evidence synthesis. Validation: validated.",
+    "description": "DerSimonian-Laird tau2 / Q / I2 heterogeneity statistics for multi-study evidence synthesis. Validation: validated.",
     "name": "heterogeneity_of_effect",
     "parameters": {
       "properties": {
@@ -5002,7 +5002,7 @@
     }
   },
   {
-    "description": "Overlap-weighted 2\u00d72 DiD. Weights observations by e(X)(1-e(X)), where e(X) is the estimated propensity score, placing highest weight on units with the most overlap between treated and control covariate distributions. Useful when overlap is poor at the tails. Validation: validated.",
+    "description": "Overlap-weighted 2x2 DiD. Weights observations by e(X)(1-e(X)), where e(X) is the estimated propensity score, placing highest weight on units with the most overlap between treated and control covariate distributions. Useful when overlap is poor at the tails. Validation: validated.",
     "name": "overlap_weighted_did",
     "parameters": {
       "properties": {
@@ -5093,7 +5093,7 @@
     }
   },
   {
-    "description": "Split-conformal prediction bands for continuous-treatment dose-response curves (Schr\u00f6der, Frauen, Schweisthal, He\u00df, Melnychuk, Feuerriegel 2024, arXiv:2407.03094). Validation: validated.",
+    "description": "Split-conformal prediction bands for continuous-treatment dose-response curves (Schroder, Frauen, Schweisthal, He, Melnychuk, Feuerriegel 2024, arXiv:2407.03094). Validation: validated.",
     "name": "conformal_continuous",
     "parameters": {
       "properties": {
@@ -5417,7 +5417,7 @@
     }
   },
   {
-    "description": "Bayesian Difference-in-Differences with staggered adoption \u2014 hierarchical ATT(g,t) posterior with optional cohort / unit random effects. Full MCMC with PyMC; reports R-hat, ESS, divergences, and 94% HDI. Validation: validated.",
+    "description": "Bayesian Difference-in-Differences with staggered adoption -- hierarchical ATT(g,t) posterior with optional cohort / unit random effects. Full MCMC with PyMC; reports R-hat, ESS, divergences, and 94% HDI. Validation: validated.",
     "name": "bayes_did",
     "parameters": {
       "properties": {
@@ -5499,7 +5499,7 @@
           "type": "integer"
         },
         "instrument": {
-          "description": "Instrument(s) \u2014 str or list",
+          "description": "Instrument(s) -- str or list",
           "type": "string"
         },
         "treatment": {
@@ -5890,7 +5890,7 @@
     }
   },
   {
-    "description": "Hierarchical Bayesian Causal Forest for longitudinal data (BCFLong) \u2014 allows mu_t(X), tau_t(X) to evolve across time with unit-level random intercepts. Validation: validated.",
+    "description": "Hierarchical Bayesian Causal Forest for longitudinal data (BCFLong) -- allows mu_t(X), tau_t(X) to evolve across time with unit-level random intercepts. Validation: validated.",
     "name": "bcf_longitudinal",
     "parameters": {
       "properties": {
@@ -6186,7 +6186,7 @@
     }
   },
   {
-    "description": "Hardt-Price-Srebro equalized-odds gap \u2014 max of TPR and FPR group differences. Validation: validated.",
+    "description": "Hardt-Price-Srebro equalized-odds gap -- max of TPR and FPR group differences. Validation: validated.",
     "name": "equalized_odds",
     "parameters": {
       "properties": {
@@ -6260,7 +6260,7 @@
     }
   },
   {
-    "description": "Proximal surrogate-index estimator: long-term ATE when an unobserved U confounds S\u2192Y, using a proxy W and 2SLS-style bridge-function identification (Imbens-Kallus-Mao-Wang 2025, JRSS-B). Validation: validated.",
+    "description": "Proximal surrogate-index estimator: long-term ATE when an unobserved U confounds S->Y, using a proxy W and 2SLS-style bridge-function identification (Imbens-Kallus-Mao-Wang 2025, JRSS-B). Validation: validated.",
     "name": "proximal_surrogate_index",
     "parameters": {
       "properties": {
@@ -6383,7 +6383,7 @@
     }
   },
   {
-    "description": "Model-averaging DML (PLR) per Ahrens et al. (2025, JAE). Fits DML-PLR under multiple candidate nuisance learners and reports a risk-weighted (or equal/single-best) average of their \u03b8 estimates with a covariance-adjusted SE. Validation: validated.",
+    "description": "Model-averaging DML (PLR) per Ahrens et al. (2025, JAE). Fits DML-PLR under multiple candidate nuisance learners and reports a risk-weighted (or equal/single-best) average of their theta estimates with a covariance-adjusted SE. Validation: validated.",
     "name": "dml_model_averaging",
     "parameters": {
       "properties": {
@@ -6584,7 +6584,7 @@
     }
   },
   {
-    "description": "Modern IV reporting bundle (R `ivDiag` analogue). Combines 2SLS point estimate, analytic + pairs/wild bootstrap SEs, Olea-Pflueger effective F, Lee-McCrary-Moreira-Porter (2022) tF-corrected critical value, Anderson-Rubin / CLR / K weak-IV-robust confidence sets, Kleibergen-Paap rk LM, Conley-Hansen-Rossi (2012) plausibly-exogenous LTZ sensitivity, and a Blandhol-Bonney-Mogstad-Torgovitsky (2022/2025) / S\u0142oczy\u0144ski (2024) `TSLS-as-LATE` caveat into a single IVDiagResult. Validation: validated.",
+    "description": "Modern IV reporting bundle (R `ivDiag` analogue). Combines 2SLS point estimate, analytic + pairs/wild bootstrap SEs, Olea-Pflueger effective F, Lee-McCrary-Moreira-Porter (2022) tF-corrected critical value, Anderson-Rubin / CLR / K weak-IV-robust confidence sets, Kleibergen-Paap rk LM, Conley-Hansen-Rossi (2012) plausibly-exogenous LTZ sensitivity, and a Blandhol-Bonney-Mogstad-Torgovitsky (2022/2025) / Soczynski (2024) `TSLS-as-LATE` caveat into a single IVDiagResult. Validation: validated.",
     "name": "iv_diag",
     "parameters": {
       "properties": {
@@ -6643,7 +6643,7 @@
           "type": "array"
         },
         "ltz_gamma_sd": {
-          "description": "Standard deviation of CHR (2012) LTZ Gaussian prior on \u03b3",
+          "description": "Standard deviation of CHR (2012) LTZ Gaussian prior on gamma",
           "type": "number"
         },
         "n_boot": {
@@ -6769,7 +6769,7 @@
     }
   },
   {
-    "description": "TMLE with Highly Adaptive Lasso (HAL) nuisance learners (Qian & van der Laan 2025). The stable 'delta' variant plugs HAL into standard TMLE. The reserved 'projection' variant raises NotImplementedError until the Riesz-projection targeting step has reference parity. Validation: validated. Known limitations: variant='projection' raises NotImplementedError \u2014 the Riesz-projection targeting step from Li-Qiu-Wang-vdL (2025) \u00a73.2 is not yet ported (the v1.11.x code path was a no-op on the point estimate; see CHANGELOG). The implementation roadmap and parity-test gates are in docs/rfc/hal_tmle_projection.md.",
+    "description": "TMLE with Highly Adaptive Lasso (HAL) nuisance learners (Qian & van der Laan 2025). The stable 'delta' variant plugs HAL into standard TMLE. The reserved 'projection' variant raises NotImplementedError until the Riesz-projection targeting step has reference parity. Validation: validated. Known limitations: variant='projection' raises NotImplementedError -- the Riesz-projection targeting step from Li-Qiu-Wang-vdL (2025) Section 3.2 is not yet ported (the v1.11.x code path was a no-op on the point estimate; see CHANGELOG). The implementation roadmap and parity-test gates are in docs/rfc/hal_tmle_projection.md.",
     "name": "hal_tmle",
     "parameters": {
       "properties": {
@@ -6804,7 +6804,7 @@
           "type": "string"
         },
         "lambda_outcome": {
-          "description": "Outcome L1 penalty; None \u2192 5-fold CV",
+          "description": "Outcome L1 penalty; None -> 5-fold CV",
           "type": "number"
         },
         "max_anchors_per_col": {
@@ -6906,7 +6906,7 @@
     }
   },
   {
-    "description": "Unified dispatcher for six causal-inference bridging theorems (2025-2026): DiD\u2261SC (Shi-Athey), EWM\u2261CATE (Ferman), IPW\u2261DR\u2261CB (Zhao-Percival), Bunching\u2261RDD (Lu-Wang-Xie), DR-via-Calibration (Zhang), Long-term-surrogate\u2261PCI (Imbens-Kallus-Mao-Wang). Reports both path estimates + doubly-robust recommendation. Validation: validated.",
+    "description": "Unified dispatcher for six causal-inference bridging theorems (2025-2026): DiD==SC (Shi-Athey), EWM==CATE (Ferman), IPW==DR==CB (Zhao-Percival), Bunching==RDD (Lu-Wang-Xie), DR-via-Calibration (Zhang), Long-term-surrogate==PCI (Imbens-Kallus-Mao-Wang). Reports both path estimates + doubly-robust recommendation. Validation: validated.",
     "name": "bridge",
     "parameters": {
       "properties": {
@@ -7090,7 +7090,7 @@
           "type": "string"
         },
         "policy": {
-          "description": "Function D \u2192 D_shifted",
+          "description": "Function D -> D_shifted",
           "type": "string"
         },
         "proxy_w": {
@@ -7177,7 +7177,7 @@
           "type": "string"
         },
         "quantiles": {
-          "description": "Quantiles \u03c4 at which to evaluate QTE (default 0.1..0.9 step 0.1)",
+          "description": "Quantiles tau at which to evaluate QTE (default 0.1..0.9 step 0.1)",
           "items": {
             "type": "string"
           },
@@ -7320,7 +7320,7 @@
     }
   },
   {
-    "description": "Kwak-Pleasants (2025) evidence-without-injustice counterfactual fairness test.  Freezes admissible-evidence features at their factual values and tests whether predictions still change under do(A=a').",
+    "description": "Kwak-Pleasants (2025) evidence-without-injustice counterfactual fairness test. Freezes admissible-evidence features at their factual values and tests whether predictions still change under do(A=a').",
     "name": "evidence_without_injustice",
     "parameters": {
       "properties": {
@@ -7381,7 +7381,7 @@
     }
   },
   {
-    "description": "Harvest every valid 2\u00d72 DID comparison from a staggered panel and aggregate them via precision-weighted / simple / cohort-weighted averages. Agnostic to cohort structure; useful for robustness comparisons against CS / SA / BJS. Validation: validated.",
+    "description": "Harvest every valid 2x2 DID comparison from a staggered panel and aggregate them via precision-weighted / simple / cohort-weighted averages. Agnostic to cohort structure; useful for robustness comparisons against CS / SA / BJS. Validation: validated.",
     "name": "harvest_did",
     "parameters": {
       "properties": {
@@ -7446,7 +7446,7 @@
     }
   },
   {
-    "description": "Bayesian Causal Forest for ordered / dose-level treatment (Zorzetto et al. 2026).  Estimates cumulative dose-response curves via chained BCF between consecutive levels. Validation: validated.",
+    "description": "Bayesian Causal Forest for ordered / dose-level treatment (Zorzetto et al. 2026). Estimates cumulative dose-response curves via chained BCF between consecutive levels. Validation: validated.",
     "name": "bcf_ordinal",
     "parameters": {
       "properties": {
@@ -7514,7 +7514,7 @@
     }
   },
   {
-    "description": "BCF on PCA-factor scores of a high-dimensional exposure vector (arXiv:2601.16595, 2026).  Compresses exposures via SVD or user-supplied loadings, then fits one BCF per factor. Validation: validated.",
+    "description": "BCF on PCA-factor scores of a high-dimensional exposure vector (arXiv:2601.16595, 2026). Compresses exposures via SVD or user-supplied loadings, then fits one BCF per factor. Validation: validated.",
     "name": "bcf_factor_exposure",
     "parameters": {
       "properties": {
@@ -7825,7 +7825,7 @@
     }
   },
   {
-    "description": "[experimental] [experimental] Veitch-Wang-Blei (2020) text-as-treatment ATE estimation. Embeds a text column into n_components features (default hash embedder, deterministic) and uses them as confounder adjustment in OLS with HC1 SEs. Validation: experimental. Known limitations: embedder='sbert' requires the optional sentence-transformers extra; the bundled 'hash' embedder is a deterministic fallback, not a published parity reference; Veitch et al. (2020) full BERT/topic-model recipe is not yet implemented \u2014 see module docstring.",
+    "description": "[experimental] [experimental] Veitch-Wang-Blei (2020) text-as-treatment ATE estimation. Embeds a text column into n_components features (default hash embedder, deterministic) and uses them as confounder adjustment in OLS with HC1 SEs. Validation: experimental. Known limitations: embedder='sbert' requires the optional sentence-transformers extra; the bundled 'hash' embedder is a deterministic fallback, not a published parity reference; Veitch et al. (2020) full BERT/topic-model recipe is not yet implemented -- see module docstring.",
     "name": "text_treatment_effect",
     "parameters": {
       "properties": {
@@ -8105,7 +8105,7 @@
     }
   },
   {
-    "description": "Closed-form Kalman filter over a stream of causal-effect estimates + SEs.  Produces a running posterior over the time-varying (or static) causal effect. Validation: validated.",
+    "description": "Closed-form Kalman filter over a stream of causal-effect estimates + SEs. Produces a running posterior over the time-varying (or static) causal effect. Validation: validated.",
     "name": "causal_kalman",
     "parameters": {
       "properties": {
@@ -8152,7 +8152,7 @@
     }
   },
   {
-    "description": "End-to-end Assimilative Causal Inference pipeline (Nature Communications 2026): for each data batch, apply `estimator` to get (\u03b8\u0302, SE), then fuse via Kalman filtering or particle filter. Validation: validated.",
+    "description": "End-to-end Assimilative Causal Inference pipeline (Nature Communications 2026): for each data batch, apply `estimator` to get (theta, SE), then fuse via Kalman filtering or particle filter. Validation: validated.",
     "name": "assimilative_causal",
     "parameters": {
       "properties": {
@@ -8205,7 +8205,7 @@
     }
   },
   {
-    "description": "Multi-period panel shift-share IV (Park-Xu 2026 \u00a74.2): pooled 2SLS with unit/time/two-way FEs over a time-varying Bartik instrument.  Reports per-period event-study, aggregate Rotemberg top-K, and share-balance F-tests. Validation: validated.",
+    "description": "Multi-period panel shift-share IV (Park-Xu 2026 Section 4.2): pooled 2SLS with unit/time/two-way FEs over a time-varying Bartik instrument. Reports per-period event-study, aggregate Rotemberg top-K, and share-balance F-tests. Validation: validated.",
     "name": "shift_share_political_panel",
     "parameters": {
       "properties": {
@@ -8284,7 +8284,7 @@
     }
   },
   {
-    "description": "Bootstrap SIR particle filter for non-Gaussian assimilative causal inference.  Supports arbitrary prior sampler, transition sampler, and observation log-pdf, with systematic resampling triggered by an ESS threshold. Validation: validated.",
+    "description": "Bootstrap SIR particle filter for non-Gaussian assimilative causal inference. Supports arbitrary prior sampler, transition sampler, and observation log-pdf, with systematic resampling triggered by an ESS threshold. Validation: validated.",
     "name": "particle_filter",
     "parameters": {
       "properties": {
@@ -8341,7 +8341,7 @@
     }
   },
   {
-    "description": "Construct an OpenAI-compatible LLM client for use with sp.causal_llm.causal_mas.  Requires the optional openai>=1.0 extra.  Supports custom base_url for Azure / vLLM / Ollama.",
+    "description": "Construct an OpenAI-compatible LLM client for use with sp.causal_llm.causal_mas. Requires the optional openai>=1.0 extra. Supports custom base_url for Azure / vLLM / Ollama.",
     "name": "openai_client",
     "parameters": {
       "properties": {
@@ -8383,7 +8383,7 @@
     }
   },
   {
-    "description": "Construct an Anthropic-compatible LLM client for use with sp.causal_llm.causal_mas.  Requires the optional anthropic>=0.30 extra.  Defaults to Claude Opus 4.7.",
+    "description": "Construct an Anthropic-compatible LLM client for use with sp.causal_llm.causal_mas. Requires the optional anthropic>=0.30 extra. Defaults to Claude Opus 4.7.",
     "name": "anthropic_client",
     "parameters": {
       "properties": {
@@ -8437,13 +8437,13 @@
     }
   },
   {
-    "description": "Unified Mendelian Randomization dispatcher. method= selects the estimator: 'ivw' / 'egger' / 'median' / 'penalized_median' / 'mode' / 'all' (runs IVW+Egger+Median together) / 'mvmr' / 'mediation' / 'bma' (multi-exposure) / 'presso' / 'radial' / 'leave_one_out' / 'steiger' / 'heterogeneity' / 'pleiotropy_egger' / 'f_statistic' (diagnostics).  Kwargs are passed through to the target function unchanged; see sp.mendelian_family guide. Validation: validated.",
+    "description": "Unified Mendelian Randomization dispatcher. method= selects the estimator: 'ivw' / 'egger' / 'median' / 'penalized_median' / 'mode' / 'all' (runs IVW+Egger+Median together) / 'mvmr' / 'mediation' / 'bma' (multi-exposure) / 'presso' / 'radial' / 'leave_one_out' / 'steiger' / 'heterogeneity' / 'pleiotropy_egger' / 'f_statistic' (diagnostics). Kwargs are passed through to the target function unchanged; see sp.mendelian_family guide. Validation: validated.",
     "name": "mr",
     "parameters": {
       "properties": {
         "method": {
           "default": "ivw",
-          "description": "MR estimator / diagnostic \u2014 call sp.mr_available_methods() for the full list.",
+          "description": "MR estimator / diagnostic -- call sp.mr_available_methods() for the full list.",
           "type": "string"
         }
       },
@@ -8452,13 +8452,13 @@
     }
   },
   {
-    "description": "Unified conformal causal inference dispatcher. kind= selects the estimator: 'cate' / 'counterfactual' / 'ite' (Lei-Cand\u00e8s 2021 base) / 'weighted' (TBCR 2019 primitive) / 'density' / 'multidp' / 'debiased' / 'fair' (2025-2026 frontier) / 'continuous' (dose-response) / 'interference' (cluster-exchangeable).  Kwargs pass through to the target function; see sp.conformal_family guide. Validation: validated.",
+    "description": "Unified conformal causal inference dispatcher. kind= selects the estimator: 'cate' / 'counterfactual' / 'ite' (Lei-Candes 2021 base) / 'weighted' (TBCR 2019 primitive) / 'density' / 'multidp' / 'debiased' / 'fair' (2025-2026 frontier) / 'continuous' (dose-response) / 'interference' (cluster-exchangeable). Kwargs pass through to the target function; see sp.conformal_family guide. Validation: validated.",
     "name": "conformal",
     "parameters": {
       "properties": {
         "kind": {
           "default": "cate",
-          "description": "Conformal estimator \u2014 call sp.conformal_available_kinds() for the full list.",
+          "description": "Conformal estimator -- call sp.conformal_available_kinds() for the full list.",
           "type": "string"
         }
       },
@@ -8467,13 +8467,13 @@
     }
   },
   {
-    "description": "Unified interference / spillover dispatcher. design= selects the estimator: 'partial' (Hudgens-Halloran cluster) / 'network_exposure' (Aronow-Samii HT) / 'peer_effects' (Manski / Bramoull\u00e9 linear-in-means) / 'network_hte' (Wu & Yuan 2025 orthogonal, arXiv:2509.18484) / 'inward_outward' (directed network; Fang, Airoldi & Forastiere 2025, arXiv:2506.06615) / 'cluster_matched_pair' (Bai 2022) / 'cluster_cross' (Ding et al. 2025) / 'cluster_staggered' (Zhou et al. 2025) / 'dnc_gnn' (Zhao et al. 2026).  Kwargs pass through to the target function; see sp.interference_family guide. Validation: validated.",
+    "description": "Unified interference / spillover dispatcher. design= selects the estimator: 'partial' (Hudgens-Halloran cluster) / 'network_exposure' (Aronow-Samii HT) / 'peer_effects' (Manski / Bramoulle linear-in-means) / 'network_hte' (Wu & Yuan 2025 orthogonal, arXiv:2509.18484) / 'inward_outward' (directed network; Fang, Airoldi & Forastiere 2025, arXiv:2506.06615) / 'cluster_matched_pair' (Bai 2022) / 'cluster_cross' (Ding et al. 2025) / 'cluster_staggered' (Zhou et al. 2025) / 'dnc_gnn' (Zhao et al. 2026). Kwargs pass through to the target function; see sp.interference_family guide. Validation: validated.",
     "name": "interference",
     "parameters": {
       "properties": {
         "design": {
           "default": "partial",
-          "description": "Interference design \u2014 call sp.interference_available_designs() for the full list.",
+          "description": "Interference design -- call sp.interference_available_designs() for the full list.",
           "type": "string"
         }
       },
@@ -8482,7 +8482,7 @@
     }
   },
   {
-    "description": "Quantile Difference-in-Differences (Athey & Imbens 2006 CIC). Estimates QTE at multiple quantiles via changes-in-changes on a 2\u00d72 design with bootstrap SE. Validation: validated.",
+    "description": "Quantile Difference-in-Differences (Athey & Imbens 2006 CIC). Estimates QTE at multiple quantiles via changes-in-changes on a 2x2 design with bootstrap SE. Validation: validated.",
     "name": "qdid",
     "parameters": {
       "properties": {
@@ -8801,7 +8801,7 @@
     }
   },
   {
-    "description": "DiD with continuous treatment intensity. Four modes: (i) 'twfe' TWFE with dose\u00d7post interaction; (ii) 'att_gt' dose-quantile group-time ATT versus the untreated (dose=0) arm with bootstrap SE (heuristic); (iii) 'dose_response' local-linear regression of \u0394Y=Y_post\u2212Y_pre on baseline dose; (iv) 'cgs' Callaway-Goodman-Bacon-Sant'Anna (2024) ATT(d|g,t) MVP \u2014 2-period design, OR only, bootstrap SE, [\u5f85\u6838\u9a8c] markers on paper formulas. Full CGS parity (cohort aggregation, DR/IPW, analytical IF variance) is on the roadmap \u2014 see docs/rfc/continuous_did_cgs.md. Validation: validated. Known limitations: method='cgs' is an MVP \u2014 2-period design, OR only, bootstrap SE; full CGS parity (cohort aggregation, DR/IPW, analytical IF variance) is on the roadmap (see docs/rfc/continuous_did_cgs.md). Other modes (twfe / att_gt / dose_response) are stable..",
+    "description": "DiD with continuous treatment intensity. Four modes: (i) 'twfe' TWFE with dosexpost interaction; (ii) 'att_gt' dose-quantile group-time ATT versus the untreated (dose=0) arm with bootstrap SE (heuristic); (iii) 'dose_response' local-linear regression of DeltaY=Y_post-Y_pre on baseline dose; (iv) 'cgs' Callaway-Goodman-Bacon-Sant'Anna (2024) ATT(d|g,t) MVP -- 2-period design, OR only, bootstrap SE, [pending verification] markers on paper formulas. Full CGS parity (cohort aggregation, DR/IPW, analytical IF variance) is on the roadmap -- see docs/rfc/continuous_did_cgs.md. Validation: validated. Known limitations: method='cgs' is an MVP -- 2-period design, OR only, bootstrap SE; full CGS parity (cohort aggregation, DR/IPW, analytical IF variance) is on the roadmap (see docs/rfc/continuous_did_cgs.md). Other modes (twfe / att_gt / dose_response) are stable.",
     "name": "continuous_did",
     "parameters": {
       "properties": {
@@ -8890,7 +8890,7 @@
     }
   },
   {
-    "description": "de Chaisemartin & D'Haultf\u0153uille (2020) DID_M estimator. Weighted average of consecutive-period DID cells where treatment 'switchers' are compared to 'stayers'. Handles treatments that switch on AND off (unlike Callaway-Sant'Anna which assumes staggered adoption). Supports placebo lags, dynamic horizons, cluster bootstrap SE, joint placebo test and average-cumulative-effect summary from dCDH (2024). The heteroskedastic-weights variant and full dCDH (2024) intertemporal event-study (did_multiplegt_dyn Stata) are on the roadmap \u2014 see docs/rfc/multiplegt_dyn.md. Validation: validated.",
+    "description": "de Chaisemartin & D'Haultfuille (2020) DID_M estimator. Weighted average of consecutive-period DID cells where treatment 'switchers' are compared to 'stayers'. Handles treatments that switch on AND off (unlike Callaway-Sant'Anna which assumes staggered adoption). Supports placebo lags, dynamic horizons, cluster bootstrap SE, joint placebo test and average-cumulative-effect summary from dCDH (2024). The heteroskedastic-weights variant and full dCDH (2024) intertemporal event-study (did_multiplegt_dyn Stata) are on the roadmap -- see docs/rfc/multiplegt_dyn.md. Validation: validated.",
     "name": "did_multiplegt",
     "parameters": {
       "properties": {
@@ -8961,7 +8961,7 @@
     }
   },
   {
-    "description": "Canonical 2\u00d72 DID: two groups (treated / control) \u00d7 two periods (pre / post). Point estimate via either group-means differencing or OLS on the treat \u00d7 post interaction; optional covariates, robust / cluster SE, and sample weights. Validation: validated.",
+    "description": "Canonical 2x2 DID: two groups (treated / control) x two periods (pre / post). Point estimate via either group-means differencing or OLS on the treat x post interaction; optional covariates, robust / cluster SE, and sample weights. Validation: validated.",
     "name": "did_2x2",
     "parameters": {
       "properties": {
@@ -9017,7 +9017,7 @@
     }
   },
   {
-    "description": "Doubly-robust DiD (Sant'Anna & Zhao 2020). Combines outcome regression with IPW; consistent if either model is correct. Primary estimator for 2\u00d72 DiD with covariates. Validation: certified parity evidence.",
+    "description": "Doubly-robust DiD (Sant'Anna & Zhao 2020). Combines outcome regression with IPW; consistent if either model is correct. Primary estimator for 2x2 DiD with covariates. Validation: certified parity evidence.",
     "name": "drdid",
     "parameters": {
       "properties": {
@@ -9054,7 +9054,7 @@
           "type": "string"
         },
         "n_boot": {
-          "description": "Bootstrap replications (None \u2192 analytical SE)",
+          "description": "Bootstrap replications (None -> analytical SE)",
           "type": "integer"
         },
         "seed": {
@@ -9148,7 +9148,7 @@
     }
   },
   {
-    "description": "Borusyak-Jaravel-Spiess (2024) imputation DiD. Fits a TWFE model on untreated observations only, imputes counterfactual Y(0) for treated obs, and averages the imputation residuals. Efficient under no-anticipation + parallel trends; analytical SE via bjs_inference. Validation: certified parity evidence.",
+    "description": "Borusyak-Jaravel-Spiess (2024) imputation DiD. Fits a TWFE model on untreated observations only, imputes counterfactual Y(0) for treated obs, and averages the imputation residuals. Efficient under no-anticipation + parallel trends; analytical SE via bjs_inference. Validation: certified evidence with scoped limitations. Known limitations: R parity is for the documented untreated-only TWFE and simple ATT convention; Stata did_imputation uses a different autosample/aggregation convention on mpdta.",
     "name": "did_imputation",
     "parameters": {
       "properties": {
@@ -9207,7 +9207,7 @@
     }
   },
   {
-    "description": "Wooldridge (2021) extended TWFE (ETWFE). Saturated TWFE regression with cohort \u00d7 post interactions; recovers cohort-specific ATTs. Numerically equivalent to CS / SA / BJS under the saturated specification. Validation: certified parity evidence.",
+    "description": "Wooldridge (2021) extended TWFE (ETWFE). Saturated TWFE regression with cohort x post interactions; recovers cohort-specific ATTs. Numerically equivalent to CS / SA / BJS under the saturated specification. Validation: certified parity evidence.",
     "name": "wooldridge_did",
     "parameters": {
       "properties": {
@@ -9259,7 +9259,7 @@
     }
   },
   {
-    "description": "Extended Two-Way Fixed Effects (Wooldridge 2021). Explicit API mirroring the R etwfe package. Alias for sp.wooldridge_did; same numerical output. Validation: certified parity evidence. Known limitations: cgroup='nevertreated' combined with panel=False (repeated cross-sections) is not yet supported; pass either panel=True with cgroup='nevertreated' or panel=False with cgroup='notyet'.",
+    "description": "Extended Two-Way Fixed Effects (Wooldridge 2021). Explicit API mirroring the R etwfe package. Alias for sp.wooldridge_did; same numerical output. Known limitations: cgroup='nevertreated' combined with panel=False (repeated cross-sections) is not yet supported; pass either panel=True with cgroup='nevertreated' or panel=False with cgroup='notyet'; The top-level sp.etwfe estimate preserves StatsPAI's historical cohort-share weighting convention. For R etwfe::emfx(type='simple') point-estimate parity, use sp.etwfe(..., panel=False) followed by sp.etwfe_emfx(..., weighting='treated').",
     "name": "etwfe",
     "parameters": {
       "properties": {
@@ -9332,7 +9332,7 @@
     }
   },
   {
-    "description": "Goodman-Bacon (2021) decomposition of the TWFE DiD coefficient into a weighted sum of underlying 2\u00d72 DID comparisons: treated-vs-never, treated-vs-notyet, earlier-vs-later. Diagnoses when TWFE is contaminated by already-treated units acting as controls. Validation: certified parity evidence.",
+    "description": "Goodman-Bacon (2021) decomposition of the TWFE DiD coefficient into a weighted sum of underlying 2x2 DID comparisons: treated-vs-never, treated-vs-notyet, earlier-vs-later. Diagnoses when TWFE is contaminated by already-treated units acting as controls. Validation: certified parity evidence.",
     "name": "bacon_decomposition",
     "parameters": {
       "properties": {
@@ -9553,7 +9553,7 @@
     }
   },
   {
-    "description": "Design-robust event study with explicit negative-weight diagnostics per cohort \u00d7 relative-time cell. Reports which event-study coefficients receive negative weights in TWFE and flags the affected horizons. Validation: validated.",
+    "description": "Design-robust event study with explicit negative-weight diagnostics per cohort x relative-time cell. Reports which event-study coefficients receive negative weights in TWFE and flags the affected horizons. Validation: validated.",
     "name": "design_robust_event_study",
     "parameters": {
       "properties": {
@@ -9636,7 +9636,7 @@
         },
         "pi_misclass": {
           "default": 0.0,
-          "description": "P(observed treat \u2260 true treat) \u2014 between 0 and 1",
+          "description": "P(observed treat != true treat) -- between 0 and 1",
           "type": "number"
         },
         "time": {
@@ -9663,7 +9663,7 @@
     }
   },
   {
-    "description": "[experimental] dCDH (2024) intertemporal event-study DiD (MVP \u2014 see docs/rfc/multiplegt_dyn.md). At each horizon l \u2208 {-placebo, ..., dynamic}, compares Y_{F+l} \u2212 Y_{F-1} between units first switching at F and a not-yet-treated or never-treated control set held stable across the horizon. **MVP caveats**: analytical influence-function variance [\u5f85\u6838\u9a8c] is not yet implemented (SE via cluster bootstrap); switch-off events are ignored; heteroskedastic-weights variant pending. Validation: experimental. Known limitations: switch-on only \u2014 switch-off events are silently dropped; SE is cluster bootstrap; the paper's analytical influence-function variance is not yet implemented; heteroskedastic-weights variant (dCDH 2023 EJ survey) is not implemented.",
+    "description": "[experimental] dCDH (2024) intertemporal event-study DiD (MVP -- see docs/rfc/multiplegt_dyn.md). At each horizon l in {-placebo, ..., dynamic}, compares Y_{F+l} - Y_{F-1} between units first switching at F and a not-yet-treated or never-treated control set held stable across the horizon. **MVP caveats**: analytical influence-function variance [pending verification] is not yet implemented (SE via cluster bootstrap); switch-off events are ignored; heteroskedastic-weights variant pending. Validation: experimental. Known limitations: switch-on only -- switch-off events are silently dropped; SE is cluster bootstrap; the paper's analytical influence-function variance is not yet implemented; heteroskedastic-weights variant (dCDH 2023 EJ survey) is not implemented.",
     "name": "did_multiplegt_dyn",
     "parameters": {
       "properties": {
@@ -9736,7 +9736,7 @@
     }
   },
   {
-    "description": "DiD with time-varying covariates frozen at baseline (Caetano, Callaway, Payne & Rodrigues 2022 [\u5f85\u6838\u9a8c]). Avoids the bad-controls bias that arises when treatment affects the covariates: freezes X at period g + baseline_offset (default g-1) per cohort and uses the frozen values as controls in a per-(g, t) outcome-regression DiD. Aggregates via cohort-size weights. Validation: validated.",
+    "description": "DiD with time-varying covariates frozen at baseline (Caetano, Callaway, Payne & Rodrigues 2022 [pending verification]). Avoids the bad-controls bias that arises when treatment affects the covariates: freezes X at period g + baseline_offset (default g-1) per cohort and uses the frozen values as controls in a per-(g, t) outcome-regression DiD. Aggregates via cohort-size weights. Validation: validated.",
     "name": "did_timevarying_covariates",
     "parameters": {
       "properties": {
@@ -9864,7 +9864,7 @@
     }
   },
   {
-    "description": "Local-Projections DiD (Dube-Girardi-Jord\u00e0-Taylor 2023). At each event-time horizon h \u2208 {-P, ..., H}, runs a separate OLS of Y_{t+h} \u2212 Y_{t-1} on the treatment change \u0394d_{t} with time FE and cluster-robust SE, using 'not-yet-treated' or 'never-treated' units as controls. Event-study \u03b2_h paths are returned in ``model_info['event_study']``. Validation: validated.",
+    "description": "Local-Projections DiD (Dube-Girardi-Jorda-Taylor 2023). At each event-time horizon h in {-P, ..., H}, runs a separate OLS of Y_{t+h} - Y_{t-1} on the treatment change Deltad_{t} with time FE and cluster-robust SE, using 'not-yet-treated' or 'never-treated' units as controls. Event-study beta_h paths are returned in ``model_info['event_study']``. Validation: validated.",
     "name": "lp_did",
     "parameters": {
       "properties": {
@@ -9998,7 +9998,7 @@
     }
   },
   {
-    "description": "Production function estimator (Cobb-Douglas) \u2014 unified method= dispatcher. Solves the simultaneity between input choices and unobserved productivity by inverting an input policy as a control function. method= selects: 'op' (Olley-Pakes 1996, investment proxy), 'lp' (Levinsohn-Petrin 2003, intermediate-input proxy), 'acf' (Ackerberg-Caves-Frazer 2015, corrected identification \u2014 DEFAULT), 'wrdg' (Wooldridge 2009, one-step joint GMM). Validation: validated.",
+    "description": "Production function estimator (Cobb-Douglas) -- unified method= dispatcher. Solves the simultaneity between input choices and unobserved productivity by inverting an input policy as a control function. method= selects: 'op' (Olley-Pakes 1996, investment proxy), 'lp' (Levinsohn-Petrin 2003, intermediate-input proxy), 'acf' (Ackerberg-Caves-Frazer 2015, corrected identification -- DEFAULT), 'wrdg' (Wooldridge 2009, one-step joint GMM). Validation: validated.",
     "name": "prod_fn",
     "parameters": {
       "properties": {
@@ -10086,7 +10086,7 @@
     }
   },
   {
-    "description": "Olley-Pakes (1996) production function estimator. Two-stage control function with INVESTMENT as the productivity proxy. Drops zero-investment firms (required for the inversion). Note: \u03b2_l identification can fail if labor responds to current productivity (ACF critique) \u2014 prefer sp.acf for modern work. Validation: validated.",
+    "description": "Olley-Pakes (1996) production function estimator. Two-stage control function with INVESTMENT as the productivity proxy. Drops zero-investment firms (required for the inversion). Note: beta_l identification can fail if labor responds to current productivity (ACF critique) -- prefer sp.acf for modern work. Validation: validated.",
     "name": "olley_pakes",
     "parameters": {
       "properties": {
@@ -10169,7 +10169,7 @@
     }
   },
   {
-    "description": "Levinsohn-Petrin (2003) production function estimator. Uses intermediate inputs (materials/energy) as proxy \u2014 avoids the OP zero-investment selection problem. Same ACF caveat applies to \u03b2_l identification: prefer sp.acf for rigorous identification. Validation: validated.",
+    "description": "Levinsohn-Petrin (2003) production function estimator. Uses intermediate inputs (materials/energy) as proxy -- avoids the OP zero-investment selection problem. Same ACF caveat applies to beta_l identification: prefer sp.acf for rigorous identification. Validation: validated.",
     "name": "levinsohn_petrin",
     "parameters": {
       "properties": {
@@ -10357,7 +10357,7 @@
         },
         "polynomial_degree": {
           "default": 2,
-          "description": "Lower than ACF default \u2014 joint problem is higher-dimensional.",
+          "description": "Lower than ACF default -- joint problem is higher-dimensional.",
           "type": "integer"
         },
         "productivity_degree": {
@@ -10472,7 +10472,7 @@
     }
   },
   {
-    "description": "Alias for sp.olley_pakes. Olley-Pakes (1996) production function estimator. Two-stage control function with INVESTMENT as the productivity proxy. Drops zero-investment firms (required for the inversion). Note: \u03b2_l identification can fail if labor responds to current productivity (ACF critique) \u2014 prefer sp.acf for modern work. Validation: validated.",
+    "description": "Alias for sp.olley_pakes. Olley-Pakes (1996) production function estimator. Two-stage control function with INVESTMENT as the productivity proxy. Drops zero-investment firms (required for the inversion). Note: beta_l identification can fail if labor responds to current productivity (ACF critique) -- prefer sp.acf for modern work. Validation: validated.",
     "name": "opreg",
     "parameters": {
       "properties": {
@@ -10555,7 +10555,7 @@
     }
   },
   {
-    "description": "Alias for sp.levinsohn_petrin. Levinsohn-Petrin (2003) production function estimator. Uses intermediate inputs (materials/energy) as proxy \u2014 avoids the OP zero-investment selection problem. Same ACF caveat applies to \u03b2_l identification: prefer sp.acf for rigorous identification. Validation: validated.",
+    "description": "Alias for sp.levinsohn_petrin. Levinsohn-Petrin (2003) production function estimator. Uses intermediate inputs (materials/energy) as proxy -- avoids the OP zero-investment selection problem. Same ACF caveat applies to beta_l identification: prefer sp.acf for rigorous identification. Validation: validated.",
     "name": "levpet",
     "parameters": {
       "properties": {
@@ -10633,7 +10633,7 @@
     }
   },
   {
-    "description": "De Loecker & Warzynski (2012) firm-time markup estimator. Takes a fitted ProductionResult plus revenue and input-cost columns; returns \u03bc_it = \u03b8_v_it \u00b7 (PQ)/(P_v V) where \u03b8_v is the output elasticity of the flexible input. Cobb-Douglas only for now (translog forthcoming). Validation: validated.",
+    "description": "De Loecker & Warzynski (2012) firm-time markup estimator. Takes a fitted ProductionResult plus revenue and input-cost columns; returns mu_it = theta_v_it * (PQ)/(P_v V) where theta_v is the output elasticity of the flexible input. Cobb-Douglas only for now (translog forthcoming). Validation: validated.",
     "name": "markup",
     "parameters": {
       "properties": {
@@ -10669,7 +10669,7 @@
     }
   },
   {
-    "description": "Augmented inverse-probability weighting (AIPW) \u2014 the canonical doubly-robust ATE estimator.  Cross-fits an outcome regression and a propensity model and combines them via the efficient-influence-function formula, so the estimate is consistent if either nuisance is correctly specified (Robins, Rotnitzky & Zhao 1994). Validation: validated.",
+    "description": "Augmented inverse-probability weighting (AIPW) -- the canonical doubly-robust ATE estimator. Cross-fits an outcome regression and a propensity model and combines them via the efficient-influence-function formula, so the estimate is consistent if either nuisance is correctly specified (Robins, Rotnitzky & Zhao 1994). Validation: validated.",
     "name": "aipw",
     "parameters": {
       "properties": {
@@ -10727,7 +10727,7 @@
     }
   },
   {
-    "description": "Aggregate Callaway-Sant'Anna group-time ATTs into interpretable summaries \u2014 overall ATT, event-study by relative time, group-specific ATT(g), or calendar-time ATT(t).  Inference uses the multiplier bootstrap on the pre-stored influence functions, so SEs are correct under clustering at the unit level. Validation: validated.",
+    "description": "Aggregate Callaway-Sant'Anna group-time ATTs into interpretable summaries -- overall ATT, event-study by relative time, group-specific ATT(g), or calendar-time ATT(t). Inference uses the multiplier bootstrap on the pre-stored influence functions, so SEs are correct under clustering at the unit level. Validation: validated.",
     "name": "aggte",
     "parameters": {
       "properties": {
@@ -10737,7 +10737,7 @@
           "type": "number"
         },
         "balance_e": {
-          "description": "For dynamic: cap event time at \u00b1balance_e for balanced panel",
+          "description": "For dynamic: cap event time at +/-balance_e for balanced panel",
           "type": "integer"
         },
         "boot_type": {
@@ -10805,7 +10805,7 @@
     }
   },
   {
-    "description": "Joint Wald test of pre-treatment ATTs (or event-study leads) against zero \u2014 the canonical sanity check for the parallel-trends assumption in DiD designs.  Failing to reject is necessary but not sufficient evidence for parallel trends; always pair with sp.honest_did / sp.sensitivity_rr for design-robust inference. Validation: validated.",
+    "description": "Joint Wald test of pre-treatment ATTs (or event-study leads) against zero -- the canonical sanity check for the parallel-trends assumption in DiD designs. Failing to reject is necessary but not sufficient evidence for parallel trends; always pair with sp.honest_did / sp.sensitivity_rr for design-robust inference. Validation: validated.",
     "name": "pretrends_test",
     "parameters": {
       "properties": {
@@ -10834,7 +10834,7 @@
     }
   },
   {
-    "description": "Rambachan-Roth (2023) honest-DiD sensitivity analysis: computes the largest violation of parallel trends (parametrised by Mbar \u2014 relative magnitude of the post-period violation versus the worst observed pre-period one) under which the post-treatment ATT is still different from zero at level alpha.  Reports both the robust confidence sets and the breakdown Mbar.",
+    "description": "Rambachan-Roth (2023) honest-DiD sensitivity analysis: computes the largest violation of parallel trends (parametrised by Mbar -- relative magnitude of the post-period violation versus the worst observed pre-period one) under which the post-treatment ATT is still different from zero at level alpha. Reports both the robust confidence sets and the breakdown Mbar.",
     "name": "sensitivity_rr",
     "parameters": {
       "properties": {
@@ -10872,7 +10872,7 @@
     }
   },
   {
-    "description": "McCrary (2008) density test for manipulation of the running variable at the cutoff in regression-discontinuity designs.  A significant discontinuity in the density of x at c is direct evidence that units are sorting around the cutoff (e.g. test-taking strategy, income manipulation), invalidating local randomisation. Validation: validated.",
+    "description": "McCrary (2008) density test for manipulation of the running variable at the cutoff in regression-discontinuity designs. A significant discontinuity in the density of x at c is direct evidence that units are sorting around the cutoff (e.g. test-taking strategy, income manipulation), invalidating local randomisation. Validation: validated.",
     "name": "mccrary_test",
     "parameters": {
       "properties": {
@@ -10911,7 +10911,7 @@
     }
   },
   {
-    "description": "Oster (2019) sensitivity to selection on unobservables \u2014 computes the bounding coefficient under the assumption that selection on unobservables (proportional to delta x selection on observables) brings the explained variance to r_max.  The breakdown delta tells you how strong unobserved selection has to be to overturn your result. Validation: validated.",
+    "description": "Oster (2019) sensitivity to selection on unobservables -- computes the bounding coefficient under the assumption that selection on unobservables (proportional to delta x selection on observables) brings the explained variance to r_max. The breakdown delta tells you how strong unobserved selection has to be to overturn your result. Validation: validated.",
     "name": "oster_bounds",
     "parameters": {
       "properties": {
@@ -10970,7 +10970,7 @@
     }
   },
   {
-    "description": "Cameron-Gelbach-Miller (2008) wild cluster bootstrap \u2014 the canonical fix for cluster-robust inference with few clusters (G < 30).  Re-samples cluster-level Rademacher weights to construct a percentile-t reference distribution that has correct size when the standard cluster-robust z-test rejects too often. Validation: validated.",
+    "description": "Cameron-Gelbach-Miller (2008) wild cluster bootstrap -- the canonical fix for cluster-robust inference with few clusters (G < 30). Re-samples cluster-level Rademacher weights to construct a percentile-t reference distribution that has correct size when the standard cluster-robust z-test rejects too often. Validation: validated.",
     "name": "wild_cluster_bootstrap",
     "parameters": {
       "properties": {
@@ -11038,7 +11038,7 @@
     }
   },
   {
-    "description": "Armstrong-Koles\u00e1r (2018) honest confidence intervals for sharp regression discontinuity \u2014 the only RD inference procedure with provable finite-sample coverage without bandwidth-selection bias.  M is the upper bound on the second derivative of E[Y|X] near the cutoff; smaller M means tighter CIs but riskier coverage if the true curvature is larger. Validation: validated.",
+    "description": "Armstrong-Kolesar (2018) honest confidence intervals for sharp regression discontinuity -- the only RD inference procedure with provable finite-sample coverage without bandwidth-selection bias. M is the upper bound on the second derivative of E[Y|X] near the cutoff; smaller M means tighter CIs but riskier coverage if the true curvature is larger. Validation: validated.",
     "name": "rd_honest",
     "parameters": {
       "properties": {
@@ -11101,7 +11101,7 @@
     }
   },
   {
-    "description": "RD with flexible covariate adjustment via cross-fit ML residualisation (Noack-Olma-Rothe 2025).  Reduces variance of \u03c4\u0302 at the cutoff by subtracting an ML estimate of E[Y|W] before running rdrobust; consistent under free-of-cutoff continuity of \u03b7, asymptotically efficient when \u03b7\u0302 converges to E[Y|X=c, W]. Validation: validated.",
+    "description": "RD with flexible covariate adjustment via cross-fit ML residualisation (Noack-Olma-Rothe 2025). Reduces variance of tau at the cutoff by subtracting an ML estimate of E[Y|W] before running rdrobust; consistent under free-of-cutoff continuity of eta, asymptotically efficient when eta converges to E[Y|X=c, W]. Validation: validated.",
     "name": "rd_flex",
     "parameters": {
       "properties": {
@@ -11174,7 +11174,7 @@
     }
   },
   {
-    "description": "Bias-aware confidence interval for fuzzy RD via Anderson-Rubin test inversion (Noack-Rothe 2024 Econometrica).  Robust to weak first stages and avoids the power asymmetry of conventional 2SLS-style fuzzy RD CIs (Kaliski-Keane-Neal 2025). Validation: validated.",
+    "description": "Bias-aware confidence interval for fuzzy RD via Anderson-Rubin test inversion (Noack-Rothe 2024 Econometrica). Robust to weak first stages and avoids the power asymmetry of conventional 2SLS-style fuzzy RD CIs (Kaliski-Keane-Neal 2025). Validation: validated.",
     "name": "rd_bias_aware_fuzzy",
     "parameters": {
       "properties": {
@@ -11237,7 +11237,7 @@
     }
   },
   {
-    "description": "Honest CI for RD when the running variable takes only a moderate number of distinct values (Koles\u00e1r-Rothe 2018 AER).  Uses bounded second derivative or bounded misspecification smoothness classes; robust to the loss of asymptotics that affects rdrobust under sparse mass points. Validation: validated.",
+    "description": "Honest CI for RD when the running variable takes only a moderate number of distinct values (Kolesar-Rothe 2018 AER). Uses bounded second derivative or bounded misspecification smoothness classes; robust to the loss of asymptotics that affects rdrobust under sparse mass points. Validation: validated.",
     "name": "rd_discrete",
     "parameters": {
       "properties": {
@@ -11653,7 +11653,7 @@
     }
   },
   {
-    "description": "Soft convergence warning \u2014 fit produced output but diagnostics",
+    "description": "Soft convergence warning -- fit produced output but diagnostics",
     "name": "ConvergenceWarning",
     "parameters": {
       "properties": {
@@ -11684,7 +11684,7 @@
     }
   },
   {
-    "description": "Soft assumption warning \u2014 a test flags concern but the caller",
+    "description": "Soft assumption warning -- a test flags concern but the caller",
     "name": "AssumptionWarning",
     "parameters": {
       "properties": {
@@ -11786,7 +11786,7 @@
         },
         "method": {
           "default": "smoothness",
-          "description": "Type of restriction on violations: - ``'smoothness'``: |\u0394\u03b4_t| \u2264 M (bounded change in violation) - ``'relative_magnitude'``: |\u03b4_post| \u2264 M\u0304 \u00d7 max|\u03b4_pre|",
+          "description": "Type of restriction on violations: - ``'smoothness'``: |Deltadelta_t| <= M (bounded change in violation) - ``'relative_magnitude'``: |delta_post| <= M x max|delta_pre|",
           "type": "string"
         },
         "result": {
@@ -12171,7 +12171,7 @@
         },
         "ci": {
           "default": true,
-          "description": "Show 95% confidence intervals (\u00b11.96 SE of mean).",
+          "description": "Show 95% confidence intervals (+/-1.96 SE of mean).",
           "type": "boolean"
         },
         "colors": {
@@ -12213,7 +12213,7 @@
           "type": "string"
         },
         "treat": {
-          "description": "Treatment group indicator. Binary (0/1) for 2\u00d72, or first-treatment-period for staggered (0 = never treated).",
+          "description": "Treatment group indicator. Binary (0/1) for 2x2, or first-treatment-period for staggered (0 = never treated).",
           "type": "string"
         },
         "treat_time": {
@@ -12248,7 +12248,7 @@
           "type": "object"
         },
         "colors": {
-          "description": "Map comparison type \u2192 color. Defaults provided.",
+          "description": "Map comparison type -> color. Defaults provided.",
           "type": "object"
         },
         "figsize": {
@@ -12747,7 +12747,7 @@
     }
   },
   {
-    "description": "R ``etwfe::emfx``-style aggregated marginal effects for an ETWFE fit.",
+    "description": "R ``etwfe::emfx``-style aggregated marginal effects for an ETWFE fit. Validation: certified parity evidence.",
     "name": "etwfe_emfx",
     "parameters": {
       "properties": {
@@ -12773,6 +12773,15 @@
             "group",
             "event",
             "calendar"
+          ],
+          "type": "string"
+        },
+        "weighting": {
+          "default": "cohort",
+          "description": "Aggregation weights for cohort-level marginal effects. ``'cohort'`` preserves the historical StatsPAI cohort-share weighting. ``'treated'`` uses the number of treated post-period observations in each cohort, matching R ``etwfe::emfx(type='simple')`` on balanced staggered panels.",
+          "enum": [
+            "cohort",
+            "treated"
           ],
           "type": "string"
         }
@@ -12818,7 +12827,7 @@
         },
         "include_sensitivity": {
           "default": false,
-          "description": "If ``True`` and ``'cs'`` is among the methods fit, compute the Rambachan\u2013Roth (2023) *breakdown M\\** \u2014 the largest relative violation of parallel trends under which the treatment effect is still significantly different from zero. The value is added to ``model_info['breakdown_m']`` and to the ``breakdown_m`` column of ``detail`` (CS row only; other methods leave ``NaN``).",
+          "description": "If ``True`` and ``'cs'`` is among the methods fit, compute the Rambachan-Roth (2023) *breakdown M\\** -- the largest relative violation of parallel trends under which the treatment effect is still significantly different from zero. The value is added to ``model_info['breakdown_m']`` and to the ``breakdown_m`` column of ``detail`` (CS row only; other methods leave ``NaN``).",
           "type": "boolean"
         },
         "methods": {
@@ -13006,7 +13015,7 @@
     }
   },
   {
-    "description": "TWFE decomposition: Goodman-Bacon (2021) + de Chaisemartin\u2013D'Haultfoeuille weights.",
+    "description": "TWFE decomposition: Goodman-Bacon (2021) + de Chaisemartin-D'Haultfoeuille weights.",
     "name": "twfe_decomposition",
     "parameters": {
       "properties": {
@@ -14151,7 +14160,7 @@
     }
   },
   {
-    "description": "Causal Forest for RD \u2014 heterogeneous treatment effect estimation.",
+    "description": "Causal Forest for RD -- heterogeneous treatment effect estimation.",
     "name": "rd_forest",
     "parameters": {
       "properties": {
@@ -14187,7 +14196,7 @@
         },
         "min_leaf": {
           "default": 20,
-          "description": "Minimum leaf size (larger \u2192 more regularisation).",
+          "description": "Minimum leaf size (larger -> more regularisation).",
           "type": "integer"
         },
         "n_trees": {
@@ -14218,7 +14227,7 @@
     }
   },
   {
-    "description": "Gradient Boosting for RD \u2014 flexible CATE estimation.",
+    "description": "Gradient Boosting for RD -- flexible CATE estimation.",
     "name": "rd_boost",
     "parameters": {
       "properties": {
@@ -14625,7 +14634,7 @@
         },
         "v_method": {
           "default": "auto",
-          "description": "``'auto'`` \u2192 nested V-W when covariates / special predictors are supplied, equal V otherwise. ``'nested'`` forces the outer V optimisation even when only Y lags are used (note: the outer problem is then under-identified, per Kaul et al. 2015). Equal V reduces to the outcome-only simplex LS estimator.",
+          "description": "``'auto'`` -> nested V-W when covariates / special predictors are supplied, equal V otherwise. ``'nested'`` forces the outer V optimisation even when only Y lags are used (note: the outer problem is then under-identified, per Kaul et al. 2015). Equal V reduces to the outcome-only simplex LS estimator.",
           "enum": [
             "auto",
             "nested",
@@ -14698,7 +14707,7 @@
         },
         "variant": {
           "default": "demeaned",
-          "description": "* ``'demeaned'`` \u2014 subtract unit-level pre-treatment means. * ``'detrended'`` \u2014 subtract unit-level linear time trends.",
+          "description": "* ``'demeaned'`` -- subtract unit-level pre-treatment means. * ``'detrended'`` -- subtract unit-level linear time trends.",
           "enum": [
             "demeaned",
             "detrended"
@@ -14780,7 +14789,7 @@
         },
         "variant": {
           "default": "unconstrained",
-          "description": "* ``'unconstrained'`` \u2014 no sign / sum constraints; optional intercept. * ``'elastic_net'`` \u2014 L1 + L2 penalty, no sign constraints. * ``'penalized'`` \u2014 classic SCM constraints + elastic-net penalty.",
+          "description": "* ``'unconstrained'`` -- no sign / sum constraints; optional intercept. * ``'elastic_net'`` -- L1 + L2 penalty, no sign constraints. * ``'penalized'`` -- classic SCM constraints + elastic-net penalty.",
           "enum": [
             "unconstrained",
             "elastic_net",
@@ -14892,7 +14901,7 @@
         },
         "method": {
           "default": "separate",
-          "description": "* ``'separate'`` \u2014 fit a separate SCM for each treated unit. * ``'pooled'`` \u2014 partially pool weights across cohorts with the same adoption time.",
+          "description": "* ``'separate'`` -- fit a separate SCM for each treated unit. * ``'pooled'`` -- partially pool weights across cohorts with the same adoption time.",
           "enum": [
             "separate",
             "pooled"
@@ -15024,7 +15033,7 @@
         },
         "method": {
           "default": "sdid",
-          "description": "* ``'sdid'`` \u2014 Synthetic DID (unit + time weights) * ``'sc'`` \u2014 Synthetic Control (unit weights only) * ``'did'`` \u2014 DID (uniform weights)",
+          "description": "* ``'sdid'`` -- Synthetic DID (unit + time weights) * ``'sc'`` -- Synthetic Control (unit weights only) * ``'did'`` -- DID (uniform weights)",
           "enum": [
             "sdid",
             "sc",
@@ -15470,7 +15479,7 @@
     }
   },
   {
-    "description": "Unified matching estimator supporting multiple distance \u00d7 method combinations.",
+    "description": "Unified matching estimator supporting multiple distance x method combinations.",
     "name": "MatchEstimator",
     "parameters": {
       "properties": {
@@ -16064,7 +16073,7 @@
     }
   },
   {
-    "description": "Legacy fa\u00e7ade. Prefer the per-model classes directly for new code:",
+    "description": "Legacy facade. Prefer the per-model classes directly for new code:",
     "name": "DoubleML",
     "parameters": {
       "properties": {
@@ -16223,7 +16232,7 @@
     }
   },
   {
-    "description": "Interactive regression DML \u2014 binary D, ATE via AIPW.",
+    "description": "Interactive regression DML -- binary D, ATE via AIPW.",
     "name": "DoubleMLIRM",
     "parameters": {
       "properties": {
@@ -16300,7 +16309,7 @@
     }
   },
   {
-    "description": "Partially linear IV DML \u2014 endogenous D with continuous/binary Z.",
+    "description": "Partially linear IV DML -- endogenous D with continuous/binary Z.",
     "name": "DoubleMLPLIV",
     "parameters": {
       "properties": {
@@ -16377,7 +16386,7 @@
     }
   },
   {
-    "description": "Interactive IV DML \u2014 binary D, binary Z, LATE via Wald.",
+    "description": "Interactive IV DML -- binary D, binary Z, LATE via Wald.",
     "name": "DoubleMLIIVM",
     "parameters": {
       "properties": {
@@ -16501,7 +16510,7 @@
         },
         "weight_rule": {
           "default": "short_stacking",
-          "description": "How to combine candidate nuisance predictions or estimates. * ``\"short_stacking\"`` *(default; Ahrens et al. 2025 eq. 7)* \u2014 solve constrained least squares on cross-fitted predictions for each nuisance separately (``\u0177`` and ``D\u0302``), produce stacked nuisances, plug into the PLR moment equation. * ``\"single_best\"`` \u2014 Ahrens et al. (2025, fn. 8): pick the candidate with lowest joint nuisance MSE. * ``\"inverse_risk\"`` \u2014 :math:`w_k \\propto 1/(\\text{MSE}_g + \\text{MSE}_m)`. Convenience baseline; **not** in the paper. * ``\"equal\"`` \u2014 :math:`w_k = 1/K`. Convenience baseline; **not** in the paper. For the non-stacking rules (``inverse_risk`` / ``equal`` / ``single_best``) the function computes per-candidate :math:`\\hat\\theta_k` and reports the weighted average with a between-candidate-covariance-corrected SE; for ``\"short_stacking\"`` it reports the standard PLR sandwich SE on the stacked-nuisance score (Neyman orthogonality is preserved).",
+          "description": "How to combine candidate nuisance predictions or estimates. * ``\"short_stacking\"`` *(default; Ahrens et al. 2025 eq. 7)* -- solve constrained least squares on cross-fitted predictions for each nuisance separately (``y`` and ``D``), produce stacked nuisances, plug into the PLR moment equation. * ``\"single_best\"`` -- Ahrens et al. (2025, fn. 8): pick the candidate with lowest joint nuisance MSE. * ``\"inverse_risk\"`` -- :math:`w_k \\propto 1/(\\text{MSE}_g + \\text{MSE}_m)`. Convenience baseline; **not** in the paper. * ``\"equal\"`` -- :math:`w_k = 1/K`. Convenience baseline; **not** in the paper. For the non-stacking rules (``inverse_risk`` / ``equal`` / ``single_best``) the function computes per-candidate :math:`\\hat\\theta_k` and reports the weighted average with a between-candidate-covariance-corrected SE; for ``\"short_stacking\"`` it reports the standard PLR sandwich SE on the stacked-nuisance score (Neyman orthogonality is preserved).",
           "enum": [
             "short_stacking",
             "single_best",
@@ -16600,18 +16609,18 @@
     "parameters": {
       "properties": {
         "benchmark_covariates": {
-          "description": "Subset of the original covariates to benchmark against. For each ``X_k``, the benchmark sets ``cf_y_bench, cf_d_bench`` to the partial R\u00b2 that ``X_k`` itself contributes (multiplied by ``k_y, k_d`` to express \"what if a confounder were k\u00d7 as strong as ``X_k``?\").",
+          "description": "Subset of the original covariates to benchmark against. For each ``X_k``, the benchmark sets ``cf_y_bench, cf_d_bench`` to the partial R2 that ``X_k`` itself contributes (multiplied by ``k_y, k_d`` to express \"what if a confounder were kx as strong as ``X_k``?\").",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "cf_d": {
-          "description": "Hypothesized partial-R\u00b2 of an unobserved confounder with the residualised outcome and treatment. If both are given, the report includes a bias bound and adjusted-estimate range.",
+          "description": "Hypothesized partial-R2 of an unobserved confounder with the residualised outcome and treatment. If both are given, the report includes a bias bound and adjusted-estimate range.",
           "type": "number"
         },
         "cf_y": {
-          "description": "Hypothesized partial-R\u00b2 of an unobserved confounder with the residualised outcome and treatment. If both are given, the report includes a bias bound and adjusted-estimate range.",
+          "description": "Hypothesized partial-R2 of an unobserved confounder with the residualised outcome and treatment. If both are given, the report includes a bias bound and adjusted-estimate range.",
           "type": "number"
         },
         "k_d": {
@@ -16626,7 +16635,7 @@
         },
         "q": {
           "default": 1.0,
-          "description": "Bias threshold as a fraction of |\u03b8\u0302|. ``q=1`` \u21d2 confounder needed to shrink estimate to zero; ``q=0.5`` \u21d2 half the estimate.",
+          "description": "Bias threshold as a fraction of |theta|. ``q=1`` => confounder needed to shrink estimate to zero; ``q=0.5`` => half the estimate.",
           "type": "number"
         },
         "result": {
@@ -16726,7 +16735,7 @@
       "properties": {
         "clip": {
           "default": 0.02,
-          "description": "For IRM-style overlap: count units with propensity within ``[0, clip] \u222a [1-clip, 1]`` as overlap-violating.",
+          "description": "For IRM-style overlap: count units with propensity within ``[0, clip] [1-clip, 1]`` as overlap-violating.",
           "type": "number"
         },
         "result": {
@@ -17164,7 +17173,7 @@
           "type": "string"
         },
         "_formula": {
-          "description": "Formula for the  component.",
+          "description": "Formula for the component.",
           "type": "string"
         },
         "_indep_vars": {
@@ -17526,6 +17535,11 @@
           "description": "Significance level for confidence intervals and tests.",
           "type": "number"
         },
+        "clip": {
+          "default": 0.01,
+          "description": "Propensity scores are clipped to ``[clip, 1-clip]`` before the inverse-propensity term to stabilise the score under near-overlap violations.",
+          "type": "number"
+        },
         "forest": {
           "description": "forest parameter ('CausalForest').",
           "type": "string"
@@ -17581,7 +17595,7 @@
       "properties": {
         "accelerate": {
           "default": true,
-          "description": "Enable Irons-Tuck \u0394\u00b2 acceleration.",
+          "description": "Enable Irons-Tuck Delta2 acceleration.",
           "type": "boolean"
         },
         "drop_singletons": {
@@ -17600,7 +17614,7 @@
         },
         "solver": {
           "default": "map",
-          "description": "Within-transformation backend. ``\"map\"`` uses alternating projections with Irons-Tuck acceleration (default, typically fastest on well-conditioned panels). ``\"lsmr\"`` / ``\"lsqr\"`` delegate to ``scipy.sparse.linalg.lsmr`` / ``lsqr`` on the sparse FE design matrix \u2014 more robust for ill-conditioned or highly nested FE structures. See the migration guide for how this maps to ``pyreghdfe``.",
+          "description": "Within-transformation backend. ``\"map\"`` uses alternating projections with Irons-Tuck acceleration (default, typically fastest on well-conditioned panels). ``\"lsmr\"`` / ``\"lsqr\"`` delegate to ``scipy.sparse.linalg.lsmr`` / ``lsqr`` on the sparse FE design matrix -- more robust for ill-conditioned or highly nested FE structures. See the migration guide for how this maps to ``pyreghdfe``.",
           "enum": [
             "map",
             "lsmr",
@@ -17961,7 +17975,7 @@
         },
         "estimand": {
           "default": "ATO",
-          "description": "Which generalized-weight scheme to use. All follow Li-Li-Li (2019) Table 1; 'ATO' uses the overlap weights; 'matching' uses the ``min(e, 1-e)`` weight; 'entropy' uses ``-e\u00b7log(e) - (1-e)\u00b7log(1-e)``; 'ATE/ATT/ATC' reduce to standard IPW for comparison.",
+          "description": "Which generalized-weight scheme to use. All follow Li-Li-Li (2019) Table 1; 'ATO' uses the overlap weights; 'matching' uses the ``min(e, 1-e)`` weight; 'entropy' uses ``-e*log(e) - (1-e)*log(1-e)``; 'ATE/ATT/ATC' reduce to standard IPW for comparison.",
           "enum": [
             "ATO",
             "ATE",
@@ -17987,7 +18001,7 @@
         },
         "trim": {
           "default": 0.0,
-          "description": "Optional clip of pscore to ``[trim, 1-trim]``. For overlap weights this is rarely needed \u2014 set to 0 by default.",
+          "description": "Optional clip of pscore to ``[trim, 1-trim]``. For overlap weights this is rarely needed -- set to 0 by default.",
           "type": "number"
         },
         "y": {
@@ -18103,7 +18117,7 @@
         },
         "delta": {
           "default": 0.02,
-          "description": "Balance tolerance. With ``tolerance_scale='sd'`` the constraint is ``|mean_T(X_j) - weighted mean_C(X_j)| \u2264 \u03b4_j \u00b7 sd(X_j)``.",
+          "description": "Balance tolerance. With ``tolerance_scale='sd'`` the constraint is ``|mean_T(X_j) - weighted mean_C(X_j)| <= delta_j * sd(X_j)``.",
           "type": "number"
         },
         "estimand": {
@@ -18118,12 +18132,12 @@
         },
         "include_squares": {
           "default": false,
-          "description": "Also balance second-moments (w_j\u00b2 columns).",
+          "description": "Also balance second-moments (w_j2 columns).",
           "type": "boolean"
         },
         "objective": {
           "default": "variance",
-          "description": "Dispersion objective. ``'variance'`` minimises \u03a3 w_i\u00b2; ``'entropy'`` minimises \u03a3 w_i log(n \u00b7 w_i) (KL from uniform).",
+          "description": "Dispersion objective. ``'variance'`` minimises Sigma w_i2; ``'entropy'`` minimises Sigma w_i log(n * w_i) (KL from uniform).",
           "enum": [
             "variance",
             "entropy"
@@ -18673,11 +18687,11 @@
         },
         "level": {
           "default": 0.95,
-          "description": "Confidence level for the error bars (normal approximation ``b \u00b1 z\u00b7se``, matching :func:`coefplot`).",
+          "description": "Confidence level for the error bars (normal approximation ``b +/- z*se``, matching :func:`coefplot`).",
           "type": "number"
         },
         "model_names": {
-          "description": "Legend labels. Default ``Model 1``, ``Model 2``, \u2026",
+          "description": "Legend labels. Default ``Model 1``, ``Model 2``, ...",
           "items": {
             "type": "string"
           },
@@ -19257,7 +19271,7 @@
       "properties": {
         "format": {
           "default": "bibtex",
-          "description": "- ``\"bibtex\"`` \u2014 BibTeX entry suitable for LaTeX bibliographies. - ``\"apa\"`` \u2014 APA-style human-readable string. - ``\"plain\"`` \u2014 Minimal plain-text string. - ``\"cff\"`` \u2014 Raw contents of the repository ``CITATION.cff`` file (only available in editable / source installs that ship the file).",
+          "description": "- ``\"bibtex\"`` -- BibTeX entry suitable for LaTeX bibliographies. - ``\"apa\"`` -- APA-style human-readable string. - ``\"plain\"`` -- Minimal plain-text string. - ``\"cff\"`` -- Raw contents of the repository ``CITATION.cff`` file (only available in editable / source installs that ship the file).",
           "enum": [
             "bibtex",
             "apa",
@@ -19368,7 +19382,7 @@
         },
         "overwrite": {
           "default": false,
-          "description": "If False (default) and ``result._provenance`` already exists, do nothing \u2014 preserves the *first* (most-specific) record set by an inner estimator.",
+          "description": "If False (default) and ``result._provenance`` already exists, do nothing -- preserves the *first* (most-specific) record set by an inner estimator.",
           "type": "boolean"
         },
         "params": {
@@ -19376,7 +19390,7 @@
           "type": "object"
         },
         "result": {
-          "description": "The estimator result. Must accept attribute assignment; ``CausalResult`` / ``ResultBase`` / dataclasses / SimpleNamespace all work. Tuples / dicts / immutable types do not \u2014 for those the call is a silent no-op.",
+          "description": "The estimator result. Must accept attribute assignment; ``CausalResult`` / ``ResultBase`` / dataclasses / SimpleNamespace all work. Tuples / dicts / immutable types do not -- for those the call is a silent no-op.",
           "type": "string"
         }
       },
@@ -19513,7 +19527,7 @@
           "type": "string"
         },
         "template": {
-          "description": "Journal preset (``\"aer\"`` / ``\"qje\"`` / \u2026). Default: pulled from ``result.template`` when present.",
+          "description": "Journal preset (``\"aer\"`` / ``\"qje\"`` / ...). Default: pulled from ``result.template`` when present.",
           "type": "string"
         },
         "title": {
@@ -19683,7 +19697,7 @@
           "type": "string"
         },
         "by": {
-          "description": "Grouping variable \u2014 produces separate series on the same plot (e.g., ``by='female'`` overlays male and female).",
+          "description": "Grouping variable -- produces separate series on the same plot (e.g., ``by='female'`` overlays male and female).",
           "type": "string"
         },
         "ci": {
@@ -19834,7 +19848,7 @@
       "properties": {
         "style": {
           "default": "auto",
-          "description": "- ``'auto'``: auto-detect the best available Chinese font - ``'serif'``: prefer serif fonts (\u5b8b\u4f53 Songti SC, SimSun) - ``'sans'``: prefer sans-serif fonts (\u82f9\u65b9 PingFang, \u9ed1\u4f53 SimHei) - Any specific font name, e.g. ``'Songti SC'``, ``'SimHei'``",
+          "description": "- ``'auto'``: auto-detect the best available Chinese font - ``'serif'``: prefer serif fonts ( Songti SC, SimSun) - ``'sans'``: prefer sans-serif fonts ( PingFang, SimHei) - Any specific font name, e.g. ``'Songti SC'``, ``'SimHei'``",
           "type": "string"
         }
       },
@@ -19964,7 +19978,7 @@
     }
   },
   {
-    "description": "Stata-style ``describe`` \u2014 variable names, types, labels, and",
+    "description": "Stata-style ``describe`` -- variable names, types, labels, and",
     "name": "describe",
     "parameters": {
       "properties": {
@@ -20336,7 +20350,7 @@
           "type": "string"
         },
         "instruments": {
-          "description": "Excluded-instrument column names. Must have length \u2265 1.",
+          "description": "Excluded-instrument column names. Must have length >= 1.",
           "items": {
             "type": "string"
           },
@@ -20938,7 +20952,7 @@
           "type": "string"
         },
         "result": {
-          "description": "Fitted model \u2014 same input ``sp.margins`` accepts. Forwarded verbatim to :func:`margins`.",
+          "description": "Fitted model -- same input ``sp.margins`` accepts. Forwarded verbatim to :func:`margins`.",
           "type": "string"
         },
         "variables": {
@@ -21197,7 +21211,7 @@
     "parameters": {
       "properties": {
         "hypothesis": {
-          "description": "Hypothesis specification. Examples: - ``\"x1 = 0\"`` \u2014 test if beta_x1 = 0 - ``\"x1 = x2\"`` \u2014 test if beta_x1 = beta_x2 - ``\"x1 = x2 = 0\"`` \u2014 joint test - ``\"x1 + x2 = 1\"`` \u2014 linear restriction",
+          "description": "Hypothesis specification. Examples: - ``\"x1 = 0\"`` -- test if beta_x1 = 0 - ``\"x1 = x2\"`` -- test if beta_x1 = beta_x2 - ``\"x1 = x2 = 0\"`` -- joint test - ``\"x1 + x2 = 1\"`` -- linear restriction",
           "type": "string"
         },
         "result": {
@@ -21223,7 +21237,7 @@
           "type": "number"
         },
         "expression": {
-          "description": "Linear combination. Examples: - ``\"x1 + x2\"`` \u2014 beta_x1 + beta_x2 - ``\"x1 - x2\"`` \u2014 beta_x1 - beta_x2 - ``\"2*x1 + 3*x2\"`` \u2014 2*beta_x1 + 3*beta_x2",
+          "description": "Linear combination. Examples: - ``\"x1 + x2\"`` -- beta_x1 + beta_x2 - ``\"x1 - x2\"`` -- beta_x1 - beta_x2 - ``\"2*x1 + 3*x2\"`` -- 2*beta_x1 + 3*beta_x2",
           "type": "string"
         },
         "result": {
@@ -21563,7 +21577,7 @@
         },
         "powers": {
           "default": 3,
-          "description": "Include \u0177\u00b2, \u0177\u00b3, ..., \u0177^powers in the auxiliary regression.",
+          "description": "Include y2, y3, ..., y^powers in the auxiliary regression.",
           "type": "integer"
         },
         "x": {
@@ -21611,7 +21625,7 @@
     }
   },
   {
-    "description": "CJM (2020) density discontinuity test for RD manipulation. Validation: certified parity evidence.",
+    "description": "CJM (2020) density discontinuity test for RD manipulation. Validation: certified evidence with scoped limitations. Known limitations: Certified conclusion-level density-test evidence is available, but the native default bandwidth selector and local-density estimates can differ from rddensity::rddensity; use backend='r' with R/rddensity installed when exact cross-language selector/test-statistic matching matters. Manual side-specific bandwidths are sensitivity controls, not a reference-parity guarantee.",
     "name": "rddensity",
     "parameters": {
       "properties": {
@@ -21619,6 +21633,15 @@
           "default": 0.05,
           "description": "Significance level for confidence intervals and tests.",
           "type": "number"
+        },
+        "backend": {
+          "default": "native",
+          "description": "``\"native\"`` uses StatsPAI's dependency-light implementation. ``\"r\"`` delegates to ``rddensity::rddensity`` through ``Rscript`` when the R package is installed, matching the reference package's selector and test statistic.",
+          "enum": [
+            "native",
+            "r"
+          ],
+          "type": "string"
         },
         "c": {
           "default": 0,
@@ -21630,7 +21653,7 @@
           "type": "string"
         },
         "h": {
-          "description": "Bandwidth. Default: automatic (Cattaneo-Jansson-Ma rule).",
+          "description": "Bandwidth. A scalar applies the same bandwidth on both sides; a length-2 sequence is interpreted as ``(h_left, h_right)``.",
           "type": "number"
         },
         "p": {
@@ -21695,7 +21718,7 @@
     }
   },
   {
-    "description": "Anderson-Rubin (1949) test \u2014 size-correct under weak instruments.",
+    "description": "Anderson-Rubin (1949) test -- size-correct under weak instruments.",
     "name": "anderson_rubin_test",
     "parameters": {
       "properties": {
@@ -21784,7 +21807,7 @@
         },
         "vcov": {
           "default": "HC1",
-          "description": "Variance estimator for the first-stage residuals: - ``'classic'`` \u2014 homoskedastic; F_eff equals first-stage F. - ``'HC0'`` \u2014 White heteroskedasticity-robust. - ``'HC1'`` \u2014 HC0 with small-sample correction ``n/(n-k)``.",
+          "description": "Variance estimator for the first-stage residuals: - ``'classic'`` -- homoskedastic; F_eff equals first-stage F. - ``'HC0'`` -- White heteroskedasticity-robust. - ``'HC1'`` -- HC0 with small-sample correction ``n/(n-k)``.",
           "enum": [
             "HC0",
             "HC1",
@@ -21802,7 +21825,7 @@
     }
   },
   {
-    "description": "Lee\u2013McCrary\u2013Moreira\u2013Porter (2022, AER) tF adjusted critical value.",
+    "description": "Lee-McCrary-Moreira-Porter (2022, AER) tF adjusted critical value.",
     "name": "tF_critical_value",
     "parameters": {
       "properties": {
@@ -21859,7 +21882,7 @@
         },
         "h0": {
           "default": 0.0,
-          "description": "Null value for the endogenous coefficient. All under-H0 tests (AR, CLR, K) are evaluated at ``\u03b2 = h0``.",
+          "description": "Null value for the endogenous coefficient. All under-H0 tests (AR, CLR, K) are evaluated at ``beta = h0``.",
           "type": "number"
         },
         "include_clr": {
@@ -21885,7 +21908,7 @@
         },
         "vcov": {
           "default": "HC1",
-          "description": "Used by the Olea\u2013Pflueger effective F.",
+          "description": "Used by the Olea-Pflueger effective F.",
           "enum": [
             "HC0",
             "HC1",
@@ -23186,7 +23209,7 @@
         },
         "include_WY": {
           "default": true,
-          "description": "If True, include WY as a regressor (spatial autoregressive coefficient \u03c1).",
+          "description": "If True, include WY as a regressor (spatial autoregressive coefficient rho).",
           "type": "boolean"
         },
         "instruments": {
@@ -23280,7 +23303,7 @@
     }
   },
   {
-    "description": "X-Learner (K\u00fcnzel et al. 2019).",
+    "description": "X-Learner (Kunzel et al. 2019).",
     "name": "XLearner",
     "parameters": {
       "properties": {
@@ -23779,7 +23802,7 @@
     }
   },
   {
-    "description": "Optuna-tuned CATE learner race \u2014 nuisance, per-learner, or both.",
+    "description": "Optuna-tuned CATE learner race -- nuisance, per-learner, or both.",
     "name": "auto_cate_tuned",
     "parameters": {
       "properties": {
@@ -23865,7 +23888,7 @@
         },
         "tune": {
           "default": "nuisance",
-          "description": "Tuning regime: - ``'nuisance'`` \u2014 tune the shared outcome / propensity GBMs against held-out R-loss, then hand them to ``auto_cate``. (v0.9.5 behaviour.) - ``'per_learner'`` \u2014 keep default nuisance models; for each learner, tune its final-stage CATE model against held-out R-loss. - ``'both'`` \u2014 run ``'nuisance'`` first, then ``'per_learner'`` using the tuned nuisance. Most expensive; most thorough.",
+          "description": "Tuning regime: - ``'nuisance'`` -- tune the shared outcome / propensity GBMs against held-out R-loss, then hand them to ``auto_cate``. (v0.9.5 behaviour.) - ``'per_learner'`` -- keep default nuisance models; for each learner, tune its final-stage CATE model against held-out R-loss. - ``'both'`` -- run ``'nuisance'`` first, then ``'per_learner'`` using the tuned nuisance. Most expensive; most thorough.",
           "enum": [
             "nuisance",
             "per_learner",
@@ -24580,7 +24603,7 @@
     }
   },
   {
-    "description": "**Stylised** PRTE weights \u2014 convenience builder, NOT the",
+    "description": "**Stylised** PRTE weights -- convenience builder, NOT the",
     "name": "policy_weight_prte",
     "parameters": {
       "properties": {
@@ -25334,7 +25357,7 @@
           "type": "string"
         },
         "forbidden": {
-          "description": "Background knowledge: edges that must NOT appear in the final graph (treated as undirected \u2014 both ``(a, b)`` and ``(b, a)`` are forbidden when either is given). The skeleton phase keeps these absent regardless of CI test outcomes.",
+          "description": "Background knowledge: edges that must NOT appear in the final graph (treated as undirected -- both ``(a, b)`` and ``(b, a)`` are forbidden when either is given). The skeleton phase keeps these absent regardless of CI test outcomes.",
           "items": {
             "type": "string"
           },
@@ -25622,7 +25645,7 @@
     }
   },
   {
-    "description": "Doubly-robust policy-tree \u2014 article-facing alias.",
+    "description": "Doubly-robust policy-tree -- article-facing alias.",
     "name": "policy_tree",
     "parameters": {
       "properties": {
@@ -27414,7 +27437,7 @@
     "parameters": {
       "properties": {
         "by": {
-          "description": "Mapping of *display name* \u2192 *column name* for grouping.",
+          "description": "Mapping of *display name* -> *column name* for grouping.",
           "type": "object"
         },
         "data": {
@@ -27494,7 +27517,7 @@
           "type": "string"
         },
         "fpc": {
-          "description": "Finite population correction \u2014 column of stratum population sizes or sampling fractions. If values are < 1 they are treated as fractions; otherwise as population counts.",
+          "description": "Finite population correction -- column of stratum population sizes or sampling fractions. If values are < 1 they are treated as fractions; otherwise as population counts.",
           "type": "string"
         },
         "nest": {
@@ -27801,7 +27824,7 @@
         },
         "rho": {
           "default": 0.5,
-          "description": "First-order autocorrelation of errors (0\u20131).",
+          "description": "First-order autocorrelation of errors (0-1).",
           "type": "number"
         },
         "sigma": {
@@ -28040,7 +28063,7 @@
         },
         "reference": {
           "default": 0,
-          "description": "Reference coefficient vector beta*: - ``0`` \u2014 Group A coefficients (beta_A). The \"explained\" part uses Group A's returns as the benchmark. - ``1`` \u2014 Group B coefficients (beta_B). - ``'pooled'`` \u2014 Pooled OLS (Neumark 1988). - ``'cotton'`` \u2014 Sample-size weighted average (Cotton 1988). - ``'reimers'`` \u2014 Equal-weighted average (Reimers 1983).",
+          "description": "Reference coefficient vector beta*: - ``0`` -- Group A coefficients (beta_A). The \"explained\" part uses Group A's returns as the benchmark. - ``1`` -- Group B coefficients (beta_B). - ``'pooled'`` -- Pooled OLS (Neumark 1988). - ``'cotton'`` -- Sample-size weighted average (Cotton 1988). - ``'reimers'`` -- Equal-weighted average (Reimers 1983).",
           "enum": [
             "pooled",
             "cotton",
@@ -28271,12 +28294,12 @@
         },
         "max_iter": {
           "default": 1000,
-          "description": "Maximum coordinate descent iterations per \u03bb.",
+          "description": "Maximum coordinate descent iterations per lambda.",
           "type": "integer"
         },
         "method": {
           "default": "cv",
-          "description": "How to choose the regularisation parameter \u03bb.",
+          "description": "How to choose the regularisation parameter lambda.",
           "enum": [
             "cv",
             "bic",
@@ -28291,7 +28314,7 @@
         },
         "n_lambda": {
           "default": 100,
-          "description": "Number of \u03bb values in the grid.",
+          "description": "Number of lambda values in the grid.",
           "type": "integer"
         },
         "seed": {
@@ -28602,15 +28625,15 @@
     "parameters": {
       "properties": {
         "category": {
-          "description": "Limit to one category (``\"causal\"``, ``\"panel\"`` \u2026).",
+          "description": "Limit to one category (``\"causal\"``, ``\"panel\"`` ...).",
           "type": "string"
         },
         "stability": {
-          "description": "Limit to one tier \u2014 one of :data:`STABILITY_TIERS` (``\"stable\"`` / ``\"experimental\"`` / ``\"deprecated\"``). This is the API-lifecycle filter.",
+          "description": "Limit to one tier -- one of :data:`STABILITY_TIERS` (``\"stable\"`` / ``\"experimental\"`` / ``\"deprecated\"``). This is the API-lifecycle filter.",
           "type": "string"
         },
         "validation_status": {
-          "description": "Limit to one evidence tier \u2014 one of :data:`VALIDATION_STATUSES` (``\"certified\"`` / ``\"validated\"`` / ``\"api_stable\"`` / ``\"experimental\"`` / ``\"deprecated\"``). Use ``validation_status='certified'`` for parity-backed tool catalogs.",
+          "description": "Limit to one evidence tier -- one of :data:`VALIDATION_STATUSES` (``\"certified\"`` / ``\"validated\"`` / ``\"api_stable\"`` / ``\"experimental\"`` / ``\"deprecated\"``). Use ``validation_status='certified'`` for parity-backed tool catalogs.",
           "type": "string"
         }
       },
@@ -28641,7 +28664,7 @@
       "properties": {
         "agent_native": {
           "default": false,
-          "description": "When True, attach a top-level ``x_statspai`` extension block carrying identifying assumptions, data pre-conditions, failure modes, ranked alternatives, stability / validation tier and ``typical_n_min`` \u2014 so an LLM planner can reason about *whether* to call the tool inside the same schema it already reads, with no extra :func:`agent_card` round-trip. The base ``name`` / ``description`` / ``parameters`` shape is unchanged, so the schema still works with strict tool-calling APIs.",
+          "description": "When True, attach a top-level ``x_statspai`` extension block carrying identifying assumptions, data pre-conditions, failure modes, ranked alternatives, stability / validation tier and ``typical_n_min`` -- so an LLM planner can reason about *whether* to call the tool inside the same schema it already reads, with no extra :func:`agent_card` round-trip. The base ``name`` / ``description`` / ``parameters`` shape is unchanged, so the schema still works with strict tool-calling APIs.",
           "type": "boolean"
         },
         "name": {
@@ -28782,7 +28805,7 @@
           "type": "boolean"
         },
         "name": {
-          "description": "Registered function name (``\"did\"``, ``\"iv\"``, ``\"rd\"``, \u2026).",
+          "description": "Registered function name (``\"did\"``, ``\"iv\"``, ``\"rd\"``, ...).",
           "type": "string"
         }
       },
@@ -29126,7 +29149,7 @@
           "type": "string"
         },
         "topic": {
-          "description": "- ``None`` \u2192 top-level overview. - ``'<function_name>'`` \u2192 function detail (from registry + docstring). - ``'<category>'`` \u2192 list functions in category. - ``'<category>.<function_name>'`` \u2192 scoped function detail. - any callable (e.g. ``sp.regress``) \u2192 docstring fallback.",
+          "description": "- ``None`` -> top-level overview. - ``'<function_name>'`` -> function detail (from registry + docstring). - ``'<category>'`` -> list functions in category. - ``'<category>.<function_name>'`` -> scoped function detail. - any callable (e.g. ``sp.regress``) -> docstring fallback.",
           "type": "string"
         },
         "verbose": {
@@ -29751,7 +29774,7 @@
           "type": "number"
         },
         "alt": {
-          "description": "Alternative identifier \u2014 accepted for API compatibility with ``statsmodels.MNLogit`` / Stata conventions, but the ordering of alternatives is taken directly from the DataFrame's row order within each ``chid`` group.",
+          "description": "Alternative identifier -- accepted for API compatibility with ``statsmodels.MNLogit`` / Stata conventions, but the ordering of alternatives is taken directly from the DataFrame's row order within each ``chid`` group.",
           "type": "string"
         },
         "chid": {
@@ -29783,16 +29806,16 @@
           "type": "integer"
         },
         "panel_id": {
-          "description": "Individual identifier. When provided, the SAME draws of the random coefficients are used for every choice of the individual (Train 2009 \u00a76.5). Omit for cross-sectional data.",
+          "description": "Individual identifier. When provided, the SAME draws of the random coefficients are used for every choice of the individual (Train 2009 Section 6.5). Omit for cross-sectional data.",
           "type": "string"
         },
         "random_dist": {
-          "description": "Per-random-variable distribution \u2014 one of ``'normal'`` (default), ``'lognormal'``, ``'triangular'``.",
+          "description": "Per-random-variable distribution -- one of ``'normal'`` (default), ``'lognormal'``, ``'triangular'``.",
           "type": "object"
         },
         "robust": {
           "default": true,
-          "description": "Report OPG-sandwich robust SEs. ``False`` \u2192 classical inverse Hessian.",
+          "description": "Report OPG-sandwich robust SEs. ``False`` -> classical inverse Hessian.",
           "type": "boolean"
         },
         "tol": {
@@ -29879,7 +29902,7 @@
         },
         "n_grid": {
           "default": 41,
-          "description": "Grid resolution for the profile search over ``\u03b1`` (scalar case) \u2014 ignored when ``endog`` is multi-dimensional.",
+          "description": "Grid resolution for the profile search over ``alpha`` (scalar case) -- ignored when ``endog`` is multi-dimensional.",
           "type": "integer"
         },
         "random_state": {
@@ -29889,7 +29912,7 @@
         },
         "refine": {
           "default": true,
-          "description": "After the grid search, refine ``\u03b1\u0302`` with a local optimizer.",
+          "description": "After the grid search, refine ``alpha`` with a local optimizer.",
           "type": "boolean"
         },
         "tau": {
@@ -30299,7 +30322,7 @@
           "type": "string"
         },
         "fml": {
-          "description": "A pyfixest-style formula. Examples: - ``\"Y ~ X1 + X2\"`` \u2014 plain OLS - ``\"Y ~ X1 | firm + year\"`` \u2014 two-way fixed effects - ``\"Y ~ 1 | firm | X1 ~ Z1\"`` \u2014 IV with fixed effects - ``\"Y ~ X1 | csw0(firm, year)\"`` \u2014 multiple estimations",
+          "description": "A pyfixest-style formula. Examples: - ``\"Y ~ X1 + X2\"`` -- plain OLS - ``\"Y ~ X1 | firm + year\"`` -- two-way fixed effects - ``\"Y ~ 1 | firm | X1 ~ Z1\"`` -- IV with fixed effects - ``\"Y ~ X1 | csw0(firm, year)\"`` -- multiple estimations",
           "type": "string"
         },
         "lean": {
@@ -30312,7 +30335,7 @@
           "type": "string"
         },
         "vcov": {
-          "description": "Variance-covariance estimator. - ``\"iid\"`` \u2014 classical - ``\"HC1\"``, ``\"HC2\"``, ``\"HC3\"`` \u2014 heteroskedasticity-robust - ``{\"CRV1\": \"firm\"}`` \u2014 cluster-robust - ``{\"CRV1\": \"firm + year\"}`` \u2014 two-way clustering",
+          "description": "Variance-covariance estimator. - ``\"iid\"`` -- classical - ``\"HC1\"``, ``\"HC2\"``, ``\"HC3\"`` -- heteroskedasticity-robust - ``{\"CRV1\": \"firm\"}`` -- cluster-robust - ``{\"CRV1\": \"firm + year\"}`` -- two-way clustering",
           "type": "object"
         },
         "weights": {
@@ -33105,7 +33128,7 @@
       "properties": {
         "allow_experimental": {
           "default": false,
-          "description": "Whether to include estimators registered as ``stability='experimental'`` (or ``'deprecated'``) in the ranked output. The default ``False`` is the agent-safe choice \u2014 an LLM agent or pipeline that asks for an estimator recommendation should not silently land on a frontier MVP. Set ``True`` when you are explicitly exploring frontier methods (e.g. ``causal_text``, ``did_multiplegt_dyn``); dropped names are listed in ``RecommendationResult.warnings`` either way. See ``docs/guides/stability.md`` for the full contract.",
+          "description": "Whether to include estimators registered as ``stability='experimental'`` (or ``'deprecated'``) in the ranked output. The default ``False`` is the agent-safe choice -- an LLM agent or pipeline that asks for an estimator recommendation should not silently land on a frontier MVP. Set ``True`` when you are explicitly exploring frontier methods (e.g. ``causal_text``, ``did_multiplegt_dyn``); dropped names are listed in ``RecommendationResult.warnings`` either way. See ``docs/guides/stability.md`` for the full contract.",
           "type": "boolean"
         },
         "covariates": {
@@ -33144,7 +33167,7 @@
           "type": "string"
         },
         "post_treat_strata": {
-          "description": "Binary post-treatment variable defining principal strata (take-up, survival, employment, \u2026). Triggers `sp.principal_strat` (Frangakis & Rubin 2002).",
+          "description": "Binary post-treatment variable defining principal strata (take-up, survival, employment, ...). Triggers `sp.principal_strat` (Frangakis & Rubin 2002).",
           "type": "string"
         },
         "proxy_w": {
@@ -33174,7 +33197,7 @@
           "type": "string"
         },
         "tv_confounders": {
-          "description": "Time-varying confounders (must be pre-treatment at each period). Triggers `sp.msm` \u2014 Marginal Structural Model via IPTW (Robins, Hern\u00e1n & Brumback 2000).",
+          "description": "Time-varying confounders (must be pre-treatment at each period). Triggers `sp.msm` -- Marginal Structural Model via IPTW (Robins, Hernan & Brumback 2000).",
           "items": {
             "type": "string"
           },
@@ -33444,11 +33467,11 @@
           "type": "string"
         },
         "method_hints": {
-          "description": "Per-method keyword overrides, merged with the shared kwargs when dispatching each estimator. Structure:: {'proximal': {'proxy_z': ['z'], 'proxy_w': ['w']}, 'msm': {'time_varying': ['L_lag']}, 'principal_strat': {'strata': 's'}} **Collision rule** (docs/ROADMAP.md \u00a76): per-method hints take precedence over the shared kwargs for the method they name. If the top-level ``covariates=['age']`` disagrees with ``method_hints={'proximal': {'covariates': ['age', 'educ']}}``, proximal uses the hint and every other method uses the shared arg. A ``UserWarning`` fires on conflict so the override is visible in the log.",
+          "description": "Per-method keyword overrides, merged with the shared kwargs when dispatching each estimator. Structure:: {'proximal': {'proxy_z': ['z'], 'proxy_w': ['w']}, 'msm': {'time_varying': ['L_lag']}, 'principal_strat': {'strata': 's'}} **Collision rule** (docs/ROADMAP.md Section 6): per-method hints take precedence over the shared kwargs for the method they name. If the top-level ``covariates=['age']`` disagrees with ``method_hints={'proximal': {'covariates': ['age', 'educ']}}``, proximal uses the hint and every other method uses the shared arg. A ``UserWarning`` fires on conflict so the override is visible in the log.",
           "type": "object"
         },
         "methods": {
-          "description": "Estimators to compare. Default auto-selects based on data. Classical options: ``'ols'``, ``'matching'``, ``'ipw'``, ``'aipw'``, ``'dml'``, ``'g_computation'``, ``'causal_forest'``, ``'did'``, ``'panel_fe'``. Hint-driven Sprint-B options (require ``method_hints``): ``'proximal'``, ``'msm'``, ``'principal_strat'``, ``'mediate'``, ``'mediate_interventional'``, ``'front_door'``. Each needs method-specific kwargs the shared signature does not expose (proxy_z/proxy_w, time_varying, strata, mediator, etc.) \u2014 pass them through ``method_hints``.",
+          "description": "Estimators to compare. Default auto-selects based on data. Classical options: ``'ols'``, ``'matching'``, ``'ipw'``, ``'aipw'``, ``'dml'``, ``'g_computation'``, ``'causal_forest'``, ``'did'``, ``'panel_fe'``. Hint-driven Sprint-B options (require ``method_hints``): ``'proximal'``, ``'msm'``, ``'principal_strat'``, ``'mediate'``, ``'mediate_interventional'``, ``'front_door'``. Each needs method-specific kwargs the shared signature does not expose (proxy_z/proxy_w, time_varying, strata, mediator, etc.) -- pass them through ``method_hints``.",
           "items": {
             "type": "string"
           },
@@ -33640,7 +33663,7 @@
           "type": "number"
         },
         "data": {
-          "description": "The dataset to inspect. Must have \u2265 1 row.",
+          "description": "The dataset to inspect. Must have >= 1 row.",
           "type": "string"
         },
         "running_var": {
@@ -33688,7 +33711,7 @@
           "type": "string"
         },
         "method": {
-          "description": "Name of the StatsPAI estimator to pre-flight (e.g. ``\"did\"``, ``\"rdrobust\"``, ``\"ivreg\"``, ``\"callaway_santanna\"``, ``\"ebalance\"``). Unknown methods get only the universal DataFrame-shape sanity checks. Estimator arguments \u2014 column names (``y``, ``treat``, ``time``, ``i``, ``running_var``), a Wilkinson ``formula``, a ``covariates`` list, etc. Passed through unchanged from what the agent intends to use; ``preflight`` doesn't run the estimator.",
+          "description": "Name of the StatsPAI estimator to pre-flight (e.g. ``\"did\"``, ``\"rdrobust\"``, ``\"ivreg\"``, ``\"callaway_santanna\"``, ``\"ebalance\"``). Unknown methods get only the universal DataFrame-shape sanity checks. Estimator arguments -- column names (``y``, ``treat``, ``time``, ``i``, ``running_var``), a Wilkinson ``formula``, a ``covariates`` list, etc. Passed through unchanged from what the agent intends to use; ``preflight`` doesn't run the estimator.",
           "type": "string"
         }
       },
@@ -33706,7 +33729,7 @@
       "properties": {
         "jax": {
           "default": true,
-          "description": "Yield a fresh JAX ``PRNGKey(seed)`` to the caller via the ``jax_key`` attribute on the yielded session object, when JAX is already imported. Never imports jax on its own. (JAX has no global state so we can't seed it \u2014 agents must thread the key explicitly.)",
+          "description": "Yield a fresh JAX ``PRNGKey(seed)`` to the caller via the ``jax_key`` attribute on the yielded session object, when JAX is already imported. Never imports jax on its own. (JAX has no global state so we can't seed it -- agents must thread the key explicitly.)",
           "type": "boolean"
         },
         "pythonhashseed": {
@@ -33715,7 +33738,7 @@
           "type": "boolean"
         },
         "seed": {
-          "description": "Seed value. ``None`` (the default) means \"snapshot current state but don't reseed\" \u2014 useful for opportunistic save / restore around code that you don't want to leak RNG drift.",
+          "description": "Seed value. ``None`` (the default) means \"snapshot current state but don't reseed\" -- useful for opportunistic save / restore around code that you don't want to leak RNG drift.",
           "type": "integer"
         },
         "torch": {
@@ -35077,7 +35100,7 @@
         },
         "_group_col": {
           "default": "",
-          "description": "Column name for  group.",
+          "description": "Column name for group.",
           "type": "string"
         },
         "_method": {
@@ -35323,7 +35346,7 @@
         },
         "vce": {
           "default": "oim",
-          "description": "Variance-covariance estimator: ``'oim'`` \u2014 observed information matrix (inverse numerical Hessian). ``'opg'`` \u2014 outer product of gradients (Berndt-Hall-Hall-Hausman). ``'robust'`` \u2014 sandwich ``H^{-1} (S' S) H^{-1}`` (White 1982).",
+          "description": "Variance-covariance estimator: ``'oim'`` -- observed information matrix (inverse numerical Hessian). ``'opg'`` -- outer product of gradients (Berndt-Hall-Hall-Hausman). ``'robust'`` -- sandwich ``H^{-1} (S' S) H^{-1}`` (White 1982).",
           "enum": [
             "oim",
             "opg",
@@ -36108,7 +36131,7 @@
           "type": "array"
         },
         "labels": {
-          "description": "Labels for ``type='compare'``. Additional arguments passed to individual plotters. Notable: * ``pre_band=True`` \u2014 for ``type='trajectory'`` / ``'gap'`` / ``'both'``: overlay a \u00b11.96 \u00d7 pre-RMSPE noise envelope. * ``pi_band=True`` \u2014 for ``type='trajectory'``: overlay the prediction-interval / conformal CI ribbon around the synthetic counterfactual when the result carries one (``sp.scpi`` / ``sp.conformal_synth``).",
+          "description": "Labels for ``type='compare'``. Additional arguments passed to individual plotters. Notable: * ``pre_band=True`` -- for ``type='trajectory'`` / ``'gap'`` / ``'both'``: overlay a +/-1.96 x pre-RMSPE noise envelope. * ``pi_band=True`` -- for ``type='trajectory'``: overlay the prediction-interval / conformal CI ribbon around the synthetic counterfactual when the result carries one (``sp.scpi`` / ``sp.conformal_synth``).",
           "items": {
             "type": "string"
           },
@@ -36132,7 +36155,7 @@
         },
         "type": {
           "default": "trajectory",
-          "description": "Plot type: * ``'trajectory'`` \u2014 treated vs synthetic over time. * ``'gap'`` \u2014 effect (gap) over time. * ``'both'`` \u2014 two-panel: trajectory + gap. * ``'weights'`` \u2014 donor weight bar chart. * ``'placebo'`` \u2014 placebo ATT distribution. * ``'placebo_gap'`` \u2014 placebo gap spaghetti plot (Abadie et al. 2010). * ``'rmspe'`` \u2014 post/pre RMSPE ratio histogram (Abadie et al. 2010). * ``'conformal'`` \u2014 period-level effects + conformal CIs. * ``'staggered'`` \u2014 cohort-level ATT comparison. * ``'factors'`` \u2014 latent factor loadings (gsynth only). * ``'compare'`` \u2014 overlay multiple results.",
+          "description": "Plot type: * ``'trajectory'`` -- treated vs synthetic over time. * ``'gap'`` -- effect (gap) over time. * ``'both'`` -- two-panel: trajectory + gap. * ``'weights'`` -- donor weight bar chart. * ``'placebo'`` -- placebo ATT distribution. * ``'placebo_gap'`` -- placebo gap spaghetti plot (Abadie et al. 2010). * ``'rmspe'`` -- post/pre RMSPE ratio histogram (Abadie et al. 2010). * ``'conformal'`` -- period-level effects + conformal CIs. * ``'staggered'`` -- cohort-level ATT comparison. * ``'factors'`` -- latent factor loadings (gsynth only). * ``'compare'`` -- overlay multiple results.",
           "type": "string"
         }
       },
@@ -36408,7 +36431,7 @@
         },
         "method": {
           "default": "mixture",
-          "description": "``'mixture'``: constrained (\u03c9 \u2265 0, \u03a3\u03c9 = 1) \u2014 minimises the L\u2082-Wasserstein distance between quantile functions. ``'quantile'``: unconstrained quantile-on-quantile regression.",
+          "description": "``'mixture'``: constrained (omega >= 0, Sigmaomega = 1) -- minimises the L2-Wasserstein distance between quantile functions. ``'quantile'``: unconstrained quantile-on-quantile regression.",
           "enum": [
             "mixture",
             "quantile"
@@ -36472,7 +36495,7 @@
         },
         "test": {
           "default": "ks",
-          "description": "``'ks'``: two-sample Kolmogorov-Smirnov test comparing treated and counterfactual quantile functions. ``'cvm'``: Cram\u00e9r-von Mises test statistic (permutation-based). ``'stochastic_dominance'``: first-order stochastic dominance test.",
+          "description": "``'ks'``: two-sample Kolmogorov-Smirnov test comparing treated and counterfactual quantile functions. ``'cvm'``: Cramer-von Mises test statistic (permutation-based). ``'stochastic_dominance'``: first-order stochastic dominance test.",
           "enum": [
             "ks",
             "cvm",
@@ -36524,7 +36547,7 @@
         },
         "type": {
           "default": "quantile_effect",
-          "description": "default 'quantile_effect' ``'quantile_effect'``: treatment effect \u0394(\u03c4) across quantiles with CIs. ``'quantile_comparison'``: overlay treated vs. counterfactual quantile functions. ``'gap'``: gap plot (treated \u2212 synthetic) over time. ``'weights'``: horizontal bar chart of donor weights.",
+          "description": "default 'quantile_effect' ``'quantile_effect'``: treatment effect Delta(tau) across quantiles with CIs. ``'quantile_comparison'``: overlay treated vs. counterfactual quantile functions. ``'gap'``: gap plot (treated - synthetic) over time. ``'weights'``: horizontal bar chart of donor weights.",
           "enum": [
             "quantile_effect",
             "quantile_comparison",
@@ -37072,7 +37095,7 @@
           "type": "string"
         },
         "title": {
-          "description": "Custom plot title. Defaults to ``\"SCM Power Curve \u2014 Minimum Detectable Effect\"``.",
+          "description": "Custom plot title. Defaults to ``\"SCM Power Curve -- Minimum Detectable Effect\"``.",
           "type": "string"
         }
       },
@@ -37528,7 +37551,7 @@
     }
   },
   {
-    "description": "Global Moran's I \u2014 test for global spatial autocorrelation.",
+    "description": "Global Moran's I -- test for global spatial autocorrelation.",
     "name": "moran",
     "parameters": {
       "properties": {
@@ -37563,7 +37586,7 @@
     }
   },
   {
-    "description": "Local Moran's I (LISA) \u2014 per-location spatial association.",
+    "description": "Local Moran's I (LISA) -- per-location spatial association.",
     "name": "moran_local",
     "parameters": {
       "properties": {
@@ -37644,7 +37667,7 @@
     }
   },
   {
-    "description": "Global Geary's C \u2014 squared-difference measure of spatial autocorrelation.",
+    "description": "Global Geary's C -- squared-difference measure of spatial autocorrelation.",
     "name": "geary",
     "parameters": {
       "properties": {
@@ -37674,7 +37697,7 @@
     }
   },
   {
-    "description": "Global Getis-Ord G \u2014 overall concentration of high (or low) values.",
+    "description": "Global Getis-Ord G -- overall concentration of high (or low) values.",
     "name": "getis_ord_g",
     "parameters": {
       "properties": {
@@ -37704,7 +37727,7 @@
     }
   },
   {
-    "description": "Local Getis-Ord Gi / Gi* \u2014 hotspot and coldspot detection.",
+    "description": "Local Getis-Ord Gi / Gi* -- hotspot and coldspot detection.",
     "name": "getis_ord_local",
     "parameters": {
       "properties": {
@@ -37913,7 +37936,7 @@
     }
   },
   {
-    "description": "Distance-band spatial weights \u2014 connect units within a fixed radius.",
+    "description": "Distance-band spatial weights -- connect units within a fixed radius.",
     "name": "distance_band",
     "parameters": {
       "properties": {
@@ -37975,7 +37998,7 @@
     }
   },
   {
-    "description": "Block (regime) spatial weights \u2014 full connectivity within each group.",
+    "description": "Block (regime) spatial weights -- full connectivity within each group.",
     "name": "block_weights",
     "parameters": {
       "properties": {
@@ -38009,7 +38032,7 @@
           "type": "number"
         },
         "coords": {
-          "description": "Point coordinates (projected \u2014 use UTM or equivalent; lat/lon will bias distances in most regions).",
+          "description": "Point coordinates (projected -- use UTM or equivalent; lat/lon will bias distances in most regions).",
           "type": "string"
         },
         "fixed": {
@@ -38198,7 +38221,7 @@
     }
   },
   {
-    "description": "Spatial Lag of X (SLX) model: ``Y = X\u03b2 + WX\u03b8 + \u03b5``.",
+    "description": "Spatial Lag of X (SLX) model: ``Y = Xbeta + WXtheta + epsilon``.",
     "name": "slx",
     "parameters": {
       "properties": {
@@ -38309,7 +38332,7 @@
     }
   },
   {
-    "description": "Kelejian-Prucha (1999) GMM for the spatial-error parameter \u03bb.",
+    "description": "Kelejian-Prucha (1999) GMM for the spatial-error parameter lambda.",
     "name": "sem_gmm",
     "parameters": {
       "properties": {
@@ -38326,7 +38349,7 @@
           "type": "string"
         },
         "robust": {
-          "description": "When ``\"het\"``, the final \u03b2 covariance uses the heteroscedasticity- robust sandwich (Arraiz et al. 2010 / ``spreg.GM_Error_Het``).",
+          "description": "When ``\"het\"``, the final beta covariance uses the heteroscedasticity- robust sandwich (Arraiz et al. 2010 / ``spreg.GM_Error_Het``).",
           "type": "string"
         },
         "row_normalize": {
@@ -38349,7 +38372,7 @@
     "parameters": {
       "properties": {
         "W": {
-          "description": "N \u00d7 N spatial weights matrix aligned with ``sorted(data[entity].unique())``.",
+          "description": "N x N spatial weights matrix aligned with ``sorted(data[entity].unique())``.",
           "type": "string"
         },
         "data": {
@@ -38866,7 +38889,7 @@
     "parameters": {
       "properties": {
         "method": {
-          "description": "One of the methods listed in ``available_methods()``. Aliases are supported (e.g. 'mm' \u2192 'machado_mata').",
+          "description": "One of the methods listed in ``available_methods()``. Aliases are supported (e.g. 'mm' -> 'machado_mata').",
           "type": "string"
         }
       },
@@ -38914,7 +38937,7 @@
         },
         "reference": {
           "default": 0,
-          "description": "- 0: reweight Group B to look like A's X (default). The counterfactual is F_{Y<1|0>} \u2014 A's X distribution with B's outcome structure. - 1: reweight Group A to look like B's X. The counterfactual is F_{Y<0|1>} \u2014 B's X distribution with A's outcome structure. .. warning:: ``reference`` has different economic semantics across method families. In DFL, ``reference=0`` yields cf = *A's X, B's \u03b2* (reweighting approach). In ``machado_mata`` / ``melly`` / ``cfm``, ``reference=0`` yields cf = *A's \u03b2, B's X* (coefficient-substitution approach). These are **opposite** counterfactual constructions. Within each method labels are internally consistent (DFL structure = A \u2212 cf; MM composition = A \u2212 cf). When comparing estimates across methods, read the per-method docstrings carefully.",
+          "description": "- 0: reweight Group B to look like A's X (default). The counterfactual is F_{Y<1|0>} -- A's X distribution with B's outcome structure. - 1: reweight Group A to look like B's X. The counterfactual is F_{Y<0|1>} -- B's X distribution with A's outcome structure. .. warning:: ``reference`` has different economic semantics across method families. In DFL, ``reference=0`` yields cf = *A's X, B's beta* (reweighting approach). In ``machado_mata`` / ``melly`` / ``cfm``, ``reference=0`` yields cf = *A's beta, B's X* (coefficient-substitution approach). These are **opposite** counterfactual constructions. Within each method labels are internally consistent (DFL structure = A - cf; MM composition = A - cf). When comparing estimates across methods, read the per-method docstrings carefully.",
           "enum": [
             "0",
             "1"
@@ -39015,7 +39038,7 @@
         },
         "reference": {
           "default": 0,
-          "description": "0: use Group A's coefficients with Group B's X. The counterfactual is F_{Y<0|1>} \u2014 A's \u03b2 on B's X. 1: use Group B's coefficients with Group A's X. .. warning:: Opposite convention to ``dfl_decompose``. In DFL, ``reference=0`` means *A's X, B's \u03b2* (reweighting). Here, ``reference=0`` means *A's \u03b2, B's X* (coefficient swap). See ``dfl_decompose`` docstring for the full convention map.",
+          "description": "0: use Group A's coefficients with Group B's X. The counterfactual is F_{Y<0|1>} -- A's beta on B's X. 1: use Group B's coefficients with Group A's X. .. warning:: Opposite convention to ``dfl_decompose``. In DFL, ``reference=0`` means *A's X, B's beta* (reweighting). Here, ``reference=0`` means *A's beta, B's X* (coefficient swap). See ``dfl_decompose`` docstring for the full convention map.",
           "enum": [
             "0",
             "1"
@@ -39028,7 +39051,7 @@
           "type": "integer"
         },
         "tau_grid": {
-          "description": "\u03c4 grid for reporting (default: deciles 0.1..0.9)",
+          "description": "tau grid for reporting (default: deciles 0.1..0.9)",
           "type": "number"
         },
         "x": {
@@ -39072,7 +39095,7 @@
         },
         "reference": {
           "default": 0,
-          "description": "Same convention as ``machado_mata``: ``reference=0`` uses A's \u03b2 on B's X (coefficient-swap counterfactual F_{Y<0|1>}), opposite to ``dfl_decompose`` whose ``reference=0`` uses A's X with B's \u03b2.",
+          "description": "Same convention as ``machado_mata``: ``reference=0`` uses A's beta on B's X (coefficient-swap counterfactual F_{Y<0|1>}), opposite to ``dfl_decompose`` whose ``reference=0`` uses A's X with B's beta.",
           "enum": [
             "0",
             "1"
@@ -39395,7 +39418,7 @@
     }
   },
   {
-    "description": "Chernozhukov-Fern\u00e1ndez-Val-Melly (2013) counterfactual decomposition.",
+    "description": "Chernozhukov-Fernandez-Val-Melly (2013) counterfactual decomposition.",
     "name": "cfm_decompose",
     "parameters": {
       "properties": {
@@ -39514,11 +39537,11 @@
     "parameters": {
       "properties": {
         "data_a": {
-          "description": "Each row contributes the factor value. The aggregate for each group is computed as \u03a3_i \u220f_f factor_{f,i}. For single-row DataFrames (one population, no stratification) the aggregate is simply \u220f_f factor_f.",
+          "description": "Each row contributes the factor value. The aggregate for each group is computed as Sigma_i _f factor_{f,i}. For single-row DataFrames (one population, no stratification) the aggregate is simply _f factor_f.",
           "type": "string"
         },
         "data_b": {
-          "description": "Each row contributes the factor value. The aggregate for each group is computed as \u03a3_i \u220f_f factor_{f,i}. For single-row DataFrames (one population, no stratification) the aggregate is simply \u220f_f factor_f.",
+          "description": "Each row contributes the factor value. The aggregate for each group is computed as Sigma_i _f factor_{f,i}. For single-row DataFrames (one population, no stratification) the aggregate is simply _f factor_f.",
           "type": "string"
         },
         "factor_names": {
@@ -39882,7 +39905,7 @@
           "type": "string"
         },
         "group": {
-          "description": "Binary group indicator (0/1) \u2014 ``1`` = advantaged / index group.",
+          "description": "Binary group indicator (0/1) -- ``1`` = advantaged / index group.",
           "type": "string"
         },
         "inference": {
@@ -39892,7 +39915,7 @@
         },
         "method": {
           "default": "plugin",
-          "description": "``\"plugin\"`` uses within-cell OLS for outcomes and within-group logit for the propensity and computes plug-in expectations (Yu-Elwert 2025, Section 4.1). ``\"efficient\"`` augments each moment with the doubly-robust correction term \u2014 recommended when nuisance functions might be misspecified.",
+          "description": "``\"plugin\"`` uses within-cell OLS for outcomes and within-group logit for the propensity and computes plug-in expectations (Yu-Elwert 2025, Section 4.1). ``\"efficient\"`` augments each moment with the doubly-robust correction term -- recommended when nuisance functions might be misspecified.",
           "enum": [
             "plugin",
             "efficient"
@@ -40191,7 +40214,7 @@
     }
   },
   {
-    "description": "One-call staggered-DID workflow: estimate \u2192 aggregate \u2192 sensitivity.",
+    "description": "One-call staggered-DID workflow: estimate -> aggregate -> sensitivity.",
     "name": "cs_report",
     "parameters": {
       "properties": {
@@ -40266,7 +40289,7 @@
           "type": "string"
         },
         "save_to": {
-          "description": "When set, treats the value as a *path prefix* and writes the report in every supported format in one call: - ``<prefix>.txt`` \u2014 fixed-width plain-text report - ``<prefix>.md`` \u2014 GitHub-flavoured Markdown - ``<prefix>.tex`` \u2014 booktabs LaTeX fragment - ``<prefix>.xlsx`` \u2014 multi-sheet workbook - ``<prefix>.png`` \u2014 2\u00d72 summary figure (only if matplotlib is installed; silently skipped otherwise) Missing parent directories are created on the fly.",
+          "description": "When set, treats the value as a *path prefix* and writes the report in every supported format in one call: - ``<prefix>.txt`` -- fixed-width plain-text report - ``<prefix>.md`` -- GitHub-flavoured Markdown - ``<prefix>.tex`` -- booktabs LaTeX fragment - ``<prefix>.xlsx`` -- multi-sheet workbook - ``<prefix>.png`` -- 2x2 summary figure (only if matplotlib is installed; silently skipped otherwise) Missing parent directories are created on the fly.",
           "type": "string"
         },
         "t": {
@@ -40348,7 +40371,7 @@
     }
   },
   {
-    "description": "Estimate impulse responses via Jord\u00e0 (2005) local projections. Validation: certified parity evidence.",
+    "description": "Estimate impulse responses via Jorda (2005) local projections. Validation: certified parity evidence.",
     "name": "local_projections",
     "parameters": {
       "properties": {
@@ -40375,13 +40398,29 @@
           "type": "boolean"
         },
         "data": {
-          "description": "Time-ordered panel (single series for now \u2014 panel extension TBD).",
+          "description": "Time-ordered panel (single series for now -- panel extension TBD).",
           "type": "string"
+        },
+        "endog_order": {
+          "description": "Endogenous variable order used only when ``identification='lpirfs_cholesky'``. Defaults to ``[outcome, shock]``.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "horizons": {
           "default": 20,
-          "description": "Number of horizons h = 0, 1, \u2026, H to estimate.",
+          "description": "Number of horizons h = 0, 1, ..., H to estimate.",
           "type": "integer"
+        },
+        "identification": {
+          "default": "direct",
+          "description": "Shock-identification convention. ``'direct'`` uses the coefficient on the observed ``shock`` variable in each horizon regression. ``'lpirfs_cholesky'`` reproduces ``lpirfs::lp_lin`` with ``lags_endog_lin=1`` and ``shock_type=1``: the variables in ``endog_order`` define the Cholesky ordering, and the reported response is the unit structural shock for ``shock``.",
+          "enum": [
+            "direct",
+            "lpirfs_cholesky"
+          ],
+          "type": "string"
         },
         "nw_lags": {
           "description": "Newey-West truncation lag. Defaults to ``round(1.5 * horizons)`` per Kilian & Kim (2011) recommendation.",
@@ -40461,7 +40500,7 @@
     }
   },
   {
-    "description": "Cardinality matching \u2014 maximise the number of matched pairs subject",
+    "description": "Cardinality matching -- maximise the number of matched pairs subject",
     "name": "cardinality_match",
     "parameters": {
       "properties": {
@@ -40625,7 +40664,7 @@
     }
   },
   {
-    "description": "Deville-S\u00e4rndal (1992) linear calibration.",
+    "description": "Deville-Sarndal (1992) linear calibration.",
     "name": "linear_calibration",
     "parameters": {
       "properties": {
@@ -41185,17 +41224,17 @@
       "properties": {
         "mean": {
           "default": true,
-          "description": "Estimate a constant mean \u03bc; if False, \u03bc = 0.",
+          "description": "Estimate a constant mean mu; if False, mu = 0.",
           "type": "boolean"
         },
         "p": {
           "default": 1,
-          "description": "Number of GARCH (lagged \u03c3\u00b2) terms.",
+          "description": "Number of GARCH (lagged sigma2) terms.",
           "type": "integer"
         },
         "q": {
           "default": 1,
-          "description": "Number of ARCH (lagged \u03b5\u00b2) terms.",
+          "description": "Number of ARCH (lagged epsilon2) terms.",
           "type": "integer"
         },
         "y": {
@@ -41643,7 +41682,7 @@
     }
   },
   {
-    "description": "Sharp / fuzzy RD \u2014 article-friendly alias for :func:`rdrobust`.",
+    "description": "Sharp / fuzzy RD -- article-friendly alias for :func:`rdrobust`.",
     "name": "rdd",
     "parameters": {
       "properties": {
@@ -41678,7 +41717,7 @@
     }
   },
   {
-    "description": "Front-door adjustment \u2014 article-friendly alias for",
+    "description": "Front-door adjustment -- article-friendly alias for",
     "name": "frontdoor",
     "parameters": {
       "properties": {
@@ -41716,7 +41755,7 @@
     }
   },
   {
-    "description": "X-Learner CATE \u2014 article alias for :func:`metalearner(learner='x')`.",
+    "description": "X-Learner CATE -- article alias for :func:`metalearner(learner='x')`.",
     "name": "xlearner",
     "parameters": {
       "properties": {
@@ -41750,7 +41789,7 @@
     }
   },
   {
-    "description": "Conformal ITE \u2014 article alias for :func:`conformal_cate`.",
+    "description": "Conformal ITE -- article alias for :func:`conformal_cate`.",
     "name": "conformal_ite",
     "parameters": {
       "properties": {
@@ -41784,7 +41823,7 @@
     }
   },
   {
-    "description": "Propensity-score matching \u2014 article alias for :func:`match` Validation: certified parity evidence.",
+    "description": "Propensity-score matching -- article alias for :func:`match` Validation: certified parity evidence.",
     "name": "psm",
     "parameters": {
       "properties": {
@@ -41823,7 +41862,7 @@
     }
   },
   {
-    "description": "Partial identification of ATE \u2014 article alias for the ``bounds`` module.",
+    "description": "Partial identification of ATE -- article alias for the ``bounds`` module.",
     "name": "partial_identification",
     "parameters": {
       "properties": {
@@ -41876,7 +41915,7 @@
     }
   },
   {
-    "description": "Anderson-Rubin confidence set \u2014 re-export of",
+    "description": "Anderson-Rubin confidence set -- re-export of",
     "name": "anderson_rubin_ci",
     "parameters": {
       "properties": {},
@@ -41885,7 +41924,7 @@
     }
   },
   {
-    "description": "Moreira (2003) CLR confidence set \u2014 re-export of",
+    "description": "Moreira (2003) CLR confidence set -- re-export of",
     "name": "conditional_lr_ci",
     "parameters": {
       "properties": {},
@@ -42154,7 +42193,7 @@
     }
   },
   {
-    "description": "Causal-discovery dispatcher \u2014 article-facing alias.",
+    "description": "Causal-discovery dispatcher -- article-facing alias.",
     "name": "causal_discovery",
     "parameters": {
       "properties": {
@@ -42182,7 +42221,7 @@
     }
   },
   {
-    "description": "Causal-mediation analysis \u2014 article-facing alias for Validation: certified parity evidence.",
+    "description": "Causal-mediation analysis -- article-facing alias for Validation: certified parity evidence.",
     "name": "mediation",
     "parameters": {
       "properties": {
@@ -42734,7 +42773,7 @@
           "type": "array"
         },
         "time_zero": {
-          "description": "Explicit rule defining time zero \u2014 usually the moment of eligibility + treatment assignment alignment. This is the single most important field for preventing immortal time bias.",
+          "description": "Explicit rule defining time zero -- usually the moment of eligibility + treatment assignment alignment. This is the single most important field for preventing immortal time bias.",
           "type": "string"
         },
         "treatment_strategies": {
@@ -43103,7 +43142,7 @@
           "type": "array"
         },
         "control_strategy": {
-          "description": "If provided, a second arm is simulated under the control strategy and a contrast (treat \u2212 control) is reported.",
+          "description": "If provided, a second arm is simulated under the control strategy and a contrast (treat - control) is reported.",
           "type": "number"
         },
         "data": {
@@ -44329,7 +44368,7 @@
       "properties": {
         "alpha": {
           "default": 0.1,
-          "description": "Miscoverage; intervals target 1 \u2212 \u03b1 coverage.",
+          "description": "Miscoverage; intervals target 1 - alpha coverage.",
           "type": "number"
         },
         "bandwidth": {
@@ -45096,7 +45135,7 @@
     }
   },
   {
-    "description": "PCMCI output \u2014 lag-specific adjacency + discovered links.",
+    "description": "PCMCI output -- lag-specific adjacency + discovered links.",
     "name": "PCMCIResult",
     "parameters": {
       "properties": {
@@ -45241,7 +45280,7 @@
     }
   },
   {
-    "description": "Partial-correlation p-value for H0: ``X \u27c2 Y | Z``.",
+    "description": "Partial-correlation p-value for H0: ``X Y | Z``.",
     "name": "partial_corr_pvalue",
     "parameters": {
       "properties": {
@@ -45656,11 +45695,11 @@
         },
         "baseline_survival_t": {
           "default": 0.5,
-          "description": "Baseline S_0(t) used to report \u0394 survival at time t.",
+          "description": "Baseline S_0(t) used to report Delta survival at time t.",
           "type": "number"
         },
         "gamma_grid": {
-          "description": "Gamma (\u2265 1) values. Defaults to ``np.linspace(1.0, 3.0, 21)``.",
+          "description": "Gamma (>= 1) values. Defaults to ``np.linspace(1.0, 3.0, 21)``.",
           "type": "number"
         },
         "log_hr": {
@@ -45694,11 +45733,11 @@
           "type": "number"
         },
         "observed_r2_outcome": {
-          "description": "Partial-R\u00b2 of the observed covariate(s) with Y (resp. D). Used to benchmark \"1x as confounding as observed\" / \"2x\" etc.",
+          "description": "Partial-R2 of the observed covariate(s) with Y (resp. D). Used to benchmark \"1x as confounding as observed\" / \"2x\" etc.",
           "type": "number"
         },
         "observed_r2_treatment": {
-          "description": "Partial-R\u00b2 of the observed covariate(s) with Y (resp. D). Used to benchmark \"1x as confounding as observed\" / \"2x\" etc.",
+          "description": "Partial-R2 of the observed covariate(s) with Y (resp. D). Used to benchmark \"1x as confounding as observed\" / \"2x\" etc.",
           "type": "number"
         },
         "se": {
@@ -46114,7 +46153,7 @@
     "parameters": {
       "properties": {
         "bw_grid": {
-          "description": "Bandwidths to evaluate in the sensitivity panel. If None, uses ``[0.5, 0.75, 1.0, 1.25, 1.5, 2.0] \u00d7 h_mse``.",
+          "description": "Bandwidths to evaluate in the sensitivity panel. If None, uses ``[0.5, 0.75, 1.0, 1.25, 1.5, 2.0] x h_mse``.",
           "type": "number"
         },
         "c": {
@@ -46842,7 +46881,7 @@
       "properties": {
         "confounding_strength": {
           "default": 0.5,
-          "description": "Magnitude of unmeasured confounding U \u2192 (action, reward).",
+          "description": "Magnitude of unmeasured confounding U -> (action, reward).",
           "type": "number"
         },
         "n_episodes": {
@@ -47234,14 +47273,14 @@
           "type": "integer"
         },
         "nc_exposure": {
-          "description": "Negative-control exposures \u2014 pseudo-treatments expected NOT to cause the outcome.",
+          "description": "Negative-control exposures -- pseudo-treatments expected NOT to cause the outcome.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "nc_outcome": {
-          "description": "Negative-control outcomes \u2014 variables expected NOT affected by the treatment but sharing the same confounding structure.",
+          "description": "Negative-control outcomes -- variables expected NOT affected by the treatment but sharing the same confounding structure.",
           "items": {
             "type": "string"
           },
@@ -48436,7 +48475,7 @@
           "type": "number"
         },
         "method": {
-          "default": "Lei-Cand\u00e8s-2021-split-CQR",
+          "default": "Lei-Candes-2021-split-CQR",
           "description": "Estimator or algorithm variant to use.",
           "type": "string"
         },
@@ -48522,7 +48561,7 @@
     }
   },
   {
-    "description": "Prediction intervals for the individual treatment effect \u03c4(x).",
+    "description": "Prediction intervals for the individual treatment effect tau(x).",
     "name": "ConformalITEResult",
     "parameters": {
       "properties": {
@@ -48539,7 +48578,7 @@
           "type": "string"
         },
         "method": {
-          "default": "nested-counterfactual-bound (Lei-Cand\u00e8s 2021 Eq. 3.4)",
+          "default": "nested-counterfactual-bound (Lei-Candes 2021 Eq. 3.4)",
           "description": "Estimator or algorithm variant to use.",
           "type": "string"
         },

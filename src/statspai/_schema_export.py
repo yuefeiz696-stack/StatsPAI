@@ -33,6 +33,7 @@ which is the part an agent actually reasons over.
 from __future__ import annotations
 
 import json
+import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -172,6 +173,109 @@ _FILE_MAP = {
     "result_schema": "result.schema.json",
 }
 
+ASCII_TRANSLITERATION = str.maketrans({
+    "\u2010": "-",
+    "\u2011": "-",
+    "\u2012": "-",
+    "\u2013": "-",
+    "\u2014": "--",
+    "\u2015": "--",
+    "\u2212": "-",
+    "\u2026": "...",
+    "\u00d7": "x",
+    "\u00b7": "*",
+    "\u2248": "~",
+    "\u2264": "<=",
+    "\u2265": ">=",
+    "\u2260": "!=",
+    "\u2261": "==",
+    "\u221e": "inf",
+    "\u2208": "in",
+    "\u2190": "<-",
+    "\u2192": "->",
+    "\u2194": "<->",
+    "\u21d2": "=>",
+    "\u221a": "sqrt",
+    "\u2211": "sum",
+    "\u222b": "integral",
+    "\u2202": "partial",
+    "\u22a5": "perp",
+    "\u201c": '"',
+    "\u201d": '"',
+    "\u2018": "'",
+    "\u2019": "'",
+    "\u00a7": "Section ",
+    "\u00b1": "+/-",
+    "\u2022": "*",
+    "\u26a0": "WARNING",
+    "\u2705": "OK",
+    "\u2713": "OK",
+    "\ufe0f": "",
+    "\u2500": "-",
+    "\u2501": "-",
+    "\u2550": "=",
+    "\u2502": "|",
+    "\u2503": "|",
+    "\u250c": "+",
+    "\u2510": "+",
+    "\u2514": "+",
+    "\u2518": "+",
+    "\u251c": "+",
+    "\u2524": "+",
+    "\u253c": "+",
+    "\u2554": "+",
+    "\u2557": "+",
+    "\u255a": "+",
+    "\u255d": "+",
+    "\u2551": "|",
+    "\u03b1": "alpha",
+    "\u03b2": "beta",
+    "\u03b3": "gamma",
+    "\u03b4": "delta",
+    "\u03b5": "epsilon",
+    "\u03b7": "eta",
+    "\u03b8": "theta",
+    "\u03ba": "kappa",
+    "\u03bb": "lambda",
+    "\u03bc": "mu",
+    "\u03bd": "nu",
+    "\u03c0": "pi",
+    "\u03c1": "rho",
+    "\u03c3": "sigma",
+    "\u03c4": "tau",
+    "\u03c6": "phi",
+    "\u03c7": "chi",
+    "\u03c8": "psi",
+    "\u03c9": "omega",
+    "\u0393": "Gamma",
+    "\u0394": "Delta",
+    "\u03a3": "Sigma",
+    "\u03a6": "Phi",
+    "\u03a8": "Psi",
+    "\u03a9": "Omega",
+    "\u2080": "0",
+    "\u2081": "1",
+    "\u2082": "2",
+    "\u2083": "3",
+    "\u2084": "4",
+    "\u2085": "5",
+    "\u2086": "6",
+    "\u2087": "7",
+    "\u2088": "8",
+    "\u2089": "9",
+    "\u00b9": "1",
+    "\u00b2": "2",
+    "\u00b3": "3",
+    "\u2070": "0",
+    "\u2074": "4",
+    "\u2075": "5",
+    "\u2076": "6",
+    "\u2077": "7",
+    "\u2078": "8",
+    "\u2079": "9",
+    "\u207b": "-",
+})
+
 
 def _json_default(obj: Any) -> Any:
     """Coerce non-JSON-serializable leaves so the bundle always renders.
@@ -194,8 +298,38 @@ def _json_default(obj: Any) -> Any:
     return None
 
 
+def _ascii_schema_string(value: str) -> str:
+    text = value.replace("\u5f85\u6838\u9a8c", "pending verification")
+    text = text.translate(ASCII_TRANSLITERATION)
+    text = unicodedata.normalize("NFKD", text)
+    text = text.encode("ascii", "ignore").decode("ascii")
+    while "  " in text:
+        text = text.replace("  ", " ")
+    return text
+
+
+def _ascii_schema_obj(obj: Any) -> Any:
+    if isinstance(obj, str):
+        return _ascii_schema_string(obj)
+    if isinstance(obj, list):
+        return [_ascii_schema_obj(item) for item in obj]
+    if isinstance(obj, tuple):
+        return [_ascii_schema_obj(item) for item in obj]
+    if isinstance(obj, dict):
+        return {
+            _ascii_schema_obj(key): _ascii_schema_obj(value)
+            for key, value in obj.items()
+        }
+    return obj
+
+
 def _dumps(obj: Any) -> str:
-    return json.dumps(obj, indent=2, sort_keys=True, default=_json_default) + "\n"
+    return json.dumps(
+        _ascii_schema_obj(obj),
+        indent=2,
+        sort_keys=True,
+        default=_json_default,
+    ) + "\n"
 
 
 def render_files(bundle: Dict[str, Any]) -> Dict[str, str]:

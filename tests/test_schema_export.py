@@ -20,6 +20,7 @@ No network / R / Stata.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -37,7 +38,9 @@ from statspai._schema_export import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS_DIR = REPO_ROOT / "schemas"
 
-jsonschema = pytest.importorskip("jsonschema")
+
+def _jsonschema():
+    return pytest.importorskip("jsonschema")
 
 
 # --------------------------------------------------------------------------- #
@@ -70,6 +73,7 @@ def _ols_dataset() -> pd.DataFrame:
 
 
 def test_causal_result_agent_payload_matches_schema():
+    jsonschema = _jsonschema()
     import statspai as sp
 
     r = sp.did(_did_dataset(), y="y", treat="treat", time="post")
@@ -84,6 +88,7 @@ def test_causal_result_agent_payload_matches_schema():
 
 
 def test_econometric_result_agent_payload_matches_schema():
+    jsonschema = _jsonschema()
     import statspai as sp
 
     r = sp.regress("y ~ x + z", data=_ols_dataset())
@@ -95,6 +100,7 @@ def test_econometric_result_agent_payload_matches_schema():
 
 def test_minimal_and_standard_payloads_also_validate():
     """The schema is permissive enough to accept the leaner detail levels."""
+    jsonschema = _jsonschema()
     import statspai as sp
 
     r = sp.did(_did_dataset(), y="y", treat="treat", time="post")
@@ -104,6 +110,7 @@ def test_minimal_and_standard_payloads_also_validate():
 
 
 def test_result_schema_is_itself_a_valid_jsonschema():
+    jsonschema = _jsonschema()
     # Will raise SchemaError if the schema document is malformed.
     jsonschema.Draft202012Validator.check_schema(RESULT_AGENT_SCHEMA)
 
@@ -141,6 +148,80 @@ def test_bundle_renders_to_valid_json():
     } <= set(files)
     for fname, text in files.items():
         json.loads(text)  # raises on malformed JSON
+
+
+def _walk_strings(obj, path="$"):
+    if isinstance(obj, str):
+        yield path, obj
+    elif isinstance(obj, list):
+        for i, item in enumerate(obj):
+            yield from _walk_strings(item, f"{path}[{i}]")
+    elif isinstance(obj, dict):
+        for key, value in obj.items():
+            yield from _walk_strings(str(key), f"{path}.{key!s}<key>")
+            yield from _walk_strings(value, f"{path}.{key!s}")
+
+
+def test_rendered_bundle_strings_are_ascii_normalized():
+    """No hidden Unicode escapes should reappear after JSON decoding.
+
+    JSS requires submitted source files to be ASCII.  The archive packager
+    therefore normalizes source files, and the schema bundle must be stable
+    before and after that normalization.  Checking decoded strings catches
+    JSON-safe but semantically non-ASCII escapes such as ``\u2014``.
+    """
+    files = render_files(build_schemas())
+    bad = []
+    double_spaced = []
+    for fname, text in files.items():
+        payload = json.loads(text)
+        for path, value in _walk_strings(payload):
+            if any(ord(ch) > 127 for ch in value):
+                bad.append(f"{fname}:{path}: {value!r}")
+            if "  " in value:
+                double_spaced.append(f"{fname}:{path}: {value!r}")
+    assert not bad, "Non-ASCII decoded schema strings:\n  " + "\n  ".join(bad[:20])
+    assert not double_spaced, (
+        "Schema strings with repeated spaces after normalization:\n  "
+        + "\n  ".join(double_spaced[:20])
+    )
+
+
+def test_tool_descriptions_do_not_contain_join_artifacts():
+    """Agent-facing descriptions should not expose sloppy sentence joins."""
+    files = render_files(build_schemas())
+    bad = []
+    sentence_double_period = re.compile(r"(?<!\.)\.\.(?:\s|$)")
+    for fname in ("tools.json", "functions.json", "agent_cards.json"):
+        payload = json.loads(files[fname])
+        entries = payload.values() if isinstance(payload, dict) else payload
+        for i, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            candidates = [entry.get("description")]
+            signature = entry.get("signature")
+            if isinstance(signature, dict):
+                candidates.append(signature.get("description"))
+            for value in candidates:
+                if isinstance(value, str) and sentence_double_period.search(value):
+                    bad.append(f"{fname}[{i}]: {value}")
+    assert not bad, (
+        "Schema descriptions contain double-period sentence joins:\n  "
+        + "\n  ".join(bad[:20])
+    )
+
+
+def test_scoped_certified_limitations_do_not_claim_unqualified_parity():
+    """Certified-but-limited tools must not overstate exact parity in schemas."""
+    import statspai as sp
+
+    schema = sp.function_schema("rddensity")
+    desc = schema["description"]
+
+    assert "Validation: certified evidence with scoped limitations." in desc
+    assert "Validation: certified parity evidence." not in desc
+    assert "backend='r'" in desc
+    assert "not a reference-parity guarantee" in desc
 
 
 # --------------------------------------------------------------------------- #

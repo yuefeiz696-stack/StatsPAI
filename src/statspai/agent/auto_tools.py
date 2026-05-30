@@ -121,7 +121,15 @@ def _enrich_description(base_desc: str, card: Optional[Dict[str, Any]]) -> str:
 
     The result is kept under :data:`_MAX_DESCRIPTION_LEN` characters.
     """
-    desc = (base_desc or '').strip()
+    from statspai._schema_export import _ascii_schema_string
+
+    def clean(value: Any) -> str:
+        return _ascii_schema_string(str(value).strip())
+
+    def fragment(value: Any) -> str:
+        return clean(value).rstrip('.;')
+
+    desc = clean(base_desc or '')
     if not card:
         return desc[:_MAX_DESCRIPTION_LEN]
 
@@ -129,22 +137,22 @@ def _enrich_description(base_desc: str, card: Optional[Dict[str, Any]]) -> str:
 
     assumptions = card.get('assumptions') or []
     if assumptions:
-        bullets = '; '.join(str(a).rstrip('.') for a in assumptions[:3])
+        bullets = '; '.join(fragment(a) for a in assumptions[:3])
         chunks.append(f"Assumptions: {bullets}.")
 
     pre = card.get('pre_conditions') or []
     if pre:
-        bullets = '; '.join(str(p).rstrip('.') for p in pre[:3])
+        bullets = '; '.join(fragment(p) for p in pre[:3])
         chunks.append(f"Pre-conditions: {bullets}.")
 
     fm = card.get('failure_modes') or []
     if fm:
         pieces = []
         for f in fm[:3]:
-            sym = str(f.get('symptom') or '').strip()
-            rem = str(f.get('remedy') or '').strip()
+            sym = fragment(f.get('symptom') or '')
+            rem = fragment(f.get('remedy') or '')
             if sym and rem:
-                pieces.append(f"{sym} → {rem}")
+                pieces.append(f"{sym} -> {rem}")
         if pieces:
             chunks.append(f"Failure modes: {'; '.join(pieces)}.")
 
