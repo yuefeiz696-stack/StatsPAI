@@ -1,12 +1,11 @@
 """StatsPAI local projections parity (Python side) -- Module 34.
 
-Generates a deterministic AR(1) + shock series and runs sp.local_
-projections at horizons 0..5. The companion 34_lp.R uses
-lpirfs::lp_lin.
+Generates a deterministic AR(1) + shock series and runs the
+lpirfs-compatible Cholesky/unit-shock path in sp.local_projections at
+horizons 0..5. The companion 34_lp.R uses lpirfs::lp_lin.
 
-Tolerance: rel < 1e-2 on the impulse-response coefficients
-(closed-form OLS per horizon; both implementations should match
-up to small Newey-West HAC variance differences).
+Tolerance: rel < 1e-6 on the impulse-response coefficients and
+Newey-West standard errors.
 """
 from __future__ import annotations
 
@@ -36,15 +35,11 @@ def main() -> None:
     df = df.iloc[1:].reset_index(drop=True)
     dump_csv(df, MODULE)
 
-    # Post-2026-05-28: `controls` is honoured verbatim and `auto_lag`
-    # controls whether y_{t-1} and shock_{t-1} are auto-added. We pass
-    # `controls=["y_lag"]` (= y_{t-1}) and `auto_lag=False` to make
-    # the regression literally y_{t+h} ~ const + x_t + y_lag, which
-    # is the spec the .do / .R parity siblings reproduce.
     fit = sp.local_projections(
         data=df, outcome="y", shock="x",
-        controls=["y_lag"], horizons=H_MAX,
-        auto_lag=False,
+        horizons=H_MAX,
+        identification="lpirfs_cholesky",
+        endog_order=["y", "x"],
     )
 
     rows: list[ParityRecord] = []
@@ -59,23 +54,18 @@ def main() -> None:
     write_results(
         MODULE, "py", rows,
         extra={
-            "horizons": H_MAX, "controls": ["y_lag"],
+            "horizons": H_MAX,
+            "identification": "lpirfs_cholesky",
+            "endog_order": ["y", "x"],
             "identification_note": (
-                "sp.local_projections regresses y_{t+h} on the "
-                "contemporaneous shock x_t with explicit y_lag "
-                "controls; lpirfs::lp_lin uses a Cholesky-"
-                "orthogonalised shock that zeros the h=0 response "
-                "by construction. At h=0 the implementations "
-                "therefore disagree by definition. At h>=1 both "
-                "compute OLS-by-horizon impulse responses, but "
-                "lpirfs uses lag-structure controls "
-                "(lags_endog_lin=1) on all endogenous variables "
-                "while sp uses an explicit y_lag scalar; this "
-                "introduces a small short-horizon gap (~7-11% at "
-                "h=1-3) and a larger long-horizon gap (h=4-5) "
-                "where LP variance is high. Reviewers should treat "
-                "as different identification conventions, not as "
-                "a numerical bug."
+                "sp.local_projections(..., identification='lpirfs_cholesky') "
+                "implements the lpirfs::lp_lin lags_endog_lin=1, "
+                "shock_type=1 convention: a reduced VAR(1), a unit "
+                "Cholesky shock using the supplied endogenous-variable "
+                "order, and horizon-by-horizon Newey-West OLS. This "
+                "closes the former direct-shock identification gap with R; "
+                "the frozen Stata fixture remains a separate direct-OLS "
+                "shock comparison."
             ),
         },
     )

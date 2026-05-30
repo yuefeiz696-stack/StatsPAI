@@ -6,19 +6,19 @@
       "module": "34_lp",
       "side": "py",
       "statistic": "irf_h0",
-      "estimate": 0.13168247869200098,
-      "se": 0.06651056261581295,
+      "estimate": 0.0,
+      "se": 0.0,
       "ci_lo": null,
       "ci_hi": null,
-      "n": 199,
+      "n": 198,
       "extra": {}
     },
     {
       "module": "34_lp",
       "side": "py",
       "statistic": "irf_h1",
-      "estimate": 0.5342203976425581,
-      "se": 0.06934698647766457,
+      "estimate": 0.4614445928392223,
+      "se": 0.0431362326194262,
       "ci_lo": null,
       "ci_hi": null,
       "n": 198,
@@ -28,8 +28,8 @@
       "module": "34_lp",
       "side": "py",
       "statistic": "irf_h2",
-      "estimate": 0.3267548210488066,
-      "se": 0.0801686261845427,
+      "estimate": 0.2995825310515038,
+      "se": 0.06512166853219276,
       "ci_lo": null,
       "ci_hi": null,
       "n": 197,
@@ -39,8 +39,8 @@
       "module": "34_lp",
       "side": "py",
       "statistic": "irf_h3",
-      "estimate": 0.14922060925531405,
-      "se": 0.07353005847921742,
+      "estimate": 0.14809224545143287,
+      "se": 0.06911691325282587,
       "ci_lo": null,
       "ci_hi": null,
       "n": 196,
@@ -50,8 +50,8 @@
       "module": "34_lp",
       "side": "py",
       "statistic": "irf_h4",
-      "estimate": -0.014587102068476162,
-      "se": 0.06774666648986866,
+      "estimate": -0.005430133837305317,
+      "se": 0.0650565347230699,
       "ci_lo": null,
       "ci_hi": null,
       "n": 195,
@@ -61,8 +61,8 @@
       "module": "34_lp",
       "side": "py",
       "statistic": "irf_h5",
-      "estimate": -0.017336583133390475,
-      "se": 0.07123043193720813,
+      "estimate": -0.003246040918678566,
+      "se": 0.07460970680407314,
       "ci_lo": null,
       "ci_hi": null,
       "n": 194,
@@ -71,9 +71,11 @@
   ],
   "extra": {
     "horizons": 5,
-    "controls": [
-      "y_lag"
+    "identification": "lpirfs_cholesky",
+    "endog_order": [
+      "y",
+      "x"
     ],
-    "identification_note": "sp.local_projections regresses y_{t+h} on the contemporaneous shock x_t with explicit y_lag controls; lpirfs::lp_lin uses a Cholesky-orthogonalised shock that zeros the h=0 response by construction. At h=0 the implementations therefore disagree by definition. At h>=1 both compute OLS-by-horizon impulse responses, but lpirfs uses lag-structure controls (lags_endog_lin=1) on all endogenous variables while sp uses an explicit y_lag scalar; this introduces a small short-horizon gap (~7-11% at h=1-3) and a larger long-horizon gap (h=4-5) where LP variance is high. Reviewers should treat as different identification conventions, not as a numerical bug."
+    "identification_note": "sp.local_projections(..., identification='lpirfs_cholesky') implements the lpirfs::lp_lin lags_endog_lin=1, shock_type=1 convention: a reduced VAR(1), a unit Cholesky shock using the supplied endogenous-variable order, and horizon-by-horizon Newey-West OLS. This closes the former direct-shock identification gap with R; the frozen Stata fixture remains a separate direct-OLS shock comparison."
   }
 }

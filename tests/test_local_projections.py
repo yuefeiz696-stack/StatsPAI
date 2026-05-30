@@ -57,6 +57,64 @@ def test_to_frame_shape(ar_dgp):
     assert set(df.columns) == {"horizon", "irf", "se", "ci_lower", "ci_upper", "n"}
 
 
+def test_lpirfs_cholesky_matches_reference_fixture():
+    """Pinned to lpirfs::lp_lin(unit Cholesky shock) on module 34 data."""
+    rng = np.random.default_rng(42)
+    n = 200
+    y = np.zeros(n)
+    x = rng.normal(0, 1, n)
+    for t in range(1, n):
+        y[t] = 0.6 * y[t - 1] + 0.5 * x[t - 1] + rng.normal(0, 0.5)
+    df = pd.DataFrame({"y": y, "x": x})
+    df["y_lag"] = df["y"].shift(1)
+    df = df.iloc[1:].reset_index(drop=True)
+
+    res = local_projections(
+        df,
+        outcome="y",
+        shock="x",
+        horizons=5,
+        identification="lpirfs_cholesky",
+        endog_order=["y", "x"],
+    )
+
+    np.testing.assert_allclose(
+        res.irf,
+        np.array([
+            0.0,
+            0.461444592839222,
+            0.299582531051504,
+            0.148092245451433,
+            -0.00543013383730529,
+            -0.00324604091867858,
+        ]),
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        res.se,
+        np.array([
+            0.0,
+            0.0431362326194262,
+            0.0651216685321928,
+            0.0691169132528259,
+            0.0650565347230699,
+            0.0746097068040731,
+        ]),
+        atol=1e-12,
+    )
+
+
+def test_lpirfs_cholesky_rejects_direct_controls(ar_dgp):
+    with pytest.raises(ValueError, match="controls are not supported"):
+        local_projections(
+            ar_dgp,
+            outcome="y",
+            shock="shock",
+            controls=["shock"],
+            identification="lpirfs_cholesky",
+        )
+
+
 def test_exported_at_sp_dot():
     import statspai as sp
     assert callable(sp.local_projections)

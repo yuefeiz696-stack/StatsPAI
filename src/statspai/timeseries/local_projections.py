@@ -104,6 +104,110 @@ class LocalProjectionsResult:
 
 
 # --------------------------------------------------------------------- #
+#  lpirfs-compatible Cholesky local projections
+# --------------------------------------------------------------------- #
+
+def _lpirfs_cholesky(
+    data: pd.DataFrame,
+    outcome: str,
+    shock: str,
+    endog_order: Optional[List[str]],
+    horizons: int,
+    nw_lags: Optional[int],
+    alpha: float,
+) -> LocalProjectionsResult:
+    """Replicate ``lpirfs::lp_lin(..., shock_type=1, lags_endog_lin=1)``.
+
+    The R implementation first estimates a reduced VAR(1), builds a
+    unit-shock Cholesky matrix from the residual covariance, then runs
+    horizon-specific OLS projections and maps the coefficient matrices
+    through the Cholesky shock vector.
+    """
+    order = list(endog_order) if endog_order is not None else [outcome, shock]
+    if outcome not in order:
+        raise ValueError("endog_order must include outcome")
+    if shock not in order:
+        raise ValueError("endog_order must include shock")
+    if len(order) != len(set(order)):
+        raise ValueError("endog_order must not contain duplicate variables")
+    missing = [col for col in order if col not in data.columns]
+    if missing:
+        raise KeyError(f"endog_order columns not found in data: {missing}")
+    if len(data) <= horizons + 2:
+        raise DataInsufficient("too few observations for Cholesky local projections")
+
+    y_all = data.loc[:, order].to_numpy(dtype=float)
+    if np.isnan(y_all).any():
+        raise ValueError("Cholesky local projections require complete endog_order data")
+
+    k_endog = y_all.shape[1]
+    response_idx = order.index(outcome)
+    shock_idx = order.index(shock)
+
+    # lpirfs::create_lin_data with lags_endog_lin = 1.
+    y_lin = y_all[1:, :]
+    x_lin = y_all[:-1, :]
+    x_var = np.column_stack([np.ones(len(x_lin)), x_lin])
+
+    residuals = np.empty_like(y_lin)
+    for k in range(k_endog):
+        beta, *_ = np.linalg.lstsq(x_var, y_lin[:, k], rcond=None)
+        residuals[:, k] = y_lin[:, k] - x_var @ beta
+
+    cov = np.cov(residuals, rowvar=False, ddof=1)
+    chol = np.linalg.cholesky(cov)
+    shock_matrix = np.empty_like(chol)
+    for j in range(k_endog):
+        shock_matrix[:, j] = chol[:, j] / chol[j, j]
+    shock_vec = shock_matrix[:, shock_idx]
+
+    irf = np.empty(horizons + 1)
+    se = np.empty(horizons + 1)
+    n_used = np.empty(horizons + 1, dtype=int)
+    irf[0] = float(shock_vec[response_idx])
+    se[0] = 0.0
+    n_used[0] = int(len(y_lin))
+
+    for h in range(1, horizons + 1):
+        yy = y_lin[h - 1:, :]
+        xx = x_lin[: len(x_lin) - h + 1, :]
+        x_h = np.column_stack([np.ones(len(xx)), xx])
+        coef = np.empty((k_endog, k_endog))
+        half_width = np.empty((k_endog, k_endog))
+        lag_nw = h if nw_lags is None else nw_lags
+        for k in range(k_endog):
+            beta, *_ = np.linalg.lstsq(x_h, yy[:, k], rcond=None)
+            resid = yy[:, k] - x_h @ beta
+            cov_beta = _newey_west(x_h, resid, lags=lag_nw)
+            std = np.sqrt(np.maximum(np.diag(cov_beta), 0.0))
+            coef[k, :] = beta[1 : k_endog + 1]
+            half_width[k, :] = std[1 : k_endog + 1]
+        point = coef @ shock_vec
+        # lpirfs stores lower/upper bands for each coefficient before the
+        # Cholesky map; for the two-variable unit-shock case this is exactly
+        # the coefficient SE on the ordered shock variable, and this formula
+        # also preserves the sign of nonzero Cholesky weights.
+        lower = (coef - half_width) @ shock_vec
+        upper = (coef + half_width) @ shock_vec
+        irf[h] = float(point[response_idx])
+        se[h] = float((upper[response_idx] - lower[response_idx]) / 2.0)
+        n_used[h] = int(len(xx))
+
+    z_crit = stats.norm.ppf(1 - alpha / 2)
+    return LocalProjectionsResult(
+        horizons=np.arange(horizons + 1),
+        irf=irf,
+        se=se,
+        ci_lower=irf - z_crit * se,
+        ci_upper=irf + z_crit * se,
+        alpha=alpha,
+        shock_name=shock,
+        outcome_name=outcome,
+        n_obs_per_horizon=n_used,
+    )
+
+
+# --------------------------------------------------------------------- #
 #  Public entry point
 # --------------------------------------------------------------------- #
 
@@ -117,6 +221,8 @@ def local_projections(
     alpha: float = 0.05,
     cumulative: bool = False,
     auto_lag: bool = True,
+    identification: str = "direct",
+    endog_order: Optional[List[str]] = None,
 ) -> LocalProjectionsResult:
     """Estimate impulse responses via Jordà (2005) local projections.
 
@@ -153,9 +259,68 @@ def local_projections(
         ``shock_{t-1}`` as automatic regressors. Set ``False`` for a
         bare ``y_{t+h} ~ const + shock_t + controls`` specification.
         These two auto-controls were silent in the pre-1.16 docstring.
+    identification : {'direct', 'lpirfs_cholesky'}, default 'direct'
+        Shock-identification convention. ``'direct'`` uses the coefficient
+        on the observed ``shock`` variable in each horizon regression.
+        ``'lpirfs_cholesky'`` reproduces ``lpirfs::lp_lin`` with
+        ``lags_endog_lin=1`` and ``shock_type=1``: the variables in
+        ``endog_order`` define the Cholesky ordering, and the reported
+        response is the unit structural shock for ``shock``.
+    endog_order : list of str, optional
+        Endogenous variable order used only when
+        ``identification='lpirfs_cholesky'``. Defaults to
+        ``[outcome, shock]``.
     """
     if controls is None:
         controls = []
+    identification_norm = identification.lower().replace("-", "_")
+    if identification_norm not in {"direct", "lpirfs_cholesky", "cholesky"}:
+        raise ValueError(
+            "identification must be 'direct' or 'lpirfs_cholesky'"
+        )
+    if identification_norm in {"lpirfs_cholesky", "cholesky"}:
+        if controls:
+            raise ValueError(
+                "controls are not supported with identification='lpirfs_cholesky'"
+            )
+        if cumulative:
+            raise ValueError(
+                "cumulative=True is not supported with "
+                "identification='lpirfs_cholesky'"
+            )
+        _result = _lpirfs_cholesky(
+            data=data,
+            outcome=outcome,
+            shock=shock,
+            endog_order=endog_order,
+            horizons=horizons,
+            nw_lags=nw_lags,
+            alpha=alpha,
+        )
+        try:
+            from ..output._lineage import attach_provenance as _attach_prov
+            _attach_prov(
+                _result,
+                function="sp.timeseries.local_projections",
+                params={
+                    "outcome": outcome, "shock": shock,
+                    "controls": None, "horizons": horizons,
+                    "nw_lags": nw_lags,
+                    "alpha": alpha, "cumulative": cumulative,
+                    "auto_lag": auto_lag,
+                    "identification": identification,
+                    "endog_order": (
+                        list(endog_order)
+                        if endog_order is not None
+                        else [outcome, shock]
+                    ),
+                },
+                data=data,
+                overwrite=False,
+            )
+        except Exception:  # pragma: no cover
+            pass
+        return _result
     df = data.copy().reset_index(drop=True)
     n = len(df)
     if nw_lags is None:
@@ -234,6 +399,8 @@ def local_projections(
                 "nw_lags": nw_lags,
                 "alpha": alpha, "cumulative": cumulative,
                 "auto_lag": auto_lag,
+                "identification": identification,
+                "endog_order": list(endog_order) if endog_order is not None else None,
             },
             data=data,
             overwrite=False,
