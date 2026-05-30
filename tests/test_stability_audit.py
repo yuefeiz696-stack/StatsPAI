@@ -45,7 +45,14 @@ def test_audit_json_is_well_formed() -> None:
     assert res.returncode == 0, res.stderr
     payload = json.loads(res.stdout)
     # Required top-level shape
-    assert set(payload) == {"totals", "parity_coverage", "lists", "sources", "floor"}
+    assert set(payload) == {
+        "totals",
+        "parity_coverage",
+        "lists",
+        "sources",
+        "evidence_paths",
+        "floor",
+    }
     t = payload["totals"]
     assert t["stable"] == t["stable_handwritten"] + t["stable_auto"]
     assert t["registry"] == t["stable"] + t["experimental"] + t["deprecated"]
@@ -53,15 +60,16 @@ def test_audit_json_is_well_formed() -> None:
     # Counts must add up
     assert p["backed_handwritten"] + p["unbacked_handwritten"] == t["stable_handwritten"]
     assert p["backed_auto"] + p["unbacked_auto"] == t["stable_auto"]
+    assert payload["evidence_paths"]["refs"] >= payload["evidence_paths"]["unique"] > 0
+    assert payload["evidence_paths"]["missing"] == []
 
 
 def test_check_mode_passes_under_current_floor() -> None:
     """Today's catalogue must satisfy the documented floor.
 
-    The floor is intentionally loose (~220 unbacked hand-written
-    entries today) to allow the project to ship without a one-shot
-    mass-downgrade. Bumping it requires editing the constant in the
-    script, which is a deliberate signal that quality has slipped.
+    The JSS submission floor is zero for hand-written stable APIs: each
+    such entry needs either validation-tier evidence or explicit API/unit
+    contract evidence. Auto-registered specs remain outside this floor.
     """
     res = _run(["--check"])
     assert res.returncode == 0, (

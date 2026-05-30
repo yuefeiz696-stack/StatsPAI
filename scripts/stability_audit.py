@@ -58,15 +58,15 @@ PARITY_DIRS: Tuple[Path, ...] = (
     REPO_ROOT / "tests" / "external_parity",
 )
 
-#: Loose ceiling on how many *hand-written* stable APIs may go without
-#: a parity test before --check fails.  Bumped when we deliberately add
-#: hand-written entries faster than parity tests.  Decrease over time as
-#: the audit gets cleaned up.
-UNBACKED_HANDWRITTEN_FLOOR = 190
+#: No hand-written stable API should lack registry-attached evidence by the
+#: JSS submission snapshot. Auto-registered specs remain a separate cleanup
+#: project, but human-authored stable entries need at least API/unit evidence.
+UNBACKED_HANDWRITTEN_FLOOR = 0
 
 #: Regex matching ``sp.<name>(`` references in test source.  Used to
 #: attribute parity coverage to public ``sp.*`` symbols.
 SP_CALL_RE = re.compile(r"\bsp\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")
+EVIDENCE_PATH_RE = re.compile(r"(?P<path>(?:tests|scripts|Paper-JSS)/[^\s,;:)`]+\.py)")
 
 #: Some test files exercise multiple estimators (cross_estimator_parity,
 #: published_replications, …) — we credit every ``sp.X(`` reference
@@ -81,6 +81,11 @@ def _scan_parity_file(path: Path) -> Set[str]:
     except OSError:
         return set()
     return set(SP_CALL_RE.findall(text))
+
+
+def _note_paths(note: str) -> List[str]:
+    """Extract repository-relative Python evidence paths from a registry note."""
+    return [match.group("path") for match in EVIDENCE_PATH_RE.finditer(note)]
 
 
 def _backed_functions() -> Tuple[Set[str], Dict[str, List[str]]]:
@@ -128,6 +133,9 @@ def collect() -> dict:
     registry, hand_written = _registry_specs()
     backed, sources = _backed_functions()
     evidence_sources: Dict[str, List[str]] = {k: list(v) for k, v in sources.items()}
+    evidence_path_refs = 0
+    evidence_paths: Set[str] = set()
+    missing_evidence_paths: List[str] = []
 
     stable_handwritten: List[str] = []
     stable_auto: List[str] = []
@@ -147,15 +155,25 @@ def collect() -> dict:
             continue
         # spec.stability == "stable"
         is_hand = name in hand_written
-        registry_backed = spec.validation_status in {"certified", "validated"}
+        notes = list(getattr(spec, "validation_notes", []) or [])
+        registry_backed = (
+            spec.validation_status in {"certified", "validated"}
+            or bool(notes)
+        )
         if registry_backed:
-            notes = list(getattr(spec, "validation_notes", []) or [])
             if not notes:
                 notes = [f"registry validation_status={spec.validation_status}"]
             evidence_sources.setdefault(name, [])
             for note in notes:
                 if note not in evidence_sources[name]:
                     evidence_sources[name].append(note)
+                for rel_path in _note_paths(note):
+                    evidence_path_refs += 1
+                    evidence_paths.add(rel_path)
+                    if not (REPO_ROOT / rel_path).exists():
+                        missing_evidence_paths.append(
+                            f"{name}: missing evidence file {rel_path}"
+                        )
         is_backed = name in backed or registry_backed
         if is_hand:
             stable_handwritten.append(name)
@@ -200,6 +218,11 @@ def collect() -> dict:
             # Only carry backed-handwritten sources in the JSON payload —
             # auto-registered specs aren't the focus of this audit.
             if name in set(backed_handwritten)
+        },
+        "evidence_paths": {
+            "refs": evidence_path_refs,
+            "unique": len(evidence_paths),
+            "missing": sorted(missing_evidence_paths),
         },
         "floor": {
             "unbacked_handwritten": UNBACKED_HANDWRITTEN_FLOOR,
@@ -255,6 +278,12 @@ def render_report(stats: dict, *, show_unbacked: bool = False) -> str:
         f"  stable auto-registered, UNBACKED : "
         f"{p['unbacked_auto']}"
     )
+    e = stats["evidence_paths"]
+    lines.append(
+        f"  registry evidence path refs      : "
+        f"{e['refs']} refs / {e['unique']} unique "
+        f"(missing: {len(e['missing'])})"
+    )
     lines.append("")
     lines.append("Interpretation")
     lines.append("-" * 50)
@@ -282,6 +311,14 @@ def render_report(stats: dict, *, show_unbacked: bool = False) -> str:
 def check_drift(stats: dict) -> int:
     n = stats["parity_coverage"]["unbacked_handwritten"]
     floor = stats["floor"]["unbacked_handwritten"]
+    missing_paths = stats["evidence_paths"]["missing"]
+    if missing_paths:
+        print(
+            "FAIL: registry evidence notes reference missing files: "
+            + "; ".join(missing_paths[:20]),
+            file=sys.stderr,
+        )
+        return 1
     if n > floor:
         print(
             f"FAIL: {n} hand-written stable API entries lack parity tests "

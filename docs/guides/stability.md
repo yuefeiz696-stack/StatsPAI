@@ -12,6 +12,8 @@ StatsPAI now separates **API lifecycle** from **numerical validation evidence**.
 
 Use `stability` when you care about public API compatibility. Use `validation_status` when you care about publication-grade numerical evidence.
 
+Current JSS source-snapshot audit counts: 48 `certified`, 196 `validated`, 772 `api_stable`, and 3 `experimental` registry symbols. The intentionally harsh denominator is that 759 stable auto-registered symbols still lack parity backing; treat them as API-stable, not numerically validated. Within the hand-written stable API surface, the current audit enforces zero unbacked entries: API-only helpers carry unit-contract evidence while remaining `api_stable`, not numerically validated. `Paper-JSS/replication/results/validation_evidence_audit.{json,md}` verifies that all 244 certified/validated symbols have registry-attached evidence notes and that certified symbols carry attached R/Stata parity-module evidence. Package metadata is still `1.16.0`; source-snapshot fixes marked `1.16.0+` should be synchronized with a tagged release before final publication. The JSS archive records this boundary in `Paper-JSS/replication/results/source_snapshot_manifest.{json,md}`, and `cd Paper-JSS && make release-audit` is the strict gate for a clean tagged final-publication snapshot.
+
 ## Stability
 
 - `stable`: public signature is locked under SemVer minor releases.
@@ -62,7 +64,12 @@ statspai describe rdrobust
 These are machine-readable through `sp.describe_function(name)["limitations"]` and should be treated as the priority backlog for production hardening:
 
 - `callaway_santanna`: repeated cross-sections currently support only `estimator="reg"` with `control_group="nevertreated"`.
-- `rdrobust`: observation-level weights are reserved and raise `NotImplementedError`.
+- `rdrobust`: observation-level weights are reserved and raise `NotImplementedError`; exact R parity is attached to `bwselect="cct"` or common manual bandwidths, while the default `mserd` selector is a documented convention.
+- `rddensity`: native default bandwidths and local-density estimates can differ from `rddensity::rddensity`; the native evidence is conclusion-level, not selector/test-statistic parity. Manual side-specific bandwidths are sensitivity/reporting controls, not a reference-parity guarantee. Use `backend="r"` with R/rddensity installed for canonical `rddensity::rddensity` selector and test-statistic parity.
+- `synth`: ADH/Synth parity requires the same `special_predictors` recipe; SDID/augmented/gsynth rows include documented regularisation or local-optimum convention gaps.
+- `causal_forest`: the NSW-DW parity row is overlap-diagnostic evidence, not a clean ATT point-estimate parity claim.
+- `did_imputation`: parity is aggregation-convention sensitive; inspect `sp.parity_gap_report()` before reporting exact cross-language equality.
+- `etwfe`: the default top-level estimate is cohort-share weighted; use `sp.etwfe(..., panel=False, cluster=...)` followed by `sp.etwfe_emfx(..., weighting="treated")` for R `etwfe::emfx(type="simple")` point-estimate and clustered-SE parity.
 - `hal_tmle`: `variant="projection"` is reserved and raises `NotImplementedError`.
 - `network_exposure`: only `design="bernoulli"` is implemented.
 - `etwfe`: `panel=False` with `cgroup="nevertreated"` is not implemented.
@@ -76,7 +83,12 @@ python scripts/stability_audit.py
 python scripts/stability_audit.py --unbacked
 python scripts/stability_audit.py --check
 python scripts/stability_audit.py --json
+python Paper-JSS/replication/scripts/validation_evidence_audit.py
 ```
+
+`scripts/stability_audit.py --check` fails if any hand-written stable API entry lacks attached validation or API/unit-contract evidence. Auto-registered entries are reported separately because they represent breadth imported into the registry, not the validated numerical core defended in the JSS paper.
+
+The JSS packager also extracts Python source paths from registry evidence notes. The current submission manifest includes 129 such registry evidence files, and `Paper-JSS/replication/scripts/verify_submission_package.py` fails if any referenced evidence file is absent from the archive.
 
 Programmatic evidence summaries:
 
@@ -88,4 +100,4 @@ sp.parity_gap_report()
 
 `sp.parity_gap_report()` parses the already-generated 3-way parity table and reports documented convention gaps, missing Stata siblings, priorities, and next actions.
 
-*Last updated: v1.13.1+validation split (2026-05-05).*
+*Last updated: JSS source-snapshot validation audit (2026-05-30).*
