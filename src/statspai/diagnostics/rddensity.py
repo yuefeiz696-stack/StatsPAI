@@ -19,7 +19,12 @@ Cattaneo, M.D., Jansson, M. and Ma, X. (2018).
 *The Stata Journal*, 18(1), 234-261. [@cattaneo2018manipulation]
 """
 
-from typing import Optional, Dict, Any
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+from typing import Optional, Dict, Any, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -33,8 +38,9 @@ def rddensity(
     x: str,
     c: float = 0,
     p: int = 2,
-    h: Optional[float] = None,
+    h: Optional[Union[float, Sequence[float]]] = None,
     alpha: float = 0.05,
+    backend: str = "native",
 ) -> CausalResult:
     """
     CJM (2020) density discontinuity test for RD manipulation.
@@ -51,9 +57,16 @@ def rddensity(
         RD cutoff.
     p : int, default 2
         Polynomial order for density estimation.
-    h : float, optional
-        Bandwidth. Default: automatic (Cattaneo-Jansson-Ma rule).
+    h : float or length-2 sequence, optional
+        Bandwidth. A scalar applies the same bandwidth on both sides;
+        a length-2 sequence is interpreted as ``(h_left, h_right)``.
+        Default: automatic StatsPAI native pilot rule.
     alpha : float, default 0.05
+    backend : {"native", "r"}, default "native"
+        ``"native"`` uses StatsPAI's dependency-light implementation.
+        ``"r"`` delegates to ``rddensity::rddensity`` through
+        ``Rscript`` when the R package is installed, matching the
+        reference package's selector and test statistic.
 
     Returns
     -------
@@ -84,6 +97,12 @@ def rddensity(
 
     See Cattaneo, Jansson & Ma (2020, *JASA*).
     """
+    backend_norm = backend.lower().replace("-", "_")
+    if backend_norm in {"r", "rddensity", "r_reference", "r_package"}:
+        return _rddensity_r_backend(data=data, x=x, c=c, p=p, h=h, alpha=alpha)
+    if backend_norm not in {"native", "statspai"}:
+        raise ValueError("backend must be 'native' or 'r'.")
+
     X = data[x].values.astype(float)
     X = X[np.isfinite(X)]
     n = len(X)
@@ -100,12 +119,7 @@ def rddensity(
     if n_l < 5 or n_r < 5:
         raise ValueError("Not enough observations on each side.")
 
-    # Bandwidth selection (CJM rule)
-    if h is None:
-        h_l = _cjm_bandwidth(x_left, p)
-        h_r = _cjm_bandwidth(x_right, p)
-    else:
-        h_l = h_r = h
+    h_l, h_r, h_source = _resolve_bandwidths(h, x_left, x_right, p)
 
     # Density estimation via local polynomial on the empirical CDF
     # Pass n (full sample size) so density is on the correct scale
@@ -130,6 +144,15 @@ def rddensity(
         'density_diff': diff,
         'bandwidth_left': h_l,
         'bandwidth_right': h_r,
+        'bandwidth_source': h_source,
+        'backend': 'native',
+        'validation_note': (
+            "StatsPAI native rddensity uses a dependency-light pilot "
+            "bandwidth and local-density approximation; manual bandwidths "
+            "are sensitivity controls, not a guarantee of "
+            "rddensity::rddensity numeric parity. Use backend='r' when exact "
+            "reference-package selector/test-statistic parity is required."
+        ),
         'polynomial_order': p,
         'n_left': n_l,
         'n_right': n_r,
@@ -155,6 +178,176 @@ def rddensity(
             function="sp.diagnostics.rddensity",
             params={
                 "x": x, "c": c, "p": p, "h": h, "alpha": alpha,
+                "backend": backend,
+            },
+            data=data,
+            overwrite=False,
+        )
+    except Exception:  # pragma: no cover
+        pass
+    return _result
+
+
+def _resolve_bandwidths(h, x_left, x_right, p) -> Tuple[float, float, str]:
+    if h is None:
+        return _cjm_bandwidth(x_left, p), _cjm_bandwidth(x_right, p), "native_pilot"
+
+    if np.isscalar(h):
+        h_value = float(h)
+        if not np.isfinite(h_value) or h_value <= 0:
+            raise ValueError("h must be positive and finite.")
+        return h_value, h_value, "manual_scalar"
+
+    h_values = list(h)
+    if len(h_values) != 2:
+        raise ValueError("h must be a scalar or a length-2 sequence (h_left, h_right).")
+    h_l, h_r = float(h_values[0]), float(h_values[1])
+    if not (np.isfinite(h_l) and np.isfinite(h_r)) or h_l <= 0 or h_r <= 0:
+        raise ValueError("h_left and h_right must be positive and finite.")
+    return h_l, h_r, "manual_side_specific"
+
+
+def _rddensity_r_backend(
+    data: pd.DataFrame,
+    x: str,
+    c: float,
+    p: int,
+    h: Optional[Union[float, Sequence[float]]],
+    alpha: float,
+) -> CausalResult:
+    if shutil.which("Rscript") is None:
+        raise ImportError("backend='r' requires Rscript and the R package rddensity.")
+
+    X = data[x].values.astype(float)
+    X = X[np.isfinite(X)]
+    n = len(X)
+    if n < 20:
+        raise ValueError("Need at least 20 observations.")
+    n_l = int(np.sum(X < c))
+    n_r = int(np.sum(X >= c))
+    if n_l < 5 or n_r < 5:
+        raise ValueError("Not enough observations on each side.")
+
+    if h is None:
+        h_l = h_r = None
+        h_source = "rddensity_default"
+    else:
+        h_l, h_r, h_source = _resolve_bandwidths(h, X[X < c] - c, X[X >= c] - c, p)
+
+    r_code = r"""
+suppressPackageStartupMessages({
+  if (!requireNamespace("rddensity", quietly = TRUE)) {
+    stop("R package 'rddensity' is not installed")
+  }
+  if (!requireNamespace("jsonlite", quietly = TRUE)) {
+    stop("R package 'jsonlite' is not installed")
+  }
+})
+args <- commandArgs(trailingOnly = TRUE)
+input <- args[[1]]
+cutoff <- as.numeric(args[[2]])
+p <- as.integer(args[[3]])
+alpha <- as.numeric(args[[4]])
+h_left <- as.numeric(args[[5]])
+h_right <- as.numeric(args[[6]])
+df <- utils::read.csv(input)
+h_arg <- NULL
+if (is.finite(h_left) && is.finite(h_right)) {
+  h_arg <- c(h_left, h_right)
+}
+fit <- rddensity::rddensity(X = df$x, c = cutoff, p = p, h = h_arg)
+density_left <- as.numeric(fit$hat$left)[1]
+density_right <- as.numeric(fit$hat$right)[1]
+density_diff <- density_right - density_left
+pvalue <- as.numeric(fit$test$p_jk)[1]
+zstat <- as.numeric(fit$test$t_jk)[1]
+bw_left <- as.numeric(fit$h$left)[1]
+bw_right <- as.numeric(fit$h$right)[1]
+out <- list(
+  density_left = density_left,
+  density_right = density_right,
+  density_diff = density_diff,
+  pvalue = pvalue,
+  zstat = zstat,
+  bandwidth_left = bw_left,
+  bandwidth_right = bw_right,
+  polynomial_order = as.integer(fit$opt$p)
+)
+cat(jsonlite::toJSON(out, auto_unbox = TRUE, digits = 16, null = "null"))
+"""
+
+    with tempfile.TemporaryDirectory(prefix="statspai-rddensity-") as tmp:
+        tmp_path = Path(tmp)
+        csv_path = tmp_path / "x.csv"
+        script_path = tmp_path / "run_rddensity.R"
+        pd.DataFrame({"x": X}).to_csv(csv_path, index=False)
+        script_path.write_text(r_code)
+        h_l_arg = "NaN" if h_l is None else f"{h_l:.17g}"
+        h_r_arg = "NaN" if h_r is None else f"{h_r:.17g}"
+        proc = subprocess.run(
+            [
+                "Rscript",
+                str(script_path),
+                str(csv_path),
+                f"{c:.17g}",
+                str(int(p)),
+                f"{alpha:.17g}",
+                h_l_arg,
+                h_r_arg,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            "backend='r' failed while running rddensity::rddensity: "
+            f"{proc.stderr.strip() or proc.stdout.strip()}"
+        )
+
+    out: Dict[str, Any] = json.loads(proc.stdout)
+    diff = float(out["density_diff"])
+    zstat = float(out["zstat"])
+    pvalue = float(out["pvalue"])
+    se_diff = abs(diff / zstat) if np.isfinite(zstat) and abs(zstat) > 0 else 0.0
+    z_crit = stats.norm.ppf(1 - alpha / 2)
+    ci = (diff - z_crit * se_diff, diff + z_crit * se_diff)
+
+    model_info = {
+        'test': 'Cattaneo-Jansson-Ma (2020)',
+        'density_left': float(out["density_left"]),
+        'density_right': float(out["density_right"]),
+        'density_diff': diff,
+        'bandwidth_left': float(out["bandwidth_left"]),
+        'bandwidth_right': float(out["bandwidth_right"]),
+        'bandwidth_source': h_source,
+        'backend': 'rddensity',
+        'polynomial_order': int(out["polynomial_order"]),
+        'n_left': n_l,
+        'n_right': n_r,
+        'cutoff': c,
+    }
+
+    _result = CausalResult(
+        method='CJM (2020) Density Test [rddensity::rddensity]',
+        estimand='T-statistic (density discontinuity)',
+        estimate=zstat,
+        se=float(se_diff),
+        pvalue=pvalue,
+        ci=ci,
+        alpha=alpha,
+        n_obs=n,
+        model_info=model_info,
+        _citation_key='rddensity',
+    )
+    try:
+        from ..output._lineage import attach_provenance as _attach_prov
+        _attach_prov(
+            _result,
+            function="sp.diagnostics.rddensity",
+            params={
+                "x": x, "c": c, "p": p, "h": h, "alpha": alpha,
+                "backend": "r",
             },
             data=data,
             overwrite=False,

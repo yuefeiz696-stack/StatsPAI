@@ -5,6 +5,8 @@ Tests for CJM rddensity and read_data I/O.
 import pytest
 import numpy as np
 import pandas as pd
+import shutil
+import subprocess
 
 from statspai.diagnostics.rddensity import rddensity
 from statspai.utils.io import read_data
@@ -56,6 +58,52 @@ class TestRDDensity:
     def test_custom_bandwidth(self, clean_rd):
         result = rddensity(clean_rd, x='x', c=0, h=0.5)
         assert abs(result.model_info['bandwidth_left'] - 0.5) < 0.01
+        assert result.model_info['bandwidth_source'] == 'manual_scalar'
+
+    def test_side_specific_bandwidth(self, clean_rd):
+        result = rddensity(clean_rd, x='x', c=0, h=(0.35, 0.55))
+        assert abs(result.model_info['bandwidth_left'] - 0.35) < 1e-12
+        assert abs(result.model_info['bandwidth_right'] - 0.55) < 1e-12
+        assert result.model_info['bandwidth_source'] == 'manual_side_specific'
+
+    def test_manual_bandwidth_keeps_native_scope(self, clean_rd):
+        result = rddensity(clean_rd, x='x', c=0, h=(0.35, 0.55))
+        assert result.model_info['backend'] == 'native'
+        assert "manual bandwidths are sensitivity controls" in result.model_info[
+            'validation_note'
+        ]
+        assert "backend='r'" in result.model_info['validation_note']
+
+    def test_invalid_bandwidth(self, clean_rd):
+        with pytest.raises(ValueError, match="length-2"):
+            rddensity(clean_rd, x='x', c=0, h=(0.2, 0.3, 0.4))
+        with pytest.raises(ValueError, match="positive"):
+            rddensity(clean_rd, x='x', c=0, h=-0.2)
+
+    def test_invalid_backend(self, clean_rd):
+        with pytest.raises(ValueError, match="backend"):
+            rddensity(clean_rd, x='x', c=0, backend='unknown')
+
+    def test_r_backend_matches_reference_package(self, clean_rd):
+        if shutil.which("Rscript") is None:
+            pytest.skip("Rscript is not installed")
+        probe = subprocess.run(
+            [
+                "Rscript",
+                "-e",
+                "quit(status = as.integer(!requireNamespace('rddensity', quietly=TRUE) || !requireNamespace('jsonlite', quietly=TRUE)))",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if probe.returncode != 0:
+            pytest.skip("R packages rddensity/jsonlite are not installed")
+
+        result = rddensity(clean_rd, x='x', c=0, backend='r')
+        assert result.model_info['backend'] == 'rddensity'
+        assert result.model_info['bandwidth_source'] == 'rddensity_default'
+        assert np.isfinite(result.pvalue)
 
     def test_nonzero_cutoff(self):
         rng = np.random.default_rng(42)
