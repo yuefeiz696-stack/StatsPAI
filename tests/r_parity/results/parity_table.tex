@@ -26,11 +26,11 @@ Module & Method & Worst headline diff & Verdict \\
 \code{10\_honest\_did} & Honest DiD bounds & abs $\le 0.0149$ {\footnotesize (FLCI vs analytic-bound solver)} & \textbf{PASS} \\
 \code{11\_psm} & PSM 1:1 NN & rel $\le 1.2e-15$ & \textbf{PASS} \\
 \code{12\_sdid} & Synthetic DID & rel $\le 0.082$ {\footnotesize (regularisation $\zeta$ convention)} & \textit{GAP} \\
-\code{13\_causal\_forest} & Causal forest (AIPW) & rel $\le 3.3$ {\footnotesize (NSW-DW propensity overlap)} & \textit{GAP} \\
+\code{13\_causal\_forest} & Causal forest (AIPW) & rel $\le 0.037$ {\footnotesize (clean-overlap AIPW vs grf; recovers truth)} & \textbf{PASS} \\
 \code{14\_ols\_cluster} & OLS + cluster-robust SE & rel $\le 1.2e-09$ & \textbf{PASS} \\
 \code{15\_hdfe\_cluster} & HDFE + cluster SE & rel $\le 6.5e-15$ {\footnotesize (SE 1.27\% (ssc convention))} & \textbf{PASS} \\
 \code{16\_bjs} & BJS imputation & rel $\le 4.8e-08$ {\footnotesize (point estimate matches; SE convention differs)} & \textbf{PASS} \\
-\code{17\_etwfe} & Wooldridge ETWFE & rel $\le 0.078$ {\footnotesize (aggregation rule differs)} & \textit{GAP} \\
+\code{17\_etwfe} & Wooldridge ETWFE & rel $\le 1.5e-13$ {\footnotesize (emfx aggregation and cluster SE matched)} & \textbf{PASS} \\
 \code{18\_augsynth} & Augmented SCM & rel $\le 0.34$ {\footnotesize (SCM non-uniqueness)} & \textit{GAP} \\
 \code{19\_gsynth} & Generalized SCM (Xu 2017) & rel $\le 0.59$ {\footnotesize (SCM non-uniqueness; both pick r=1)} & \textit{GAP} \\
 \code{20\_bacon} & Goodman--Bacon decomposition & rel $\le 5.6e-16$ {\footnotesize (TWFE matches; per-2x2 convention differs)} & \textbf{PASS} \\
@@ -47,7 +47,7 @@ Module & Method & Worst headline diff & Verdict \\
 \code{31\_dfl} & DFL reweighting & rel $\le 1e-14$ {\footnotesize (comp/struct split convention)} & \textbf{PASS} \\
 \code{32\_rif} & RIF / UQR (median) & rel $\le 0.0022$ & \textbf{PASS} \\
 \code{33\_var} & VAR (vars::VAR) & rel $\le 3.1e-15$ & \textbf{PASS} \\
-\code{34\_lp} & Local projections & abs $\le 0.132$ {\footnotesize (Cholesky-orthogonalised vs OLS shock)} & \textit{GAP} \\
+\code{34\_lp} & Local projections & rel $\le 5e-15$ {\footnotesize (lpirfs Cholesky/unit-shock path)} & \textbf{PASS} \\
 \code{35\_panel} & Panel FE/RE + Hausman & rel $\le 1.1e-15$ {\footnotesize (FE/RE coefs match; Hausman variance differs)} & \textbf{PASS} \\
 \code{36\_mediation} & Causal mediation (IKT) & rel $\le 6.7e-15$ & \textbf{PASS} \\
 \code{37\_ppmlhdfe} & PPML + HDFE & rel $\le 4.9e-13$ {\footnotesize (post PPML FE-score fix; robust SE within 0.5\% of fixest)} & \textbf{PASS} \\
@@ -64,4 +64,5 @@ Module & Method & Worst headline diff & Verdict \\
 \code{48\_probit} & Binary probit & rel $\le 3.1e-07$ & \textbf{PASS} \\
 \code{49\_oprobit} & Ordered probit & rel $\le 3.4e-07$ & \textbf{PASS} \\
 \code{51\_newey} & Newey-West HAC OLS & rel $\le 1.8e-15$ {\footnotesize (post HAC sandwich sqrt(n) scaling fix)} & \textbf{PASS} \\
+\code{52\_scm\_unique} & Classical SCM (unique solution) & rel $\le 0.0074$ {\footnotesize (identified convex SCM; sp recovers exact weights+gap)} & \textbf{PASS} \\
 \end{longtable}

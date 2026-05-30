@@ -48,6 +48,7 @@ STATA_SKIP_REASON: dict[str, str] = {
     "31_dfl":           "no canonical Stata port",
     "32_rif":           "rifhdreg requires GitHub install",
     "38_drdid":         "Stata DRDID = Ferman (different DR formula)",
+    "52_scm_unique":    "no canonical Stata SCM port",
 }
 
 # Modules where the R headline is inside the registered tolerance but the
@@ -62,6 +63,10 @@ STATA_HEADLINE_GAP_EXCEPTIONS: dict[str, str] = {
     "29_panel_sfa": (
         "Stata xtfrontier uses a different Pitt-Lee intercept/inefficiency "
         "parameterisation than frontier::sfa and StatsPAI."
+    ),
+    "34_lp": (
+        "The R row now uses lpirfs' Cholesky/unit-shock convention; the "
+        "frozen Stata row is the separate direct-OLS shock fixture."
     ),
 }
 
@@ -81,11 +86,11 @@ TOLERANCES: dict[str, dict[str, float]] = {
     "10_honest_did":{"abs_est": 0.05, "abs_se": 0.05},
     "11_psm":         {"rel_est": 1e-2, "rel_se": 5.0},
     "12_sdid":        {"rel_est": 0.15, "rel_se": 1.0},   # regularisation
-    "13_causal_forest":{"rel_est": 5.0, "rel_se": 5.0},  # NSW-DW overlap
+    "13_causal_forest":{"rel_est": 0.10, "rel_se": 0.50},  # clean-overlap AIPW vs grf (~3x observed MC gap)
     "14_ols_cluster": {"rel_est": 1e-3, "rel_se": 1e-3},
     "15_hdfe_cluster":{"rel_est": 1e-6, "rel_se": 5e-2},  # ssc convention
     "16_bjs":         {"rel_est": 1e-6, "rel_se": 0.25},  # SE convention
-    "17_etwfe":       {"rel_est": 0.10, "rel_se": 0.50},  # aggregation rule
+    "17_etwfe":       {"rel_est": 1e-6, "rel_se": 1e-3},   # emfx + cluster SE parity
     "18_augsynth":    {"rel_est": 0.50, "rel_se": 1.0},   # SCM non-uniqueness
     "19_gsynth":      {"rel_est": 1.0,  "rel_se": 1.0},   # SCM non-uniqueness
     "20_bacon":       {"rel_est": 1e-3, "rel_se": 1.0},   # TWFE-only headline
@@ -102,7 +107,7 @@ TOLERANCES: dict[str, dict[str, float]] = {
     "31_dfl":         {"rel_est": 1e-3, "rel_se": 1.0},   # gap-only headline
     "32_rif":         {"rel_est": 5e-2, "rel_se": 5e-2},
     "33_var":         {"rel_est": 1e-3, "rel_se": 1e-3},
-    "34_lp":          {"abs_est": 0.50, "abs_se": 1.0},   # identification convention
+    "34_lp":          {"rel_est": 1e-6, "rel_se": 1e-6},  # lpirfs Cholesky/unit shock
     "35_panel":       {"rel_est": 1e-3, "rel_se": 1e-3},  # FE/RE only headline
     "36_mediation":   {"rel_est": 1e-2, "rel_se": 1e-2},
     # Modules added in the 2026-05-28 parity expansion session.
@@ -122,6 +127,8 @@ TOLERANCES: dict[str, dict[str, float]] = {
     "49_oprobit":     {"rel_est": 1e-3, "rel_se": 1e-3},
     "50_xtabond":     {"rel_est": 1e-6, "rel_se": 1e-6},  # Py-Stata migration fixture
     "51_newey":       {"rel_est": 1e-3, "rel_se": 1e-2},  # post HAC fix
+    # Unique-solution SCM: strict-parity counterpart to module 07.
+    "52_scm_unique":  {"rel_est": 0.02, "rel_se": 1.0},   # identified convex SCM; sp exact, Synth ~0.7%
 }
 
 
@@ -412,10 +419,10 @@ HEADLINE: dict[str, dict[str, Any]] = {
     },
     "13_causal_forest": {
         "name": "Causal forest (AIPW)",
-        "headline_filter": lambda d: d.statistic == "att_causal_forest",
+        "headline_filter": lambda d: d.statistic == "ate_causal_forest",
         "metric": "rel_est",
-        "verdict": "\\textit{GAP}",
-        "gap_note": "NSW-DW propensity overlap",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "clean-overlap AIPW vs grf; recovers truth",
     },
     "14_ols_cluster": {
         "name": "OLS + cluster-robust SE",
@@ -484,8 +491,8 @@ HEADLINE: dict[str, dict[str, Any]] = {
         "name": "Wooldridge ETWFE",
         "headline_filter": lambda d: d.statistic == "att_etwfe",
         "metric": "rel_est",
-        "verdict": "\\textit{GAP}",
-        "gap_note": "aggregation rule differs",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "emfx aggregation and cluster SE matched",
     },
     "18_augsynth": {
         "name": "Augmented SCM",
@@ -560,9 +567,9 @@ HEADLINE: dict[str, dict[str, Any]] = {
     "34_lp": {
         "name": "Local projections",
         "headline_filter": lambda d: d.statistic.startswith("irf_"),
-        "metric": "abs_est",
-        "verdict": "\\textit{GAP}",
-        "gap_note": "Cholesky-orthogonalised vs OLS shock",
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "lpirfs Cholesky/unit-shock path",
     },
     "35_panel": {
         "name": "Panel FE/RE + Hausman",
@@ -685,6 +692,13 @@ HEADLINE: dict[str, dict[str, Any]] = {
         "metric": "rel_est",
         "verdict": "\\textbf{PASS}",
         "gap_note": "post HAC sandwich sqrt(n) scaling fix",
+    },
+    "52_scm_unique": {
+        "name": "Classical SCM (unique solution)",
+        "headline_filter": lambda d: d.statistic == "avg_post_gap",
+        "metric": "rel_est",
+        "verdict": "\\textbf{PASS}",
+        "gap_note": "identified convex SCM; sp recovers exact weights+gap",
     },
 }
 

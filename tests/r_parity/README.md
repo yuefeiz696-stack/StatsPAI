@@ -54,7 +54,7 @@ Latest full verification record:
 | 14 | OLS + cluster SE | `sp.regress(cluster=)` | `lm` + `sandwich::vcovCL` |
 | 15 | HDFE + cluster SE | `sp.fast.feols(cr1)` | `fixest::feols(cluster=)` |
 | 16 | BJS imputation | `sp.did_imputation` | `didimputation::did_imputation` |
-| 17 | Wooldridge ETWFE | `sp.etwfe` | `etwfe::etwfe` |
+| 17 | Wooldridge ETWFE | `sp.etwfe` + `sp.etwfe_emfx` | `etwfe::etwfe` + `emfx` |
 | 18 | Augmented SCM | `sp.synth("augmented")` | `augsynth::augsynth` |
 | 19 | Generalized SCM | `sp.synth("gsynth")` | `gsynth::gsynth` |
 | 20 | Goodman--Bacon decomp | `sp.bacon_decomposition` | `bacondecomp::bacon` |
@@ -71,7 +71,7 @@ Latest full verification record:
 | 31 | DFL reweighting | `sp.decompose("dfl")` | `ddecompose::dfl_decompose` |
 | 32 | RIF / UQR (median) | `sp.decomposition.rif_decomposition` | `dineq::rif` + manual OLS |
 | 33 | VAR | `sp.var` | `vars::VAR` |
-| 34 | Local projections | `sp.local_projections` | `lpirfs::lp_lin` |
+| 34 | Local projections | `sp.local_projections(..., identification="lpirfs_cholesky")` | `lpirfs::lp_lin` |
 | 35 | Panel FE/RE/Hausman | `sp.panel` | `plm::plm` + `plm::phtest` |
 | 36 | Causal mediation | `sp.mediation` | `mediation::mediate` |
 | 37 | PPML + HDFE | `sp.ppmlhdfe` | `fixest::fepois` |
