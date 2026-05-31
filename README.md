@@ -4,13 +4,14 @@
   <img src="https://raw.githubusercontent.com/brycewang-stanford/StatsPAI/main/docs/logo/readme-1.png" alt="StatsPAI - validation-tiered causal inference for Python" width="780">
 </p>
 
-# StatsPAI: Validation-Tiered Causal Inference & Econometrics Workflows for Python
+# StatsPAI: Agent-Native Causal Inference & Econometrics Toolkit for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/StatsPAI.svg)](https://pypi.org/project/StatsPAI/)
 [![Python versions](https://img.shields.io/pypi/pyversions/StatsPAI.svg)](https://pypi.org/project/StatsPAI/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/brycewang-stanford/statspai/blob/main/LICENSE)
 [![Tests](https://github.com/brycewang-stanford/statspai/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/brycewang-stanford/statspai/actions)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/statspai?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/statspai)
+[![status](https://joss.theoj.org/papers/9f1c837b1b1df7adfcdd538c3698e332/status.svg)](https://joss.theoj.org/papers/9f1c837b1b1df7adfcdd538c3698e332)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19933900-blue.svg)](https://doi.org/10.5281/zenodo.19933900)
 
 StatsPAI is a **validation-tiered** Python platform for causal inference and applied econometrics. One `import`, **1,000+ registered functions** across **80+ submodules** (live count: `python scripts/registry_stats.py`), spanning classical econometrics, ML/AI causal methods, and reporting utilities for Word, Excel, and LaTeX.
@@ -21,12 +22,12 @@ It places Python-native implementations, selected R-style causal workflows, and 
 
 ---
 
-## For JSS Reviewers
+## For Journal Reviewers
 
-The shortest review path is:
+StatsPAI has two parallel software-paper submissions. Pick the path for your venue:
 
-1. Start with the JSS replication guide in [`Paper-JSS/README.md`](Paper-JSS/README.md).
-2. Inspect source-audit evidence in [`docs/jss_source_audit_dossier.md`](docs/jss_source_audit_dossier.md).
+1. **JOSS reviewers** — install and smoke-test the package with [`docs/joss_reviewer_guide.md`](docs/joss_reviewer_guide.md), then inspect validation evidence in [`docs/joss_validation_dossier.md`](docs/joss_validation_dossier.md).
+2. **JSS reviewers** — start with the replication guide in [`Paper-JSS/README.md`](Paper-JSS/README.md), then inspect source-audit evidence in [`docs/jss_source_audit_dossier.md`](docs/jss_source_audit_dossier.md).
 3. Run representative offline examples from [`examples/`](examples/).
 4. Check contribution and support pathways in [`CONTRIBUTING.md`](CONTRIBUTING.md), [`SUPPORT.md`](SUPPORT.md), and the GitHub issue templates under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).
 
@@ -1431,9 +1432,9 @@ swap in the version-specific DOI shown on the [Zenodo record](https://doi.org/10
 for that release.
 
 The canonical metadata lives in [`CITATION.cff`](CITATION.cff) (GitHub renders
-a "Cite this repository" button from it). Until a journal article is accepted,
-the software citation above and the version-specific Zenodo DOI are the
-preferred citation targets.
+a "Cite this repository" button from it). A JOSS paper for StatsPAI is
+currently under review; once accepted, the journal article will become the
+preferred citation and `sp.citation()` will be updated to return it.
 
 ## Star History
 

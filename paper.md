@@ -1,5 +1,5 @@
 ---
-title: 'StatsPAI: Validation-Tiered Python Workflows for Causal Inference'
+title: 'StatsPAI: A Unified, Agent-Native Python Toolkit for Causal Inference and Applied Econometrics'
 tags:
   - Python
   - causal inference
@@ -25,15 +25,6 @@ affiliations:
 date: 31 May 2026
 bibliography: paper.bib
 ---
-
-# Current Submission Boundary
-
-This root Markdown manuscript is kept as a software-journal record for
-citation-audit and historical continuity. It is not the authoritative
-JSS submission. The current JSS manuscript source is
-`Paper-JSS/manuscript/main.tex`, the generated PDF is
-`Paper-JSS/manuscript/main.pdf`, and the reviewer replication guide is
-`Paper-JSS/README.md`.
 
 # Summary
 
@@ -160,9 +151,8 @@ difference-in-differences examples, and synthetic-control benchmarks.
 The validation suite also includes a 1000-replication coverage run for
 representative OLS, difference-in-differences, and strong-instrument IV
 designs, with empirical coverage close to the nominal 95 percent level.
-The current reviewer-facing source-audit dossier is
-`docs/jss_source_audit_dossier.md`; the JSS replication guide is
-`Paper-JSS/README.md`.
+A reviewer-facing validation dossier and a short reviewer guide are
+included in the repository documentation.
 
 The near-term research impact is a more reproducible empirical workflow
 for applied policy evaluation. Because methods share one interface,

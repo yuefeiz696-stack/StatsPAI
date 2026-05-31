@@ -93,9 +93,10 @@ def citation(format: str = "bibtex") -> str:
 
     Notes
     -----
-    Until a peer-reviewed article is accepted, please cite the software entry
-    (and, if available, the versioned Zenodo DOI for the specific release you
-    used).
+    The JOSS paper for StatsPAI is currently under review.  Once accepted,
+    this function will return the journal article citation as the preferred
+    form; until then, please cite the software entry (and, if available, the
+    versioned Zenodo DOI for the specific release you used).
 
     For formatting a single coefficient as inline text (e.g.
     ``"β = 0.34** (0.12)"``), use :func:`statspai.cite` instead.

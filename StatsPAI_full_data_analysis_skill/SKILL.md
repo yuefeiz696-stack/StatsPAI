@@ -82,7 +82,7 @@ This skill drives StatsPAI through the **canonical pipeline of an applied AER em
 
 - **Source**: https://github.com/brycewang-stanford/StatsPAI
 - **Install**: `pip install statspai` (>= 1.6)
-- **JSS materials**: see `Paper-JSS/README.md` and `docs/jss_source_audit_dossier.md`
+- **Paper**: JOSS submission under review; JSS materials in `Paper-JSS/README.md` and `docs/jss_source_audit_dossier.md`
 
 ## Why for Agents
 

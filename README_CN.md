@@ -11,6 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/brycewang-stanford/statspai/blob/main/LICENSE)
 [![Tests](https://github.com/brycewang-stanford/statspai/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/brycewang-stanford/statspai/actions)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/statspai?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/statspai)
+[![status](https://joss.theoj.org/papers/9f1c837b1b1df7adfcdd538c3698e332/status.svg)](https://joss.theoj.org/papers/9f1c837b1b1df7adfcdd538c3698e332)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19933900-blue.svg)](https://doi.org/10.5281/zenodo.19933900)
 
 StatsPAI 是一个 **validation-tiered** Python 因果推断与应用计量经济学平台。一个 `import`，**1,000+ 个注册函数**，分布在 **80 个子模块**（实时数量请运行 `python scripts/registry_stats.py`），覆盖从经典计量经济学到 ML/AI 因果推断方法，再到论文级 Word、Excel、LaTeX 输出表格的实证研究流程。
@@ -626,8 +627,8 @@ sp.__citation__                 # 与 sp.citation("bibtex") 等价
 对应的 versioned DOI 替换上面的 `doi` 字段。
 
 规范元数据存放在 [`CITATION.cff`](CITATION.cff)（GitHub 会基于此渲染右侧
-"Cite this repository" 按钮）。在期刊论文正式录用前，上述软件引用和
-Zenodo versioned DOI 是首选引用对象。
+"Cite this repository" 按钮）。StatsPAI 的 JOSS 论文目前正在审稿中，录用
+后该论文将成为首选引用来源，`sp.citation()` 也会同步更新返回 JOSS 条目。
 
 ## Star 历史
 

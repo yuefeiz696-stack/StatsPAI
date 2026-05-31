@@ -52,7 +52,22 @@ keywords:
   - tmle
   - python
   - agent-facing
-# When a peer-reviewed article is accepted, add a preferred-citation block
-# with DOI / volume / pages. Until then, cite the software entry above
-# (versioned Zenodo DOI is preferable once the GitHub-Zenodo integration mints
-# one for a release).
+# When the JOSS paper is accepted, fill in DOI / volume / pages and uncomment.
+# Until then, cite the software entry above (versioned Zenodo DOI is
+# preferable once the GitHub-Zenodo integration mints one for a release).
+#
+# preferred-citation:
+#   type: article
+#   authors:
+#     - family-names: "Wang"
+#       given-names: "Biaoyue"
+#       affiliation: "Stanford REAP, Stanford University"
+#       email: "brycew6m@stanford.edu"
+#     - family-names: "Rozelle"
+#       given-names: "Scott"
+#       affiliation: "Stanford REAP, Stanford University"
+#       email: "rozelle@stanford.edu"
+#   title: "StatsPAI: A Unified, Agent-Native Python Toolkit for Causal Inference and Applied Econometrics"
+#   journal: "Journal of Open Source Software"
+#   year: 2026
+#   doi: "TBD"
