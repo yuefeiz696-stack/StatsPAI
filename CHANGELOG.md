@@ -36,23 +36,53 @@ All notable changes to StatsPAI will be documented in this file.
   from `average_treatment_effect` should re-run.
   - On a clean-overlap DGP (`e(X)∈[0.30,0.70]`, known ATE = 1) the AIPW
     ATE recovers the truth within 1.5 SE and agrees with `grf` at
-    `rel = 0.037` (`z = 0.69` combined SE); the R-parity module
-    `13_causal_forest` verdict moves from GAP (500 % band) to PASS
-    (10 % band).
+    `rel = 0.037` (`z = 0.69` combined SE). For the JSS source snapshot,
+    `13_causal_forest` is now a T3 combined-Monte-Carlo-error pass:
+    the row is like-for-like AIPW versus `grf` and is graded against
+    combined sampling error, not sold as deterministic machine-precision
+    equality. The strictness-tier denominator is
+    `11 / 26 / 10 / 4 on the 51 R-joined modules`: the forest row shares
+    the loose/stochastic bucket with three documented native convention
+    gaps, but it is the only one of the four graded as a T3 pass.
   - Guards: `tests/reference_parity/test_causal_forest_aipw_recovery.py`
     (recovery against truth, no R needed) and the tightened
     `tests/reference_parity/test_grf_parity.py` (combined-SE parity vs a
     committed `grf` fixture).
-- **Synthetic-control solver certified on identified problems.** Added
+- **Synthetic-control solver certified on identified problems and exact
+  `Synth` parity exposed when reviewers need it.** Added
   `tests/reference_parity/test_scm_recovery.py` and the cross-language
   module `tests/r_parity/52_scm_unique`: on a DGP whose synthetic-control
   weights are uniquely identified (treated unit exactly a convex
   combination of donors in the pre-period), `sp.synth(method="classic")`
   recovers the exact weights and gap (pre-RMSE = 0) and agrees with
-  `Synth::synth` to 0.7 %; the classical/augmented/generalised/MC
-  variants each recover a known factor-model ATT within 3 %. No
-  estimator numerics change — this is added validation isolating the
-  Basque-data SCM gap (module `07`) as genuine weight non-uniqueness.
+  `Synth::synth` to 0.7 %. For the ambiguous Basque-data row, the parity
+  harness keeps the native default visible as a documented
+  donor-weight-non-uniqueness gap; users who need exact R numbers can call
+  the optional `sp.synth(method="classic", backend="synth")` bridge. The
+  release claim is therefore native-solver certification on identified
+  SCM problems plus an explicit Basque-data limitation, not a hidden
+  machine-precision victory on a non-unique original-data example.
+
+### Changed — synthetic-DID regularisation aligned to `synthdid` convention
+
+- **`sp.sdid` native unit/time weights now use the
+  \citet{arkhangelsky2021synthetic} `synthdid` regularisation formula.**
+  The unit-weight ridge penalty is now
+  `ζ_ω = (N_tr · T_post)^{1/4} · σ̂` (it was `(N_co · T_pre)^{1/4}` with
+  no noise scale), where `σ̂` is the standard deviation of the control
+  units' pre-treatment first differences; the time-weight penalty is
+  `ζ_λ = 10^{-6}·σ̂`; and both weight fits now absorb a profiled-out
+  intercept, the level-shift invariance that distinguishes the SDID
+  weight problem from a plain SC fit. This matches `synthdid`'s
+  documented convention rather than an ad-hoc penalty. On the
+  California-99 replica the point estimate is numerically unchanged
+  (the data are ill-conditioned — `N_co = 38 > T_pre = 19` makes the
+  ridge term negligible relative to the SSE, so both the SLSQP and the
+  reference Frank–Wolfe optima sit on a near-flat ridge and the residual
+  `rel ≈ 0.082` vs `synthdid` is documented weight non-uniqueness, T4 in
+  the parity ledger). The change is a correctness refinement of the
+  regularisation scale, not a headline-number change; guarded by the 58
+  `sdid`/`synthdid` tests.
 
 ### Added — MCP protocol modernization
 
@@ -111,10 +141,10 @@ All notable changes to StatsPAI will be documented in this file.
 - **Strictness-tier breakdown in the Track A parity tables
   (`tests/r_parity/compare.py`)** — each module is classified by its
   registered point-estimate tolerance into machine / iterative / moderate /
-  methodological tiers (6 / 26 / 10 / 9 on the 51 R-joined modules), shown
+  loose-stochastic T3/T4 tiers (11 / 26 / 10 / 4 on the 51 R-joined modules), shown
   in the Markdown ledger and the LaTeX appendix caption so a machine-precision
   match is not flattened together with a deliberately loose
-  methodological-difference tolerance.
+  stochastic or documented-convention tolerance.
 - **Stata leg brought to the same rigor as R (`tests/stata_parity/`)** —
   `_common.do` now writes an inline `provenance` block (engine version,
   edition, OS) onto every `*_Stata.json`; `verify_reproduce_stata.py` re-runs
@@ -132,15 +162,14 @@ All notable changes to StatsPAI will be documented in this file.
 
 ### Changed — Track A R golden values regenerated under the locked environment
 
-- The current R parity ledger covers 51 `results/*_R.json` modules under R 4.5.2 with
-  the `renv.lock` package set so each is self-describing. The only material
-  numerical movement is `07_scm` (classical SCM), whose headline estimate
-  shifted by 2.18e-8 — L-BFGS-B / Apple-Accelerate-BLAS non-associativity,
-  far inside that module's 0.20 SCM non-uniqueness parity tolerance. The
-  ledger also adds `52_scm_unique`, an identified synthetic-control DGP that
-  separates solver correctness from the Basque non-uniqueness gap. This is
-  primarily a reference-fixture and evidence refresh, not a broad
-  `statspai` estimator-output change.
+- The current R parity ledger covers 51 rendered R-joined modules under
+  R 4.5.2 with the `renv.lock` package set so each is self-describing.
+  The material parity-status movement is the added `52_scm_unique`
+  counterpart for classical SCM: an identified synthetic-control DGP now
+  separates native solver correctness from ambiguous real-data weight
+  selection, while the Basque row remains a documented native
+  non-uniqueness gap. This is primarily a reference-fixture and evidence
+  refresh, not a broad `statspai` estimator-output change.
 - The 44 committed `results/*_Stata.json` were likewise refreshed to embed
   the engine `provenance` block; their numbers are **unchanged** (every
   module reproduces at exactly 0 under the locked Stata 18 MP environment).
@@ -253,9 +282,9 @@ All notable changes to StatsPAI will be documented in this file.
   PNG/PDF via `fig.savefig`): one `\addplot` series per model with horizontal
   CI error bars, reversed y-axis, dashed zero line; `coef_labels` / `level` /
   `standalone` options. Auto-registered.
-- **Export-surface universality contract (`tests/test_export_surface_contract.py`)**
-  — 55 parametrized checks asserting `sp.regtable(r)` consumes every estimator
-  result (`EconometricResults` / `CausalResult` / `PanelResults` /
+- **Export-surface contract (`tests/test_export_surface_contract.py`)**
+  — 55 parametrized checks asserting `sp.regtable(r)` consumes registered
+  result-class outputs (`EconometricResults` / `CausalResult` / `PanelResults` /
   `FrontierResult`) and round-trips, so a future non-exportable result fails
   loudly. Guide §7–§8 document coefplots and the table/non-table boundary.
 - **`Collection.to_dict()` / `.to_json()` and `PaperTables.to_dict()` /
@@ -768,14 +797,12 @@ not change the negative-binomial numerical path.
   the score-formulation derivation for wild and wild-cluster variants
   and the Cameron-Gelbach-Miller 2008 attribution added to
   `jss-bib.bib`), the Rust `cluster_meat` kernel, and `sp.iv(absorb=...)`.
-  §6 gains an `\subsection{Accelerator benchmarks (v1.14 bootstrap)}`
-  with a 4-variant × 4-hardware-tier table (CPU sequential / CPU JAX
-  vmap / GPU T4 / GPU A100 80GB) whose cells are placeholders pending
-  a GPU benchmark run; `\usepackage{multirow}` added to `main.tex`.
-  The benchmark harness is shipped as
-  `tests/perf/05_feols_jax_bootstrap_bench.py` (n=10⁶, B=2000, 5000
-  clusters; modes `cpu_seq` / `cpu_jax` / `gpu`); a one-time GPU run
-  populates the table from the emitted JSON.
+  §6 originally sketched an accelerator-benchmark table for
+  `sp.fast.feols_jax_bootstrap`, but the JSS source snapshot now relies
+  only on packaged measurements. The active Track C table is generated
+  from measured CPU benchmarks under `tests/perf/`, and GPU/JAX timing
+  remains an opt-in engineering benchmark until a dedicated accelerator
+  run is packaged as evidence.
 - JOSS bullet 5 in `paper.md` simplified from a four-paragraph
   exposition to a single tight paragraph that cross-references the
   JSS companion paper for full architecture detail.
@@ -792,8 +819,8 @@ not change the negative-binomial numerical path.
 
 Five pushes in this cycle. First, an IV-module polish to the post-2022
 reporting standard (the `sp.iv.iv_diag` bundle, see below). Second, a
-synthetic-control polish pass: every estimator the package already
-ships now has a publication-grade table-export pipeline, the trajectory
+synthetic-control polish pass: supported synthetic-control estimators in
+that release now have a publication-grade table-export pipeline, the trajectory
 and gap plots gain prediction-interval / pre-RMSPE ribbon options
 following Cattaneo, Feng and Titiunik (2021, *JASA* 116, DOI
 10.1080/01621459.2021.1979561) and Cattaneo, Feng, Palomba and Titiunik
@@ -886,7 +913,7 @@ adaptive density estimator — see the dedicated section below.
 - **`CausalResult.to_word`** added alongside the existing `.to_latex`
   / `.to_excel`. Renders a publication-style three-block Word
   document (estimates / detail / notes) using the AER booktab styling
-  helpers in `output/_aer_style.py`. Coverage: every estimator that
+  helpers in `output/_aer_style.py`. Coverage: supported estimators that
   already returns `CausalResult` (DML, TMLE, BCF, mediate,
   conformal_cate, proximal.p2sls, matrix_completion, metalearners,
   hal_tmle, did, rd, synth) now has uniform LaTeX / Excel / Word
@@ -3080,7 +3107,7 @@ future changes can't accidentally bloat the LLM tool-result channel.
 
 ### No numerical changes
 
-Every estimator's coefficient / SE / CI / p-value path is byte-
+Existing estimator coefficient / SE / CI / p-value paths are byte-
 identical to 1.8.0. The 12 new modules are introspection,
 serialization, prompt-rendering, and RNG-management primitives —
 they read from existing result state, never recompute it.
@@ -7396,7 +7423,7 @@ The third (Bayesian bunching) is **explicitly declined** — see the
 - **`tests/test_bayes_advi.py`** (10 tests) — ADVI runs on all five
   Bayesian estimators, posterior means finite,
   `model_info['inference']` reports correctly, invalid inference
-  modes raise for every estimator (parametrised over 5 functions).
+  modes raise across the parametrised five-function set.
 
 ### Non-goals (0.9.7, explicitly declined)
 
@@ -8498,7 +8525,7 @@ Following a 5-parallel-agent code review (correctness / numerics / API / perf / 
 
 #### Tests & validation
 
-- **144 synth tests passing** (new: 12-method cross-method consistency benchmark verifying every estimator recovers a known ATT within 1.5 units on a clean DGP).
+- **144 synth tests passing** (new: 12-method cross-method consistency benchmark verifying the benchmarked synth methods recover a known ATT within 1.5 units on a clean DGP).
 - **Full suite: 1481 passed, 4 skipped, 0 failed** (5m42s).
 - New guide: `docs/guides/synth.md` — complete tutorial covering all 20 methods with a method-choice decision table.
 

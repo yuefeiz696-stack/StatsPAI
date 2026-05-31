@@ -1,9 +1,12 @@
 # Synthetic Control — 20 methods, one package
 
-StatsPAI bundles the most comprehensive synthetic control toolkit
-available in any language: 20 estimators, 6 inference strategies, plus
-a research workflow of automatic comparison, power analysis,
-sensitivity diagnostics, and one-click reports.
+StatsPAI bundles a synthetic-control workflow with 20 estimator entry
+points, 6 inference strategies, automatic comparison, power analysis,
+sensitivity diagnostics, and report helpers. Validation strength varies
+by method and is reported through method-level metadata and the JSS
+evidence ledger.
+Validation status remains method-specific; broad API coverage is not a
+blanket parity claim.
 
 ## Quick start
 

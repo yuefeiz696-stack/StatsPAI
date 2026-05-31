@@ -1,9 +1,10 @@
 # Decomposition Analysis
 
-`statspai.decomposition` — 18 decomposition methods across 13 modules
-(v0.9.2, ~6,200 LOC, 54 tests). The most comprehensive decomposition
-toolkit in Python, covering mean, distributional, inequality,
-demographic, and causal decomposition.
+`statspai.decomposition` documents 18 decomposition methods across
+13 modules (v0.9.2, ~6,200 LOC, 54 tests), covering mean,
+distributional, inequality, demographic, and causal decomposition.
+method-level validation metadata records which functions are backed by
+reference evidence versus API-stability commitments.
 
 ## Unified dispatcher — `sp.decompose`
 

@@ -1,8 +1,10 @@
 # Synthetic Control
 
-`statspai.synth` — the most comprehensive SCM toolkit across Stata, R,
-and Python (v0.9.0, 20 estimators + 6 inference strategies + full
-research workflow).
+`statspai.synth` documents StatsPAI's synthetic-control interface
+(v0.9.0): 20 estimator entry points, 6 inference strategies, and
+ workflow helpers. Native methods carry validation-tier metadata;
+exact reference parity is limited to rows documented in the JSS
+evidence ledger.
 
 ## Unified dispatcher — `sp.synth`
 

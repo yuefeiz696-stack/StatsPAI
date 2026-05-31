@@ -150,7 +150,7 @@ Legend: 🏆 most complete across ecosystems · ✅ full coverage · ⚠️ part
 | 19 | Interference / spillover (partial / network / cluster-RCT / HTE) | ❌ | ⚠️ (`interference`) | ❌ | ❌ | 🏆 | 18 functions including `sp.spillover`, `sp.cluster_rct`, `sp.hte_interference` |
 | 20 | Matrix completion for panels                                  | ❌ | ⚠️ (`gsynth`) | ❌ | ❌ | ✅ | `sp.matrix_completion` |
 | 21 | Causal MAS (multi-agent LLM causal discovery — arXiv:2509.00987) | ❌ | ❌ | ❌ | ❌ | 🏆 | `sp.causal_mas`, `sp.causal_llm.openai_client`, `sp.causal_llm.anthropic_client` |
-| 22 | Publication tables (Word / Excel / LaTeX / HTML / Markdown)   | ⚠️ (`outreg2`) | ⚠️ (`modelsummary`) | ⚠️ | ❌ | 🏆 | Every estimator: `.to_word()` / `.to_excel()` / `.to_latex()` / `.to_html()` |
+| 22 | Publication tables (Word / Excel / LaTeX / HTML / Markdown)   | ⚠️ (`outreg2`) | ⚠️ (`modelsummary`) | ⚠️ | ❌ | 🏆 | Supported result objects expose `.to_word()` / `.to_excel()` / `.to_latex()` / `.to_html()` |
 | 23 | Agent-native tool-calling schemas (`function_schema()`)        | ❌ | ❌ | ❌ | ❌ | 🏆 | `sp.list_functions()`, `sp.describe_function()`, `sp.function_schema()`, `sp.agent.mcp_server` |
 
 ---

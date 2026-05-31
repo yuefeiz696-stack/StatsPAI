@@ -429,7 +429,7 @@ StatsPAI 1.4.0 is Sprint 2 of the 知识地图 v3 roadmap. Closes the four secon
 | **Particle-filter assimilation** | **`sp.assimilation.particle_filter`** — bootstrap-SIR particle filter with systematic resampling (Gordon-Salmond-Smith 1993; Douc-Cappé 2005). Non-Gaussian priors, heavy-tailed observation noise, nonlinear dynamics via pluggable callbacks. Agrees with exact Kalman to ~0.003 under Gaussian DGPs. **`sp.assimilative_causal(..., backend='particle')`** routes the end-to-end wrapper. |
 | **Documentation (v3 frontier guides)** | `docs/guides/synth_experimental.md` (Abadie-Zhao inverse-SC workflow), `docs/guides/harvest_did.md` (Borusyak-Hull-Jaravel harvesting DID), `docs/guides/assimilative_ci.md` (Nature Comms 2026 streaming CI, Kalman + particle backends). Wired into `mkdocs.yml` nav. |
 | **v1.3 stable foundation (carried forward)** | 11 2025-2026 frontier methods from Sprint 1: `synth_experimental_design`, `rdrobust(..., bootstrap='rbc')`, `evidence_without_injustice`, `target_trial.to_paper(fmt='jama'/'bmj')`, `harvest_did`, `bcf_ordinal`, `bcf_factor_exposure`, `causal_mas`, `shift_share_political`, `causal_kalman`. All v1.0 capstone surfaces (`sp.bridge`, `sp.fairness`, `sp.surrogate`, `sp.epi`, `sp.longitudinal`, `sp.question`, full MR suite, TARGET checklist) remain intact. |
-| **Agent-native platform** | `sp.list_functions()` / `sp.describe_function()` / `sp.function_schema()` expose OpenAI/Anthropic tool-calling schemas for 1,020 registered public functions. 362 curated or explicitly inherited `FunctionSpec` entries carry at least one of assumptions, preconditions, failure modes, limitations, `typical_n_min`, and validation tiers for the flagship surface. `validation_status` distinguishes certified/validated evidence from API-stable breadth. `sp.agent.mcp_server` MCP scaffold lets external LLMs call every StatsPAI function via natural-language tool invocation. |
+| **Agent-native platform** | `sp.list_functions()` / `sp.describe_function()` / `sp.function_schema()` expose OpenAI/Anthropic tool-calling schemas for 1,020 registered public functions. 362 curated or explicitly inherited `FunctionSpec` entries carry at least one of assumptions, preconditions, failure modes, limitations, `typical_n_min`, and validation tiers for the flagship surface. `validation_status` distinguishes certified/validated evidence from API-stable breadth. `sp.agent.mcp_server` MCP scaffold lets external LLMs call registered tool-backed functions via natural-language tool invocation. |
 | **CI/CD hygiene** | `tabulate` hard-dep from v1.3.0 carried forward. Deflaked `test_forest_ate_recovers_average_tau` by seeding the forest explicitly (`random_state=0`, `n_estimators=300`, larger `n`). 2 699+ tests passing across all OS × Python matrix entries. |
 
 **Previously in v0.9.2 — Decomposition Analysis**: **18 first-class decomposition methods across 13 modules (~6,200 LOC, 54 tests)**, unified under `sp.decompose(method=...)`. Mean (Blinder-Oaxaca/Gelbach/Fairlie/Bauer-Sinning/Yun), distributional (RIF/FFL/DFL/Machado-Mata/Melly/CFM), inequality (Theil/Atkinson/Dagum/Shapley/Lerman-Yitzhaki), demographic (Kitagawa/Das-Gupta), and causal (gap_closing/mediation_decompose/disparity_decompose). Closed-form influence functions for Theil/Atkinson, weighted O(n log n) Dagum Gini, cross-method consistency checks.
@@ -786,7 +786,7 @@ wrappers, no runtime dependencies on upstream DID packages.
 | `vif()` | Variance Inflation Factor | — |
 | `diagnose()` | General model diagnostics | — |
 
-### Smart Workflow Engine *(unique to StatsPAI — no other package has these)*
+### Smart Workflow Engine
 
 | Function | Description |
 | --- | --- |
@@ -797,7 +797,7 @@ wrappers, no runtime dependencies on upstream DID packages.
 | `pub_ready()` | Journal-specific publication readiness checklist (Top 5 Econ, AEJ, RCT) |
 | `replicate()` | Built-in famous datasets (Card 1995, LaLonde 1986, Lee 2008) with replication guides |
 
-### Robustness Analysis *(unique to StatsPAI)*
+### Robustness Analysis
 
 | Function | Description | R/Stata equivalent |
 | --- | --- | --- |
@@ -950,7 +950,7 @@ sp.modelsummary(r1, r2, output='table2.docx')
 sp.outreg2(r1, r2, r3, filename='results.xlsx')
 sp.sumstats(card, vars=['lwage', 'educ', 'exper'], output='table1.docx')
 
-# --- Robustness (unique to StatsPAI) ---
+# --- Robustness workflow ---
 sp.spec_curve(card, y='lwage', x='educ',
               controls=[[], ['exper'], ['exper', 'black']],
               se_types=['nonrobust', 'hc1']).plot()
@@ -1277,7 +1277,7 @@ New Design & Data: `randomize()`, `balance_check()`, `attrition_test()`, `optima
 
 New Structural: `blp()` (BLP demand estimation), `frontier()` (stochastic frontier)
 
-Smart Workflow Engine (unique to StatsPAI):
+Smart Workflow Engine:
 
 - `recommend()` — data + question → estimator recommendation + workflow
 - `compare_estimators()` — multi-method comparison with agreement diagnostics
