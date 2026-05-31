@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -20,9 +21,12 @@ RESULTS = REPO_ROOT / "Paper-JSS" / "replication" / "results"
 
 
 def test_jss_formal_compliance_audit_maps_official_requirements() -> None:
+    env = os.environ.copy()
+    env.setdefault("SOURCE_DATE_EPOCH", "1780185600")
     res = subprocess.run(
         [sys.executable, str(AUDIT)],
         cwd=REPO_ROOT,
+        env=env,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

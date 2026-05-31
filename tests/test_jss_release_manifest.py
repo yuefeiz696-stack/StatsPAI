@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import os
 import subprocess
 import sys
 import zipfile
@@ -37,6 +38,9 @@ VERIFY_PACKAGE = (
 )
 PACKAGE_SCRIPT = (
     REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "jss_submission_package.py"
+)
+FULL_AUDIT = (
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "jss_full_audit.py"
 )
 REGISTRY_STATS = REPO_ROOT / "scripts" / "registry_stats.py"
 RESULTS = REPO_ROOT / "Paper-JSS" / "replication" / "results"
@@ -129,6 +133,20 @@ GENERATED_PDF_FIGURES = (
     TRACK_C_LOGLOG_FIGURE,
     *sorted((REPO_ROOT / "Paper-JSS" / "manuscript" / "figures").glob("*.pdf")),
 )
+AUDIT_SCRIPTS_WITH_FIXED_CLOCK = (
+    FULL_AUDIT,
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "agent_interface_audit.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "jss_formal_compliance_audit.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "jss_submission_package.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "manuscript_artifact_audit.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "methodological_gap_ledger.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "release_boundary_audit.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "reproduction_environment_audit.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "source_snapshot_manifest.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "stata_bridge_audit.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "validate_claims.py",
+    REPO_ROOT / "Paper-JSS" / "replication" / "scripts" / "validation_evidence_audit.py",
+)
 PARITY_SECTION = REPO_ROOT / "Paper-JSS" / "manuscript" / "sections" / "05-parity.tex"
 PARITY_COMPACT_SECTION = (
     REPO_ROOT / "Paper-JSS" / "manuscript" / "sections" / "05-parity-compact.tex"
@@ -172,9 +190,12 @@ ROOT_RELEASE_PREFIXES = (
 
 
 def _run(script: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env.setdefault("SOURCE_DATE_EPOCH", "1780185600")
     return subprocess.run(
         [sys.executable, str(script), *args],
         cwd=REPO_ROOT,
+        env=env,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -379,6 +400,15 @@ def test_validation_claim_lint_covers_release_notes() -> None:
         "Python's first " "feature-complete implementation"
         in claim_lint.FORBIDDEN_SNIPPETS
     )
+    assert "first power-" "analysis tool" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "gold " "standard" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "empirical research " "workflow" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "manuscript-" "ready" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "full-" "stack" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "single, consistent " "Python API" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "all in one " "place" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "Stata has almost " "none" in claim_lint.FORBIDDEN_SNIPPETS
+    assert "R has them " "scattered" in claim_lint.FORBIDDEN_SNIPPETS
     assert (
         "Every result object exposes " "the same interface"
         in claim_lint.FORBIDDEN_SNIPPETS
@@ -580,8 +610,21 @@ def test_submission_manifest_discloses_fixed_zip_timestamp() -> None:
     if not SUBMISSION_MANIFEST.exists():
         pytest.skip("submission manifest has not been built")
     manifest = json.loads(SUBMISSION_MANIFEST.read_text())
+    assert manifest["generated_at_unix"] == 1780185600
     assert manifest["source_date_epoch"] == 1780185600
     assert manifest["zip_member_datetime"] == list(FIXED_ZIP_DATETIME)
+
+
+def test_jss_audit_scripts_honor_source_date_epoch() -> None:
+    """Reviewer-facing audit artifacts should be reproducible under Make."""
+    for script in AUDIT_SCRIPTS_WITH_FIXED_CLOCK:
+        source = script.read_text()
+        assert "SOURCE_DATE_EPOCH" in source, script
+        assert "_generated_at_unix()" in source, script
+    full_audit_source = FULL_AUDIT.read_text()
+    assert "_elapsed_seconds" in full_audit_source
+    assert "_normalize_command_output" in full_audit_source
+    assert '"seconds": _elapsed_seconds(start)' in full_audit_source
 
 
 def test_methodological_gap_ledger_pins_t4_metadata() -> None:
@@ -816,18 +859,32 @@ def test_submission_package_verifier_pins_page_and_claim_guards() -> None:
         "drop-in " "replacement",
         "publication-" "grade",
         "publication-" "ready",
+        "manuscript-" "ready",
         "journal-" "ready",
         "one-" "click",
         "one " "click",
         "state-of-" "the-art",
         "state of " "the art",
         "full research " "workflow",
+        "full-" "stack",
+        "single, consistent " "Python API",
+        "single unified " "API",
+        "all in one " "place",
+        "Stata has almost " "none",
+        "R has them " "scattered",
+        "matches R's " "5-package " "spatial stack",
+        "Neither Stata " "nor R",
+        "R has no " "equivalent",
+        "Stata requires paid " "add-ons",
         "one-call " "comprehensive",
         "comprehensive " "report",
         "full " "coverage",
         "Python's first " "feature-complete implementation",
         "Python's first " "unified CATE learner race",
         "Python's first " "unified spatial econometrics package",
+        "first power-" "analysis tool",
+        "gold " "standard",
+        "empirical research " "workflow",
         '"Every result object exposes " "the same interface"',
         "across every " "registered estimator",
         "Every result object " "speaks the same export protocol",
@@ -878,6 +935,7 @@ def test_submission_package_verifier_pins_page_and_claim_guards() -> None:
         "Paper-JSS/colab_gpu_bench",
         "Paper-JSS/DRAFT-NOTES",
         "Paper-JSS/references/",
+        "README_CN",
         ".egg-info",
         "\\u8bc4\\u5ba1",
         "\\u4e2d\\u6587",
@@ -895,6 +953,7 @@ def test_submission_package_verifier_pins_page_and_claim_guards() -> None:
         "Paper-JSS/manuscript/main.md",
         "Paper-JSS/manuscript/main-zh.md",
         "Paper-JSS/manuscript/\u8bc4\u5ba1\u610f\u89c1-\u4e2d\u6587.md",
+        "README_CN.md",
     )
     assert not (set(forbidden_members) & names)
     for forbidden_prefix in (
