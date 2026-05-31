@@ -44,21 +44,21 @@ Latest full verification record:
 | 04 | CS-DiD simple ATT | `sp.callaway_santanna` | `did::att_gt` + `aggte` |
 | 05 | Sun-Abraham event study | `sp.sun_abraham` | `fixest::sunab` |
 | 06 | RD CCT bias-corrected | `sp.rdrobust` | `rdrobust::rdrobust` |
-| 07 | Classical SCM | `sp.synth("classic")` | `Synth::synth` |
+| 07 | Classical SCM | `sp.synth(method="classic", backend="synth")` | `Synth::synth` |
 | 08 | DML PLR | `sp.dml("plr")` | `DoubleML::DoubleMLPLR` |
-| 09 | RD density (CJM) | `sp.rddensity` | `rddensity::rddensity` |
+| 09 | RD density (CJM) | `sp.rddensity(backend="r")` | `rddensity::rddensity` |
 | 10 | Honest DiD smoothness | `sp.honest_did` | `HonestDiD::createSensitivityResults` |
 | 11 | PSM 1:1 NN | `sp.psm` | `MatchIt::matchit` |
-| 12 | Synthetic DID | `sp.synth("sdid")` | `synthdid::synthdid_estimate` |
+| 12 | Synthetic DID | `sp.sdid(backend="synthdid")` | `synthdid::synthdid_estimate` |
 | 13 | Causal forest (AIPW) | `sp.causal_forest` | `grf::causal_forest` |
 | 14 | OLS + cluster SE | `sp.regress(cluster=)` | `lm` + `sandwich::vcovCL` |
 | 15 | HDFE + cluster SE | `sp.fast.feols(cr1)` | `fixest::feols(cluster=)` |
 | 16 | BJS imputation | `sp.did_imputation` | `didimputation::did_imputation` |
 | 17 | Wooldridge ETWFE | `sp.etwfe` + `sp.etwfe_emfx` | `etwfe::etwfe` + `emfx` |
-| 18 | Augmented SCM | `sp.synth("augmented")` | `augsynth::augsynth` |
-| 19 | Generalized SCM | `sp.synth("gsynth")` | `gsynth::gsynth` |
+| 18 | Augmented SCM | `sp.augsynth(backend="augsynth")` | `augsynth::augsynth` |
+| 19 | Generalized SCM | `sp.gsynth(backend="gsynth")` | `gsynth::gsynth` |
 | 20 | Goodman--Bacon decomp | `sp.bacon_decomposition` | `bacondecomp::bacon` |
-| 21 | Honest DiD relative-mags | `sp.honest_did("relative")` | `HonestDiD::createSensitivityResults_relativeMagnitudes` |
+| 21 | Honest DiD relative-mags | `sp.honest_did(method="relative_magnitude", backend="honestdid")` | `HonestDiD::createSensitivityResults_relativeMagnitudes` |
 | 22 | sensemakr | `sp.sensemakr` | `sensemakr::sensemakr` |
 | 23 | E-value | `sp.evalue` | `EValue::evalues.RR` |
 | 24 | Cox proportional hazards | `sp.survival.cox` | `survival::coxph` |

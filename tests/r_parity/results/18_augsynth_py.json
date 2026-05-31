@@ -6,8 +6,8 @@
       "module": "18_augsynth",
       "side": "py",
       "statistic": "att_augmented",
-      "estimate": -0.2394594803039969,
-      "se": 0.3571413832726445,
+      "estimate": -0.23945948030412856,
+      "se": 0.35714138327238,
       "ci_lo": null,
       "ci_hi": null,
       "n": 731,
@@ -17,7 +17,7 @@
       "module": "18_augsynth",
       "side": "py",
       "statistic": "pre_rmspe",
-      "estimate": 0.07920995207369622,
+      "estimate": 0.07920995207369655,
       "se": null,
       "ci_lo": null,
       "ci_hi": null,
@@ -27,8 +27,9 @@
   ],
   "extra": {
     "method": "augmented",
-    "ridge_lambda": 0.018329807108324356,
+    "backend": "native",
     "n_donors": 16,
-    "regularisation_note": "Augmented SCM has the same regularisation-convention non-uniqueness as classical SCM (Module 7). sp uses an l2-regularised augmentation with auto-tuned lambda; augsynth::augsynth uses the Ben-Michael-Feller-Rothstein (2021) ridge progfunc with its own lambda selection. On the Basque-Country replica sp returns ATT=-0.24 with pre-RMSPE 0.079, augsynth returns ATT=-0.36 with pre-RMSPE 0.014 (both negative; both signal the same qualitative post-1970 GDPpc gap). Reviewers should treat as the Module 7 / 12 SCM-non-uniqueness family."
+    "tier": "T4",
+    "native_note": "Headline row is the NATIVE Python augmented SCM (backend='native'). The residual gap vs augsynth is a documented ridge/outcome-model convention, graded T4, not a parity pass. The optional backend='augsynth' R bridge is a convenience feature, not a parity comparator."
   }
 }

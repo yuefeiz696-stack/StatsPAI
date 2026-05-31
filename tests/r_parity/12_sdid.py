@@ -1,16 +1,24 @@
 """StatsPAI Synthetic DID parity (Python side) -- Module 12.
 
-Runs sp.synth(method='sdid') on the california_prop99 replica
+Runs the **native Python** synthetic-DID estimator
+(``sp.sdid(backend='native')``) on the california_prop99 replica
 (Arkhangelsky et al. 2021). The companion 12_sdid.R uses
-synthdid::synthdid_estimate on the same CSV.
+``synthdid::synthdid_estimate`` on the same CSV.
 
-Tolerance: rel < 1e-3 on the post-treatment ATT.
+Tier: T4 documented convention gap.  The SDID estimand is identified
+but the regularisation parameter zeta and the unit/time weight optima
+are not uniquely pinned across implementations, so the native Python
+optimum differs from synthdid's by a documented regularisation
+convention (rel ~ 0.08 on this replica).  StatsPAI also ships an
+optional ``backend='synthdid'`` R bridge for users who need the exact R
+numbers; it is a convenience feature, NOT used here as a parity
+comparator (comparing the bridge to R would be circular).
 """
 from __future__ import annotations
 
 import statspai as sp
 
-from _common import ParityRecord, dump_csv, write_results
+from _common import PARITY_SEED, ParityRecord, dump_csv, write_results
 
 
 MODULE = "12_sdid"
@@ -20,9 +28,16 @@ def main() -> None:
     df = sp.datasets.california_prop99()
     dump_csv(df, MODULE)
 
-    fit = sp.synth(df, outcome="cigsale", unit="state", time="year",
-                   treated_unit="California", treatment_time=1989,
-                   method="sdid")
+    fit = sp.sdid(
+        df,
+        outcome="cigsale",
+        unit="state",
+        time="year",
+        treated_unit="California",
+        treatment_time=1989,
+        backend="native",
+        seed=PARITY_SEED,
+    )
 
     rows: list[ParityRecord] = [
         ParityRecord(
@@ -44,18 +59,16 @@ def main() -> None:
             "T_pre": int(fit.model_info["T_pre"]),
             "T_post": int(fit.model_info["T_post"]),
             "se_method": fit.model_info["se_method"],
-            "regularisation_note": (
-                "Synthetic-DID minimises an l2-regularised objective "
-                "for the unit-weight vector, and the regularisation "
-                "constant zeta is set differently in sp.synth("
-                "method='sdid') vs synthdid::synthdid_estimate. Both "
-                "estimates land in the published Arkhangelsky-Athey-"
-                "Hirshberg-Imbens-Wager (2021) -15-to-19 packs/capita "
-                "neighbourhood for California Prop 99: sp returns "
-                "-17.25 (SE 4.43, bootstrap), synthdid returns "
-                "-15.95 (SE 2.63, placebo). Reviewers should treat "
-                "this as the same regularisation-convention family "
-                "as the classical-SCM gap reported in Module 07."
+            "backend": fit.model_info.get("backend", "native"),
+            "validation_tier": fit.model_info.get("validation_tier"),
+            "reference_backend": fit.model_info.get("reference_backend"),
+            "tier": "T4",
+            "native_note": (
+                "Headline row is the NATIVE Python SDID (backend='native'). "
+                "The residual gap vs synthdid is a documented regularisation "
+                "(zeta) convention, graded T4, not a parity pass. The "
+                "optional backend='synthdid' R bridge is a convenience "
+                "feature, not a parity comparator."
             ),
         },
     )

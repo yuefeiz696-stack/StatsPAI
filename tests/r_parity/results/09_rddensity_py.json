@@ -38,17 +38,6 @@
     {
       "module": "09_rddensity",
       "side": "py",
-      "statistic": "test_pvalue",
-      "estimate": 0.9084611258645594,
-      "se": null,
-      "ci_lo": null,
-      "ci_hi": null,
-      "n": 6558,
-      "extra": {}
-    },
-    {
-      "module": "09_rddensity",
-      "side": "py",
       "statistic": "bandwidth_left",
       "estimate": 0.0513258951322548,
       "se": null,
@@ -67,11 +56,26 @@
       "ci_hi": null,
       "n": 6558,
       "extra": {}
+    },
+    {
+      "module": "09_rddensity",
+      "side": "py",
+      "statistic": "test_pvalue",
+      "estimate": 0.9084611258645594,
+      "se": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 6558,
+      "extra": {}
     }
   ],
   "extra": {
     "polynomial_order": 2,
+    "backend": "native",
+    "validation_tier": "T4_native_selector_disclosure",
+    "reference_backend": "rddensity",
     "test_kind": "Cattaneo-Jansson-Ma (2020)",
-    "bandwidth_selector_gap": "sp.rddensity selects h ~ 0.05 while rddensity::rddensity selects h ~ 0.13 with the same package defaults; the different effective windows produce different left/right density estimates but both p-values remain comfortably above 0.85, so the manipulation-test conclusion (no evidence of running-variable sorting) is identical. This mirrors the Module 06 mserd-bandwidth divergence."
+    "tier": "T4",
+    "native_note": "Headline row is the NATIVE Python CJM density test (backend='native'). Its dependency-light bandwidth selector differs from rddensity's, so the density difference differs by a small absolute amount while the manipulation-test conclusion is identical (both fail to reject) -- graded T4. The optional backend='r' bridge is a convenience feature, not a parity comparator."
   }
 }

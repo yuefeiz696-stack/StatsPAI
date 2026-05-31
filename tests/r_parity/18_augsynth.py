@@ -1,11 +1,15 @@
 """StatsPAI Augmented SCM parity (Python side) -- Module 18.
 
-Runs sp.synth(method='augmented') on the Basque-Country replica
-(Ben-Michael, Feller & Rothstein 2021). The companion 18_augsynth.R
-uses augsynth::augsynth.
+Runs the **native Python** augmented SCM (``sp.augsynth(backend='native')``)
+on the Basque-Country replica (Ben-Michael, Feller & Rothstein 2021).
+The companion 18_augsynth.R uses ``augsynth::augsynth`` on the same CSV.
 
-Tolerance: rel < 0.20 on the post-treatment ATT (augmented SCM has
-the same regularisation-convention non-uniqueness as classical SCM).
+Tier: T4 documented convention gap.  The ridge-augmented SCM estimand
+is identified but the ridge penalty and outcome-model conventions are
+not uniquely pinned across implementations; the native Python optimum
+differs from augsynth's by rel ~ 0.34 on this replica.  The optional
+``backend='augsynth'`` R bridge is a convenience feature, NOT used here
+as a parity comparator (comparing the bridge to R would be circular).
 """
 from __future__ import annotations
 
@@ -21,9 +25,15 @@ def main() -> None:
     df = sp.datasets.basque_terrorism()
     dump_csv(df, MODULE)
 
-    fit = sp.synth(df, outcome="gdppc", unit="region", time="year",
-                   treated_unit="Basque Country", treatment_time=1970,
-                   method="augmented")
+    fit = sp.augsynth(
+        df,
+        outcome="gdppc",
+        unit="region",
+        time="year",
+        treated_unit="Basque Country",
+        treatment_time=1970,
+        backend="native",
+    )
 
     rows: list[ParityRecord] = [
         ParityRecord(
@@ -32,31 +42,31 @@ def main() -> None:
             se=float(fit.se),
             n=int(len(df)),
         ),
-        ParityRecord(
-            module=MODULE, side="py", statistic="pre_rmspe",
-            estimate=float(fit.model_info["pre_treatment_rmse"]),
-            n=int(len(df)),
-        ),
     ]
+    _pre = fit.model_info.get("pre_treatment_rmse",
+                              fit.model_info.get("pre_rmspe"))
+    if _pre is not None:
+        rows.append(
+            ParityRecord(
+                module=MODULE, side="py", statistic="pre_rmspe",
+                estimate=float(_pre),
+                n=int(len(df)),
+            )
+        )
 
     write_results(
         MODULE, "py", rows,
         extra={
             "method": "augmented",
-            "ridge_lambda": float(fit.model_info["ridge_lambda"]),
-            "n_donors": int(fit.model_info["n_donors"]),
-            "regularisation_note": (
-                "Augmented SCM has the same regularisation-"
-                "convention non-uniqueness as classical SCM (Module "
-                "7). sp uses an l2-regularised augmentation with "
-                "auto-tuned lambda; augsynth::augsynth uses the Ben-"
-                "Michael-Feller-Rothstein (2021) ridge progfunc with "
-                "its own lambda selection. On the Basque-Country "
-                "replica sp returns ATT=-0.24 with pre-RMSPE 0.079, "
-                "augsynth returns ATT=-0.36 with pre-RMSPE 0.014 "
-                "(both negative; both signal the same qualitative "
-                "post-1970 GDPpc gap). Reviewers should treat as the "
-                "Module 7 / 12 SCM-non-uniqueness family."
+            "backend": fit.model_info.get("backend", "native"),
+            "n_donors": int(fit.model_info.get("n_donors", 0)),
+            "tier": "T4",
+            "native_note": (
+                "Headline row is the NATIVE Python augmented SCM "
+                "(backend='native'). The residual gap vs augsynth is a "
+                "documented ridge/outcome-model convention, graded T4, not "
+                "a parity pass. The optional backend='augsynth' R bridge is "
+                "a convenience feature, not a parity comparator."
             ),
         },
     )

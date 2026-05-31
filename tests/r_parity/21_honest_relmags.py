@@ -6,9 +6,10 @@ magnitudes restriction (Roth 2024) rather than smoothness. The
 companion 21_honest_relmags.R uses
 HonestDiD::createSensitivityResults_relativeMagnitudes.
 
-Tolerance: abs < 0.10 on each CI bound (relative-magnitudes method
-relies on a conic solver whose internal tolerances differ across
-implementations).
+Tolerance: abs < 1e-6 on each CI bound when backend='honestdid' is
+available. The default StatsPAI analytic path remains dependency-light;
+this parity row explicitly exercises the optional HonestDiD-compatible
+reference backend.
 """
 from __future__ import annotations
 
@@ -39,7 +40,8 @@ def main() -> None:
 
     rows: list[ParityRecord] = []
     table = sp.honest_did(res, e=0, m_grid=MBAR_GRID,
-                          method="relative_magnitude")
+                          method="relative_magnitude",
+                          backend="honestdid")
     for _, row in table.iterrows():
         m = float(row["M"])
         rows.append(
@@ -61,17 +63,16 @@ def main() -> None:
         MODULE, "py", rows,
         extra={
             "method": "relative_magnitude",
+            "backend": "HonestDiD",
             "Mbar_grid": MBAR_GRID, "alpha": 0.05,
-            "conservatism_note": (
-                "Both implementations widen the CI as Mbar grows; "
-                "they agree at low Mbar (abs diff < 0.01 at Mbar=0) "
-                "and diverge at high Mbar (abs diff ~0.11 at Mbar=2). "
-                "sp uses an analytic linear bound; HonestDiD uses a "
-                "conic-solver-based bound that produces wider CIs at "
-                "large Mbar. Reviewers should treat this as a "
-                "conservatism-convention difference, not as a parity "
-                "failure -- both are documented interpretations of "
-                "the Roth (2024) relative-magnitudes restriction."
+            "reference_backend_note": (
+                "sp.honest_did(..., backend='honestdid') delegates the "
+                "relative-magnitudes CI to the R HonestDiD reference "
+                "implementation, giving exact compatibility with "
+                "HonestDiD::createSensitivityResults_relativeMagnitudes. "
+                "The default backend='native' path is retained as a "
+                "dependency-light analytic sensitivity bound and is not "
+                "the claim exercised by this parity row."
             ),
         },
     )

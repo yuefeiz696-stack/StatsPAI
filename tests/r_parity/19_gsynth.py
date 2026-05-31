@@ -1,17 +1,22 @@
 """StatsPAI Generalized SCM parity (Python side) -- Module 19.
 
-Runs sp.synth(method='gsynth') on the Basque-Country replica
-(Xu 2017). The companion 19_gsynth.R uses gsynth::gsynth.
+Runs the **native Python** generalized SCM (``sp.gsynth(backend='native')``)
+on the Basque-Country replica (Xu 2017). The companion 19_gsynth.R uses
+``gsynth::gsynth`` on the same CSV.
 
-Tolerance: rel < 0.20 on the post-treatment ATT (interactive
-fixed-effects optimisation has the same regularisation-convention
-non-uniqueness as classical SCM).
+Tier: T4 documented identification gap.  The interactive-fixed-effects
+factor model is identified only up to a rotation, and the number of
+factors is chosen by cross-validation that can differ across
+implementations; the native Python optimum differs from gsynth's by
+rel ~ 0.59 on this replica.  The optional ``backend='gsynth'`` R bridge
+is a convenience feature, NOT used here as a parity comparator
+(comparing the bridge to R would be circular).
 """
 from __future__ import annotations
 
 import statspai as sp
 
-from _common import ParityRecord, dump_csv, write_results
+from _common import PARITY_SEED, ParityRecord, dump_csv, write_results
 
 
 MODULE = "19_gsynth"
@@ -25,9 +30,16 @@ def main() -> None:
     ).astype(int)
     dump_csv(df, MODULE)
 
-    fit = sp.synth(df, outcome="gdppc", unit="region", time="year",
-                   treated_unit="Basque Country", treatment_time=1970,
-                   method="gsynth")
+    fit = sp.gsynth(
+        df,
+        outcome="gdppc",
+        unit="region",
+        time="year",
+        treated_unit="Basque Country",
+        treatment_time=1970,
+        backend="native",
+        seed=PARITY_SEED,
+    )
 
     rows: list[ParityRecord] = [
         ParityRecord(
@@ -36,33 +48,33 @@ def main() -> None:
             se=float(fit.se) if fit.se is not None else None,
             n=int(len(df)),
         ),
-        ParityRecord(
-            module=MODULE, side="py", statistic="n_factors",
-            estimate=float(fit.model_info["n_factors"]),
-            n=int(len(df)),
-        ),
-        ParityRecord(
-            module=MODULE, side="py", statistic="pre_rmse",
-            estimate=float(fit.model_info["pre_treatment_rmse"]),
-            n=int(len(df)),
-        ),
     ]
+    _nf = fit.model_info.get("n_factors")
+    if _nf is not None:
+        rows.append(ParityRecord(
+            module=MODULE, side="py", statistic="n_factors",
+            estimate=float(_nf), n=int(len(df))))
+    _pre = fit.model_info.get("pre_treatment_rmse",
+                              fit.model_info.get("pre_rmse"))
+    if _pre is not None:
+        rows.append(ParityRecord(
+            module=MODULE, side="py", statistic="pre_rmse",
+            estimate=float(_pre), n=int(len(df))))
 
     write_results(
         MODULE, "py", rows,
         extra={
             "method": "gsynth (Xu 2017)",
-            "n_donors": int(fit.model_info["n_donors"]),
-            "factor_model_note": (
-                "Both implementations select r=1 factor on the Basque "
-                "replica (n_factors matches exactly). The headline "
-                "ATT differs by ~59% (sp -0.515 vs gsynth -0.324) "
-                "because the interactive-fixed-effects optimisation "
-                "lands on different local optima -- same family as "
-                "Modules 7 (classical SCM) and 18 (augmented SCM). "
-                "Both negative; both consistent with the published "
-                "Basque GDPpc gap. Reviewers should treat as the SCM-"
-                "non-uniqueness family."
+            "backend": fit.model_info.get("backend", "native"),
+            "n_donors": int(fit.model_info.get("n_donors", 0)),
+            "tier": "T4",
+            "native_note": (
+                "Headline row is the NATIVE Python generalized SCM "
+                "(backend='native'). The interactive-FE factor model is "
+                "identified only up to rotation and the CV factor count can "
+                "differ from gsynth's, so the residual gap is graded T4, not "
+                "a parity pass. The optional backend='gsynth' R bridge is a "
+                "convenience feature, not a parity comparator."
             ),
         },
     )
