@@ -1,8 +1,10 @@
 """
 Synthetic Difference-in-Differences (SDID).
 
-Full Python replication of the R ``synthdid`` package by Arkhangelsky,
-Athey, Hirshberg, Imbens & Wager (2021).
+Python implementation of synthetic DID / SC / DID interfaces inspired
+by Arkhangelsky, Athey, Hirshberg, Imbens & Wager (2021). Exact R
+``synthdid`` numbers are available through ``backend="synthdid"``; the
+native implementation is validation-tiered separately.
 
 Three estimators share one optimisation framework:
 
@@ -21,7 +23,12 @@ and Wager, S. (2021).
 *American Economic Review*, 111(12), 4088-4118. [@arkhangelsky2021synthetic]
 """
 
-from typing import Optional, List, Dict, Any, Tuple, Literal
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+from typing import Optional, List, Any, Tuple, Literal
 
 import numpy as np
 import pandas as pd
@@ -53,6 +60,7 @@ def sdid(
     n_reps: int = 200,
     seed: Optional[int] = None,
     alpha: float = 0.05,
+    backend: Literal["native", "synthdid", "r"] = "native",
 ) -> CausalResult:
     """
     Synthetic Difference-in-Differences estimator (and SC / DID variants).
@@ -87,6 +95,13 @@ def sdid(
         Random seed for reproducibility.
     alpha : float, default 0.05
         Significance level for confidence intervals.
+    backend : {'native', 'synthdid', 'r'}, default 'native'
+        ``'native'`` uses StatsPAI's Python implementation.
+        ``'synthdid'``/``'r'`` delegates to the R ``synthdid`` package
+        through ``Rscript`` and returns the reference package's point
+        estimate and ``synthdid_se`` standard error. The R backend is
+        mainly for exact cross-language parity claims; the dependency-
+        light native implementation remains the default.
 
     Returns
     -------
@@ -159,6 +174,25 @@ def sdid(
     treat_unit = treated_unit
     treat_time = treatment_time
 
+    backend_norm = backend.lower().replace("-", "_")
+    if backend_norm in ("synthdid", "r", "synthdid_r"):
+        return _sdid_r_backend(
+            data=data,
+            outcome=y,
+            unit=unit,
+            time=time,
+            treated_unit=treat_unit,
+            treatment_time=treat_time,
+            method=method,
+            se_method=se_method,
+            seed=seed,
+            alpha=alpha,
+        )
+    if backend_norm != "native":
+        raise ValueError(
+            "Unknown backend. Use 'native', 'synthdid', or 'r'."
+        )
+
     rng = np.random.default_rng(seed)
 
     # --- Parse treated units ------------------------------------------
@@ -202,6 +236,7 @@ def sdid(
         method,
         n_co,
         T_pre,
+        n_tr=n_tr,
     )
 
     # --- Point estimate -----------------------------------------------
@@ -294,6 +329,16 @@ def sdid(
     model_info = {
         "estimator": method,
         "estimator_label": method_labels[method],
+        "backend": "native",
+        "validation_tier": "T4_native_regularisation_disclosure",
+        "reference_backend": "synthdid",
+        "validation_note": (
+            "StatsPAI native SDID is a dependency-light implementation. "
+            "The parity ledger treats the Prop. 99 row as a T4 "
+            "regularisation/zeta convention disclosure; use "
+            "backend='synthdid' when exact synthdid package numbers are "
+            "required."
+        ),
         "n_treated": n_tr,
         "n_control": n_co,
         "T_pre": T_pre,
@@ -321,6 +366,224 @@ def sdid(
         ci=ci,
         alpha=alpha,
         n_obs=len(data),
+        model_info=model_info,
+        _citation_key="sdid",
+    )
+
+
+def _find_rscript() -> str:
+    """Return a usable Rscript executable, including common macOS paths."""
+    candidates = [
+        shutil.which("Rscript"),
+        "/Library/Frameworks/R.framework/Resources/bin/Rscript",
+        "/usr/local/bin/Rscript",
+        "/opt/homebrew/bin/Rscript",
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(candidate)
+    raise RuntimeError(
+        "The synthdid backend requires Rscript plus the R packages "
+        "'synthdid' and 'jsonlite'. Install R or use backend='native'."
+    )
+
+
+def _sdid_r_backend(
+    *,
+    data: pd.DataFrame,
+    outcome: str,
+    unit: str,
+    time: str,
+    treated_unit: Any,
+    treatment_time: Any,
+    method: str,
+    se_method: str,
+    seed: Optional[int],
+    alpha: float,
+) -> CausalResult:
+    """Delegate SDID/SC/DID estimation to R ``synthdid`` for parity."""
+    method_norm = method.lower()
+    if method_norm not in {"sdid", "sc", "did"}:
+        raise ValueError("method must be one of 'sdid', 'sc', or 'did'")
+    if se_method not in {"placebo", "bootstrap", "jackknife"}:
+        raise ValueError(
+            "se_method must be one of 'placebo', 'bootstrap', or 'jackknife'"
+        )
+
+    treated_units = (
+        list(treated_unit)
+        if isinstance(treated_unit, (list, tuple, np.ndarray, pd.Index))
+        else [treated_unit]
+    )
+    unit_col = "statspai_unit"
+    time_col = "statspai_time"
+    outcome_col = "statspai_outcome"
+    treatment_col = "statspai_treated"
+    panel_df = pd.DataFrame(
+        {
+            unit_col: data[unit],
+            time_col: data[time],
+            outcome_col: data[outcome],
+        }
+    )
+    panel_df[treatment_col] = (
+        data[unit].isin(treated_units) & (data[time] >= treatment_time)
+    ).astype(int)
+    panel_df = panel_df.sort_values([unit_col, time_col]).reset_index(drop=True)
+
+    r_script = r'''
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 9) {
+  stop("expected 9 arguments: input output outcome unit time treatment method se_method alpha_seed")
+}
+input_path <- args[[1]]
+output_path <- args[[2]]
+outcome_col <- args[[3]]
+unit_col <- args[[4]]
+time_col <- args[[5]]
+treatment_col <- args[[6]]
+method <- args[[7]]
+se_method <- args[[8]]
+alpha_seed <- strsplit(args[[9]], ":", fixed = TRUE)[[1]]
+alpha <- as.numeric(alpha_seed[[1]])
+seed <- suppressWarnings(as.integer(alpha_seed[[2]]))
+
+suppressPackageStartupMessages({
+  library(synthdid)
+  library(jsonlite)
+})
+
+if (!is.na(seed)) {
+  set.seed(seed)
+}
+
+df <- read.csv(input_path, stringsAsFactors = FALSE, check.names = FALSE)
+panel <- do.call(
+  synthdid::panel.matrices,
+  list(
+    panel = df,
+    unit = unit_col,
+    time = time_col,
+    outcome = outcome_col,
+    treatment = treatment_col
+  )
+)
+
+estimate <- switch(
+  method,
+  sdid = synthdid::synthdid_estimate(Y = panel$Y, N0 = panel$N0, T0 = panel$T0),
+  sc = synthdid::sc_estimate(Y = panel$Y, N0 = panel$N0, T0 = panel$T0),
+  did = synthdid::did_estimate(Y = panel$Y, N0 = panel$N0, T0 = panel$T0),
+  stop(paste("unknown method:", method))
+)
+
+se <- as.numeric(synthdid::synthdid_se(estimate, method = se_method))
+tau <- as.numeric(estimate)
+z <- qnorm(1 - alpha / 2)
+
+payload <- list(
+  estimate = tau,
+  se = se,
+  ci_lower = tau - z * se,
+  ci_upper = tau + z * se,
+  n_obs = nrow(df),
+  n_units = nrow(panel$Y),
+  n_times = ncol(panel$Y),
+  N0 = panel$N0,
+  T0 = panel$T0
+)
+jsonlite::write_json(
+  payload,
+  output_path,
+  auto_unbox = TRUE,
+  null = "null",
+  na = "null",
+  digits = 16
+)
+'''
+
+    rscript = _find_rscript()
+    with tempfile.TemporaryDirectory(prefix="statspai_sdid_") as tmp:
+        tmp_path = Path(tmp)
+        data_path = tmp_path / "panel.csv"
+        script_path = tmp_path / "sdid_backend.R"
+        out_path = tmp_path / "result.json"
+        panel_df.to_csv(data_path, index=False)
+        script_path.write_text(r_script, encoding="utf-8")
+
+        seed_arg = "NA" if seed is None else str(int(seed))
+        proc = subprocess.run(
+            [
+                rscript,
+                str(script_path),
+                str(data_path),
+                str(out_path),
+                outcome_col,
+                unit_col,
+                time_col,
+                treatment_col,
+                method_norm,
+                se_method,
+                f"{float(alpha)}:{seed_arg}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                "R synthdid backend failed. stderr:\n"
+                f"{proc.stderr.strip()}"
+            )
+        payload = json.loads(out_path.read_text(encoding="utf-8"))
+
+    tau = float(payload["estimate"])
+    se = float(payload["se"])
+    pvalue = float(2 * (1 - stats.norm.cdf(abs(tau / se)))) if se > 0 else np.nan
+    ci = (float(payload["ci_lower"]), float(payload["ci_upper"]))
+
+    method_labels = {
+        "sdid": "Synthetic Difference-in-Differences",
+        "sc": "Synthetic Control",
+        "did": "Difference-in-Differences",
+    }
+    n_control = int(payload["N0"])
+    n_units = int(payload["n_units"])
+    t_pre = int(payload["T0"])
+    t_total = int(payload["n_times"])
+    model_info = {
+        "estimator": method_norm,
+        "estimator_label": method_labels[method_norm],
+        "backend": "synthdid",
+        "r_package": "synthdid",
+        "validation_tier": "reference_backend_bridge",
+        "reference_backend": "synthdid",
+        "validation_note": (
+            "This result delegates to synthdid::synthdid_estimate/"
+            "sc_estimate/did_estimate and synthdid::synthdid_se. It is useful "
+            "for exact reference-package numbers, but it is not counted as "
+            "native Python parity evidence because the reference backend is "
+            "the estimator itself."
+        ),
+        "n_treated": n_units - n_control,
+        "n_control": n_control,
+        "T_pre": t_pre,
+        "T_post": t_total - t_pre,
+        "treat_time": treatment_time,
+        "treated_units": treated_units,
+        "se_method": se_method,
+        "n_reps": None,
+    }
+
+    return CausalResult(
+        method=f"{method_labels[method_norm]} (R synthdid reference backend)",
+        estimand="ATT",
+        estimate=tau,
+        se=se,
+        pvalue=pvalue,
+        ci=ci,
+        alpha=alpha,
+        n_obs=int(payload["n_obs"]),
         model_info=model_info,
         _citation_key="sdid",
     )
@@ -703,6 +966,17 @@ def california_prop99() -> pd.DataFrame:
 # ======================================================================
 
 
+def _sdid_noise_level(Y_co_pre: np.ndarray) -> float:
+    r"""Noise scale used by \pkg{synthdid}'s regularisation: the standard
+    deviation of the control units' pre-treatment first differences
+    (Arkhangelsky et al. 2021, eq. for $\hat\sigma$)."""
+    if Y_co_pre.shape[1] < 2:
+        return 1.0
+    diffs = np.diff(Y_co_pre, axis=1).ravel()
+    sd = float(np.std(diffs, ddof=1)) if diffs.size > 1 else 1.0
+    return sd if sd > 0 else 1.0
+
+
 def _compute_weights(
     Y_co_pre: np.ndarray,
     Y_co_post: np.ndarray,
@@ -710,23 +984,42 @@ def _compute_weights(
     method: str,
     n_co: int,
     T_pre: int,
+    n_tr: int = 1,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Compute unit weights (omega) and time weights (lambda)."""
+    """Compute unit weights (omega) and time weights (lambda).
+
+    The SDID/SC regularisation follows \\pkg{synthdid}
+    (Arkhangelsky et al. 2021): the unit-weight ridge penalty is
+    :math:`\\zeta_\\omega = (N_{tr}\\,T_{post})^{1/4}\\,\\hat\\sigma` and the
+    time-weight penalty is :math:`\\zeta_\\lambda = 10^{-6}\\,\\hat\\sigma`,
+    where :math:`\\hat\\sigma` is the noise level from control
+    first-differences.  Both fits absorb a free intercept (profiled out),
+    which makes the weights invariant to level shifts -- the property that
+    distinguishes the synthetic-DID weight problem from a plain SCM fit.
+    """
 
     y_tr_pre_mean = Y_tr_pre.mean(axis=0)  # (T_pre,)
     y_co_post_mean = Y_co_post.mean(axis=1)  # (N_co,)
+    T_post = int(Y_co_post.shape[1])
+
+    sigma = _sdid_noise_level(Y_co_pre)
+    zeta_omega = ((max(n_tr, 1) * max(T_post, 1)) ** 0.25) * sigma
+    zeta_lambda = 1e-6 * sigma
 
     if method == "did":
         # Uniform weights
         omega = np.ones(n_co) / n_co
         lam = np.ones(T_pre) / T_pre
     elif method == "sc":
-        # Unit weights only, uniform time weights
-        omega = _solve_unit_weights(Y_co_pre, y_tr_pre_mean, n_co, T_pre)
+        # Unit weights only (no time reweighting, no intercept -- classic SC)
+        omega = _solve_unit_weights(Y_co_pre, y_tr_pre_mean, n_co,
+                                    zeta=0.0, intercept=False)
         lam = np.ones(T_pre) / T_pre
     else:  # sdid
-        omega = _solve_unit_weights(Y_co_pre, y_tr_pre_mean, n_co, T_pre)
-        lam = _solve_time_weights(Y_co_pre, y_co_post_mean, n_co, T_pre)
+        omega = _solve_unit_weights(Y_co_pre, y_tr_pre_mean, n_co,
+                                    zeta=zeta_omega, intercept=True)
+        lam = _solve_time_weights(Y_co_pre, y_co_post_mean, T_pre,
+                                  zeta=zeta_lambda, intercept=True)
 
     return omega, lam
 
@@ -758,17 +1051,25 @@ def _solve_unit_weights(
     Y_co_pre: np.ndarray,
     y_target: np.ndarray,
     n_co: int,
-    T_pre: int,
+    zeta: float,
+    intercept: bool = True,
 ) -> np.ndarray:
-    """
-    Solve for unit weights ω:  min ||y_target - Y_co_pre' ω||² + ζ² ||ω||²
-    s.t.  ω ≥ 0,  Σω = 1.
-    """
-    zeta = (n_co * T_pre) ** (1 / 4)
+    r"""Solve for unit weights :math:`\omega` matching \pkg{synthdid}:
 
+    .. math::
+        \min_{\omega\ge 0,\ \sum\omega=1}\ \lVert (y - \bar y) -
+        (X'\omega - \overline{X'\omega})\rVert^2 + \zeta^2\lVert\omega\rVert^2,
+
+    where the bar denotes the profiled-out intercept (mean over pre-periods)
+    when ``intercept=True``.  With ``intercept=False`` this reduces to the
+    classic level-matching SC objective.
+    """
     def objective(w):
         fit = Y_co_pre.T @ w
-        return np.sum((y_target - fit) ** 2) + zeta**2 * np.sum(w**2)
+        resid = y_target - fit
+        if intercept:
+            resid = resid - resid.mean()
+        return float(np.sum(resid ** 2) + zeta ** 2 * np.sum(w ** 2))
 
     constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
     bounds = [(0, None)] * n_co
@@ -776,12 +1077,8 @@ def _solve_unit_weights(
 
     try:
         res = optimize.minimize(
-            objective,
-            w0,
-            bounds=bounds,
-            constraints=constraints,
-            method="SLSQP",
-            options={"maxiter": 500, "ftol": 1e-10},
+            objective, w0, bounds=bounds, constraints=constraints,
+            method="SLSQP", options={"maxiter": 2000, "ftol": 1e-12},
         )
         return res.x if res.success else w0
     except Exception:
@@ -791,18 +1088,18 @@ def _solve_unit_weights(
 def _solve_time_weights(
     Y_co_pre: np.ndarray,
     y_target: np.ndarray,
-    n_co: int,
     T_pre: int,
+    zeta: float,
+    intercept: bool = True,
 ) -> np.ndarray:
-    """
-    Solve for time weights λ:  min ||y_target - Y_co_pre λ||² + ζ² ||λ||²
-    s.t.  λ ≥ 0,  Σλ = 1.
-    """
-    zeta = (n_co * T_pre) ** (1 / 4)
-
+    r"""Solve for time weights :math:`\lambda` matching \pkg{synthdid},
+    with a profiled-out intercept when ``intercept=True``."""
     def objective(lam):
         fit = Y_co_pre @ lam
-        return np.sum((y_target - fit) ** 2) + zeta**2 * np.sum(lam**2)
+        resid = y_target - fit
+        if intercept:
+            resid = resid - resid.mean()
+        return float(np.sum(resid ** 2) + zeta ** 2 * np.sum(lam ** 2))
 
     constraints = {"type": "eq", "fun": lambda lam: np.sum(lam) - 1}
     bounds = [(0, None)] * T_pre
@@ -810,12 +1107,8 @@ def _solve_time_weights(
 
     try:
         res = optimize.minimize(
-            objective,
-            lam0,
-            bounds=bounds,
-            constraints=constraints,
-            method="SLSQP",
-            options={"maxiter": 500, "ftol": 1e-10},
+            objective, lam0, bounds=bounds, constraints=constraints,
+            method="SLSQP", options={"maxiter": 2000, "ftol": 1e-12},
         )
         return res.x if res.success else lam0
     except Exception:

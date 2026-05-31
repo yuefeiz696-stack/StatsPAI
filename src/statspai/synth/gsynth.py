@@ -24,6 +24,11 @@ Interactive Fixed Effects Models."
 
 from __future__ import annotations
 
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from typing import Any, List, Optional
 
 import numpy as np
@@ -47,6 +52,7 @@ def gsynth(
     placebo: bool = True,
     seed: Optional[int] = None,
     alpha: float = 0.05,
+    backend: str = "native",
 ) -> CausalResult:
     """
     Generalized Synthetic Control via interactive fixed effects.
@@ -79,6 +85,14 @@ def gsynth(
         Random seed.
     alpha : float, default 0.05
         Significance level.
+    backend : {'native', 'gsynth', 'r'}, default 'native'
+        ``'native'`` uses StatsPAI's Python interactive fixed-effects
+        implementation. ``'gsynth'``/``'r'`` delegates to the R
+        ``gsynth`` package through ``Rscript`` using the Track-A
+        reference specification ``force='two-way'``, ``CV=TRUE``,
+        ``r=c(0, max_factors)``, and ``se=FALSE``. The R backend is
+        intended for exact reference-package parity; the native path
+        remains the dependency-light default.
 
     Returns
     -------
@@ -90,6 +104,34 @@ def gsynth(
     ...                    treated_unit='California', treatment_time=1989)
     >>> print(result.summary())
     """
+    backend_norm = backend.lower().replace("-", "_")
+    if backend_norm in {"gsynth", "r", "gsynth_r"}:
+        if covariates:
+            raise NotImplementedError(
+                "The gsynth R reference backend currently supports the "
+                "outcome/treatment specification used in the parity harness; "
+                "use backend='native' for covariates."
+            )
+        if n_factors is not None:
+            raise NotImplementedError(
+                "The gsynth R reference backend uses gsynth::gsynth's CV "
+                "factor selection; use backend='native' for an explicit "
+                "n_factors."
+            )
+        return _gsynth_r_backend(
+            data=data,
+            outcome=outcome,
+            unit=unit,
+            time=time,
+            treated_unit=treated_unit,
+            treatment_time=treatment_time,
+            max_factors=max_factors,
+            seed=seed,
+            alpha=alpha,
+        )
+    if backend_norm != "native":
+        raise ValueError("Unknown backend. Use 'native', 'gsynth', or 'r'.")
+
     rng = np.random.default_rng(seed)
 
     # --- Build panel ---
@@ -262,6 +304,172 @@ def gsynth(
         alpha=alpha,
         n_obs=len(data),
         detail=effects_df,
+        model_info=model_info,
+        _citation_key="gsynth",
+    )
+
+
+def _find_rscript() -> str:
+    """Return a usable Rscript executable, including common macOS paths."""
+    candidates = [
+        shutil.which("Rscript"),
+        "/Library/Frameworks/R.framework/Resources/bin/Rscript",
+        "/usr/local/bin/Rscript",
+        "/opt/homebrew/bin/Rscript",
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(candidate)
+    raise RuntimeError(
+        "The gsynth backend requires Rscript plus the R packages "
+        "'gsynth' and 'jsonlite'. Install R or use backend='native'."
+    )
+
+
+def _gsynth_r_backend(
+    *,
+    data: pd.DataFrame,
+    outcome: str,
+    unit: str,
+    time: str,
+    treated_unit: Any,
+    treatment_time: Any,
+    max_factors: int,
+    seed: Optional[int],
+    alpha: float,
+) -> CausalResult:
+    """Delegate IFE estimation to R ``gsynth`` for parity."""
+    if not pd.api.types.is_numeric_dtype(data[time]):
+        raise TypeError(
+            "The gsynth R backend requires a numeric time column so it "
+            "can reproduce the reference package's pre/post split."
+        )
+
+    unit_col = "statspai_unit"
+    time_col = "statspai_time"
+    outcome_col = "statspai_outcome"
+    treated_col = "statspai_treated"
+    panel_df = pd.DataFrame(
+        {
+            unit_col: data[unit],
+            time_col: data[time],
+            outcome_col: data[outcome],
+        }
+    )
+    panel_df[treated_col] = (
+        (data[unit] == treated_unit) & (data[time] >= treatment_time)
+    ).astype(int)
+    panel_df = panel_df.sort_values([unit_col, time_col]).reset_index(drop=True)
+
+    r_script = r'''
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 5) {
+  stop("expected 5 arguments: input output treatment_time max_factors seed")
+}
+input_path <- args[[1]]
+output_path <- args[[2]]
+treatment_time <- as.numeric(args[[3]])
+max_factors <- as.integer(args[[4]])
+seed <- suppressWarnings(as.integer(args[[5]]))
+
+suppressPackageStartupMessages({
+  library(gsynth)
+  library(jsonlite)
+})
+
+if (!is.na(seed)) {
+  set.seed(seed)
+}
+
+df <- read.csv(input_path, stringsAsFactors = FALSE, check.names = FALSE)
+fit <- gsynth::gsynth(
+  formula = statspai_outcome ~ statspai_treated,
+  data = df,
+  index = c("statspai_unit", "statspai_time"),
+  force = "two-way",
+  CV = TRUE,
+  r = c(0, max_factors),
+  se = FALSE,
+  inference = "parametric",
+  nboots = 50
+)
+
+payload <- list(
+  estimate = as.numeric(fit$att.avg),
+  n_factors = as.numeric(fit$r.cv),
+  pre_rmse = as.numeric(fit$rmse),
+  n_obs = nrow(df),
+  n_units = length(unique(df$statspai_unit)),
+  n_pre_periods = sum(sort(unique(df$statspai_time)) < treatment_time),
+  n_post_periods = sum(sort(unique(df$statspai_time)) >= treatment_time)
+)
+jsonlite::write_json(
+  payload,
+  output_path,
+  auto_unbox = TRUE,
+  null = "null",
+  na = "null",
+  digits = 16
+)
+'''
+
+    rscript = _find_rscript()
+    with tempfile.TemporaryDirectory(prefix="statspai_gsynth_") as tmp:
+        tmp_path = Path(tmp)
+        data_path = tmp_path / "panel.csv"
+        script_path = tmp_path / "gsynth_backend.R"
+        out_path = tmp_path / "result.json"
+        panel_df.to_csv(data_path, index=False)
+        script_path.write_text(r_script, encoding="utf-8")
+
+        seed_arg = "NA" if seed is None else str(int(seed))
+        proc = subprocess.run(
+            [
+                rscript,
+                str(script_path),
+                str(data_path),
+                str(out_path),
+                str(float(treatment_time)),
+                str(int(max_factors)),
+                seed_arg,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                "R gsynth backend failed. stderr:\n"
+                f"{proc.stderr.strip()}"
+            )
+        payload = json.loads(out_path.read_text(encoding="utf-8"))
+
+    pre_rmse = float(payload["pre_rmse"])
+    model_info = {
+        "backend": "gsynth",
+        "r_package": "gsynth",
+        "force": "two-way",
+        "CV": True,
+        "n_factors": int(payload["n_factors"]),
+        "n_donors": int(payload["n_units"]) - 1,
+        "n_pre_periods": int(payload["n_pre_periods"]),
+        "n_post_periods": int(payload["n_post_periods"]),
+        "pre_treatment_rmse": pre_rmse,
+        "pre_treatment_mspe": pre_rmse ** 2,
+        "treatment_time": treatment_time,
+        "treated_unit": treated_unit,
+    }
+
+    return CausalResult(
+        method="Generalized Synthetic Control (R gsynth reference backend)",
+        estimand="ATT",
+        estimate=float(payload["estimate"]),
+        se=float("nan"),
+        pvalue=float("nan"),
+        ci=(float("nan"), float("nan")),
+        alpha=alpha,
+        n_obs=int(payload["n_obs"]),
+        detail=None,
         model_info=model_info,
         _citation_key="gsynth",
     )

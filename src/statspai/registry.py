@@ -1298,6 +1298,13 @@ def _build_registry():
                     "SCM variant: classic/demeaned/detrended/unconstrained/elastic_net/augmented/sdid/gsynth/staggered",
                 ),
                 ParamSpec(
+                    "backend",
+                    "str",
+                    False,
+                    "native",
+                    "Optional reference backend for exact R parity: synth for classic SCM",
+                ),
+                ParamSpec(
                     "inference",
                     "str",
                     False,
@@ -2678,6 +2685,13 @@ def _build_registry():
                 ParamSpec("time", "str", True),
                 ParamSpec("treated_unit", "str", True),
                 ParamSpec("treatment_time", "int", True),
+                ParamSpec(
+                    "backend",
+                    "str",
+                    False,
+                    "native",
+                    "Computation backend: native or augsynth/R reference backend",
+                ),
             ],
             returns="CausalResult with period-level effects and placebo inference",
             example='sp.augsynth(df, outcome="gdp", unit="state", time="year", treated_unit="CA", treatment_time=1989)',
@@ -11122,15 +11136,18 @@ _CERTIFIED_VARIANT_LIMITATIONS: Dict[str, Dict[str, List[str]]] = {
             "ADH/Synth parity requires passing the same special_predictors "
             "recipe; the default outcome-only V=I path is a documented "
             "Kaul-style convention.",
-            "SDID, augmented SCM, and generalized SCM parity rows include "
-            "regularisation or local-optimum convention gaps; inspect "
-            "model_info and parity_gap_report() before claiming exact "
-            "cross-language equivalence.",
+            "Default native classical SCM can differ from Synth on "
+            "Basque-style panels by a documented local-optimum convention "
+            "(the outer V optimisation has multiple near-equivalent minima); "
+            "use backend='synth' or canonical special_predictors when exact "
+            "R parity is required.",
         ],
         "validation_notes": [
             "SCM certification is variant-level; exact ADH parity is obtained "
-            "with the canonical special_predictors recipe, while default "
-            "and regularised variants document convention gaps.",
+            "with the canonical special_predictors recipe or backend='synth'; "
+            "SDID, augmented SCM, and generalized SCM expose explicit R "
+            "reference backends, and remaining native-default differences "
+            "stay documented.",
         ],
     },
     "causal_forest": {

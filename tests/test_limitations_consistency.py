@@ -90,6 +90,7 @@ LIMITATIONS_DESCRIPTIVE_ONLY: Dict[str, List[str]] = {
     "synth": [
         "documented Kaul-style convention",
         "regularisation or local-optimum convention gaps",
+        "documented local-optimum convention",
     ],
 }
 

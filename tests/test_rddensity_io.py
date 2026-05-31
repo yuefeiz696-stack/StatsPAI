@@ -5,10 +5,9 @@ Tests for CJM rddensity and read_data I/O.
 import pytest
 import numpy as np
 import pandas as pd
-import shutil
 import subprocess
 
-from statspai.diagnostics.rddensity import rddensity
+from statspai.diagnostics.rddensity import rddensity, _find_rscript
 from statspai.utils.io import read_data
 from statspai.core.results import CausalResult
 
@@ -50,6 +49,30 @@ class TestRDDensity:
         result = rddensity(manipulated_rd, x='x', c=0)
         assert result.pvalue < 0.1
 
+    def test_native_registered_examples_have_expected_conclusions(self):
+        """Native path remains conclusion-level, but must not be arbitrary."""
+        import statspai as sp
+
+        lee = sp.datasets.lee_2008_senate()
+        lee_result = rddensity(lee, x='margin', c=0)
+        assert lee_result.model_info['backend'] == 'native'
+        assert lee_result.model_info['bandwidth_source'] == 'native_pilot'
+        assert (
+            lee_result.model_info['validation_tier']
+            == 'T4_native_selector_disclosure'
+        )
+        assert lee_result.model_info['reference_backend'] == 'rddensity'
+        assert lee_result.pvalue > 0.1
+        assert abs(lee_result.model_info['density_diff']) < 0.05
+
+        rng = np.random.default_rng(12345)
+        base = rng.uniform(-2, 2, 5000)
+        extra = rng.uniform(0, 0.25, 1750)
+        bunched = pd.DataFrame({'x': np.concatenate([base, extra])})
+        bunched_result = rddensity(bunched, x='x', c=0)
+        assert bunched_result.pvalue < 0.001
+        assert bunched_result.model_info['density_diff'] > 0.5
+
     def test_density_estimates(self, clean_rd):
         result = rddensity(clean_rd, x='x', c=0)
         assert result.model_info['density_left'] > 0
@@ -85,11 +108,12 @@ class TestRDDensity:
             rddensity(clean_rd, x='x', c=0, backend='unknown')
 
     def test_r_backend_matches_reference_package(self, clean_rd):
-        if shutil.which("Rscript") is None:
+        rscript = _find_rscript()
+        if rscript is None:
             pytest.skip("Rscript is not installed")
         probe = subprocess.run(
             [
-                "Rscript",
+                rscript,
                 "-e",
                 "quit(status = as.integer(!requireNamespace('rddensity', quietly=TRUE) || !requireNamespace('jsonlite', quietly=TRUE)))",
             ],
@@ -103,6 +127,10 @@ class TestRDDensity:
         result = rddensity(clean_rd, x='x', c=0, backend='r')
         assert result.model_info['backend'] == 'rddensity'
         assert result.model_info['bandwidth_source'] == 'rddensity_default'
+        assert result.model_info['validation_tier'] == 'reference_backend_bridge'
+        assert "not counted as native Python parity evidence" in result.model_info[
+            'validation_note'
+        ]
         assert np.isfinite(result.pvalue)
 
     def test_nonzero_cutoff(self):

@@ -16,7 +16,7 @@ JSS_HEADLINE_TEST_COUNTS = {
     "external_parity": 50,
     "coverage_monte_carlo": 12,
 }
-JSS_CERTIFIED_VALIDATED_SYMBOLS = 244
+JSS_CERTIFIED_VALIDATED_SYMBOLS = 245
 
 
 def test_validation_report_summarizes_source_tree_evidence():

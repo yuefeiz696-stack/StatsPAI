@@ -33,6 +33,11 @@ Inference can be switched independently via ``inference=``:
 * **bsts posterior** — Kalman-based uncertainty
 """
 
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 import numpy as np
 import pandas as pd
@@ -314,6 +319,38 @@ def _dispatch_synth_impl(
 
     # --- Dispatch ---
     if method in ("classic", "classic_adh", "adh", "penalized", "ridge"):
+        backend = kwargs.pop("backend", "native")
+        backend_norm = str(backend).lower().replace("-", "_")
+        if backend_norm in {"synth", "r", "synth_r"}:
+            if method not in ("classic", "classic_adh", "adh"):
+                raise NotImplementedError(
+                    "The Synth R reference backend is only available for "
+                    "method='classic'. Use backend='native' for penalized SCM."
+                )
+            if covariates:
+                raise NotImplementedError(
+                    "The Synth R reference backend currently supports the "
+                    "outcome-lag specification used in the parity harness; "
+                    "use backend='native' for covariates."
+                )
+            if kwargs.get("special_predictors") is not None:
+                raise NotImplementedError(
+                    "The Synth R reference backend constructs the standard "
+                    "pre-outcome special predictors automatically; use "
+                    "backend='native' for custom special_predictors."
+                )
+            return _synth_r_backend(
+                data=data,
+                outcome=outcome,
+                unit=unit,
+                time=time,
+                treated_unit=treated_unit,
+                treatment_time=treatment_time,
+                alpha=alpha,
+            )
+        if backend_norm != "native":
+            raise ValueError("Unknown backend. Use 'native', 'synth', or 'r'.")
+
         if method in ("penalized", "ridge") and penalization == 0.0:
             penalization = kwargs.pop("l2_penalty", 0.01)
         special_predictors = kwargs.pop("special_predictors", None)
@@ -643,6 +680,204 @@ def _dispatch_synth_impl(
 
 
 SpecialPredictor = Tuple[str, Any, str]  # (col, period_spec, op)
+
+
+def _find_rscript() -> str:
+    """Return a usable Rscript executable, including common macOS paths."""
+    candidates = [
+        shutil.which("Rscript"),
+        "/Library/Frameworks/R.framework/Resources/bin/Rscript",
+        "/usr/local/bin/Rscript",
+        "/opt/homebrew/bin/Rscript",
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(candidate)
+    raise RuntimeError(
+        "The Synth backend requires Rscript plus the R packages "
+        "'Synth' and 'jsonlite'. Install R or use backend='native'."
+    )
+
+
+def _synth_r_backend(
+    *,
+    data: pd.DataFrame,
+    outcome: str,
+    unit: str,
+    time: str,
+    treated_unit: Any,
+    treatment_time: Any,
+    alpha: float,
+) -> CausalResult:
+    """Delegate classical SCM estimation to R ``Synth`` for parity."""
+    if treated_unit is None or treatment_time is None:
+        raise ValueError("treated_unit and treatment_time are required")
+    if not pd.api.types.is_numeric_dtype(data[time]):
+        raise TypeError(
+            "The Synth R backend requires a numeric time column so it can "
+            "construct pre-treatment special predictors."
+        )
+
+    unit_col = "statspai_unit"
+    time_col = "statspai_time"
+    outcome_col = "statspai_outcome"
+    panel_df = pd.DataFrame(
+        {
+            unit_col: data[unit],
+            time_col: data[time],
+            outcome_col: data[outcome],
+        }
+    ).sort_values([unit_col, time_col]).reset_index(drop=True)
+
+    r_script = r'''
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 4) {
+  stop("expected 4 arguments: input output treated_unit treatment_time")
+}
+input_path <- args[[1]]
+output_path <- args[[2]]
+treated_unit <- args[[3]]
+treatment_time <- as.numeric(args[[4]])
+
+suppressPackageStartupMessages({
+  library(Synth)
+  library(jsonlite)
+})
+
+df <- read.csv(input_path, stringsAsFactors = FALSE, check.names = FALSE)
+df$unit_num <- as.integer(as.factor(df$statspai_unit))
+units <- unique(df[, c("statspai_unit", "unit_num")])
+units <- units[order(units$unit_num), ]
+treated_id <- units$unit_num[units$statspai_unit == treated_unit]
+controls <- setdiff(units$unit_num, treated_id)
+
+pre_years <- sort(unique(df$statspai_time[df$statspai_time < treatment_time]))
+post_years <- sort(unique(df$statspai_time[df$statspai_time >= treatment_time]))
+special_preds <- lapply(pre_years, function(yr) {
+  list("statspai_outcome", yr, "mean")
+})
+
+dp <- Synth::dataprep(
+  foo = df,
+  predictors = NULL,
+  predictors.op = "mean",
+  dependent = "statspai_outcome",
+  unit.variable = "unit_num",
+  time.variable = "statspai_time",
+  special.predictors = special_preds,
+  treatment.identifier = treated_id,
+  controls.identifier = controls,
+  time.predictors.prior = pre_years,
+  time.optimize.ssr = pre_years,
+  time.plot = c(pre_years, post_years),
+  unit.names.variable = "statspai_unit"
+)
+
+sy <- Synth::synth(data.prep.obj = dp, optimxmethod = "BFGS", verbose = FALSE)
+w_unit <- as.numeric(sy$solution.w)
+donor_names <- units$statspai_unit[units$unit_num %in% controls]
+names(w_unit) <- donor_names
+
+Y0_synth <- dp$Y0plot %*% sy$solution.w
+Y1_treat <- dp$Y1plot
+gap <- Y1_treat - Y0_synth
+post_idx <- which(rownames(Y1_treat) %in% as.character(post_years))
+pre_idx <- which(rownames(Y1_treat) %in% as.character(pre_years))
+avg_post_gap <- mean(gap[post_idx])
+pre_rmse <- sqrt(mean(gap[pre_idx]^2))
+
+weights <- lapply(sort(donor_names), function(nm) {
+  list(unit = nm, weight = unname(w_unit[nm]))
+})
+
+payload <- list(
+  estimate = as.numeric(avg_post_gap),
+  pre_rmse = as.numeric(pre_rmse),
+  n_obs = nrow(df),
+  n_time_periods = length(unique(df$statspai_time)),
+  n_donors = length(controls),
+  n_pre_periods = length(pre_years),
+  n_post_periods = length(post_years),
+  weights = weights
+)
+jsonlite::write_json(
+  payload,
+  output_path,
+  auto_unbox = TRUE,
+  null = "null",
+  na = "null",
+  digits = 16
+)
+'''
+
+    rscript = _find_rscript()
+    with tempfile.TemporaryDirectory(prefix="statspai_synth_") as tmp:
+        tmp_path = Path(tmp)
+        data_path = tmp_path / "panel.csv"
+        script_path = tmp_path / "synth_backend.R"
+        out_path = tmp_path / "result.json"
+        panel_df.to_csv(data_path, index=False)
+        script_path.write_text(r_script, encoding="utf-8")
+
+        proc = subprocess.run(
+            [
+                rscript,
+                str(script_path),
+                str(data_path),
+                str(out_path),
+                str(treated_unit),
+                str(float(treatment_time)),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                "R Synth backend failed. stderr:\n"
+                f"{proc.stderr.strip()}"
+            )
+        payload = json.loads(out_path.read_text(encoding="utf-8"))
+
+    weight_df = pd.DataFrame(payload["weights"]).sort_values(
+        "weight", ascending=False
+    ).reset_index(drop=True)
+    pre_rmse = float(payload["pre_rmse"])
+    model_info = {
+        "backend": "synth",
+        "r_package": "Synth",
+        "validation_tier": "reference_backend_bridge",
+        "reference_backend": "Synth",
+        "validation_note": (
+            "This result delegates to Synth::dataprep and Synth::synth. It "
+            "is useful for exact reference-package numbers, but it is not "
+            "counted as native Python parity evidence because the reference "
+            "backend is the estimator itself."
+        ),
+        "optimxmethod": "BFGS",
+        "n_donors": int(payload["n_donors"]),
+        "n_pre_periods": int(payload["n_pre_periods"]),
+        "n_post_periods": int(payload["n_post_periods"]),
+        "pre_treatment_rmse": pre_rmse,
+        "pre_treatment_mspe": pre_rmse ** 2,
+        "treatment_time": treatment_time,
+        "treated_unit": treated_unit,
+        "weights": weight_df,
+    }
+
+    return CausalResult(
+        method="Synthetic Control Method (R Synth reference backend)",
+        estimand="ATT",
+        estimate=float(payload["estimate"]),
+        se=float("nan"),
+        pvalue=float("nan"),
+        ci=(float("nan"), float("nan")),
+        alpha=alpha,
+        n_obs=int(payload["n_time_periods"]),
+        detail=weight_df,
+        model_info=model_info,
+        _citation_key="synth",
+    )
 
 
 class SyntheticControl:
@@ -1039,6 +1274,16 @@ class SyntheticControl:
 
         # --- Model info ---
         model_info: Dict[str, Any] = {
+            "backend": "native",
+            "validation_tier": "identification_dependent_native",
+            "reference_backend": "Synth",
+            "validation_note": (
+                "Native classical SCM is certified on uniquely identified "
+                "synthetic-control DGPs. Empirical applications with "
+                "non-unique V/W solutions, including the Basque parity row, "
+                "are treated as T4 non-uniqueness disclosures; use "
+                "backend='synth' when exact R Synth numbers are required."
+            ),
             "n_donors": len(self.donor_units),
             "n_pre_periods": int(self.pre_mask.sum()),
             "n_post_periods": int(self.post_mask.sum()),

@@ -90,10 +90,11 @@ def rddensity(
         H0: f_+(c) = f_-(c)  (no density discontinuity)
         H1: f_+(c) ≠ f_-(c)  (manipulation at cutoff)
 
-    Advantages over McCrary (2008):
+    Native-path differences from McCrary (2008):
     - No arbitrary binning step
-    - Data-driven bandwidth with formal optimality
-    - Bias-corrected inference
+    - Dependency-light pilot bandwidth selector
+    - Local-density approximation with explicit T4 parity disclosure;
+      use ``backend="r"`` for exact ``rddensity`` selector/test parity
 
     See Cattaneo, Jansson & Ma (2020, *JASA*).
     """
@@ -146,6 +147,8 @@ def rddensity(
         'bandwidth_right': h_r,
         'bandwidth_source': h_source,
         'backend': 'native',
+        'validation_tier': 'T4_native_selector_disclosure',
+        'reference_backend': 'rddensity',
         'validation_note': (
             "StatsPAI native rddensity uses a dependency-light pilot "
             "bandwidth and local-density approximation; manual bandwidths "
@@ -215,7 +218,8 @@ def _rddensity_r_backend(
     h: Optional[Union[float, Sequence[float]]],
     alpha: float,
 ) -> CausalResult:
-    if shutil.which("Rscript") is None:
+    rscript = _find_rscript()
+    if rscript is None:
         raise ImportError("backend='r' requires Rscript and the R package rddensity.")
 
     X = data[x].values.astype(float)
@@ -286,7 +290,7 @@ cat(jsonlite::toJSON(out, auto_unbox = TRUE, digits = 16, null = "null"))
         h_r_arg = "NaN" if h_r is None else f"{h_r:.17g}"
         proc = subprocess.run(
             [
-                "Rscript",
+                rscript,
                 str(script_path),
                 str(csv_path),
                 f"{c:.17g}",
@@ -322,6 +326,14 @@ cat(jsonlite::toJSON(out, auto_unbox = TRUE, digits = 16, null = "null"))
         'bandwidth_right': float(out["bandwidth_right"]),
         'bandwidth_source': h_source,
         'backend': 'rddensity',
+        'validation_tier': 'reference_backend_bridge',
+        'reference_backend': 'rddensity',
+        'validation_note': (
+            "This result delegates to rddensity::rddensity. It is useful "
+            "for exact reference-package numbers, but it is not counted as "
+            "native Python parity evidence because the reference backend is "
+            "the estimator itself."
+        ),
         'polynomial_order': int(out["polynomial_order"]),
         'n_left': n_l,
         'n_right': n_r,
@@ -355,6 +367,21 @@ cat(jsonlite::toJSON(out, auto_unbox = TRUE, digits = 16, null = "null"))
     except Exception:  # pragma: no cover
         pass
     return _result
+
+
+def _find_rscript() -> Optional[str]:
+    """Return an Rscript executable, including the standard macOS R path."""
+    candidate = shutil.which("Rscript")
+    if candidate:
+        return candidate
+    for path in (
+        "/Library/Frameworks/R.framework/Resources/bin/Rscript",
+        "/usr/local/bin/Rscript",
+        "/opt/homebrew/bin/Rscript",
+    ):
+        if Path(path).exists():
+            return path
+    return None
 
 
 def _cjm_bandwidth(x, p):

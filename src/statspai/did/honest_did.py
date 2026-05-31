@@ -23,11 +23,16 @@ Parallel Trends."
 *American Economic Review: Insights*, 4(3), 305-322. [@roth2022pretest]
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+from typing import Optional, List
 
 import numpy as np
 import pandas as pd
-from scipy import stats, optimize
+from scipy import stats
 
 from ..core.results import CausalResult
 
@@ -38,6 +43,7 @@ def honest_did(
     m_grid: Optional[List[float]] = None,
     method: str = "smoothness",
     alpha: float = 0.05,
+    backend: str = "native",
 ) -> pd.DataFrame:
     """
     Rambachan & Roth (2023) sensitivity analysis for parallel trends.
@@ -64,6 +70,15 @@ def honest_did(
         - ``'relative_magnitude'``: |δ_post| ≤ M̄ × max|δ_pre|
     alpha : float, default 0.05
         Significance level.
+    backend : {'native', 'honestdid', 'r'}, default 'native'
+        ``'native'`` uses StatsPAI's dependency-light analytic
+        intervals. ``'honestdid'``/``'r'`` delegates to the R
+        ``HonestDiD`` package through ``Rscript`` and returns the
+        reference package's finite-sample conditional intervals. The
+        R backend is mainly useful when exact parity with
+        ``HonestDiD::createSensitivityResults_relativeMagnitudes`` is
+        required; the default native path remains available without an
+        R installation.
 
     Returns
     -------
@@ -106,6 +121,18 @@ def honest_did(
     Rambachan, A. and Roth, J. (2023). A more credible approach to parallel
     trends. *Review of Economic Studies*. [@rambachan2023more]
     """
+    backend_norm = backend.lower().replace("-", "_")
+    if backend_norm in {"r", "honestdid", "honest_did", "honestdid_r"}:
+        return _honest_did_r_backend(
+            result=result,
+            e=e,
+            m_grid=m_grid,
+            method=method,
+            alpha=alpha,
+        )
+    if backend_norm not in {"native", "statspai"}:
+        raise ValueError("backend must be 'native', 'honestdid', or 'r'.")
+
     es = _extract_event_study(result)
     z_crit = stats.norm.ppf(1 - alpha / 2)
 
@@ -178,6 +205,173 @@ def honest_did(
         )
 
     return pd.DataFrame(rows)
+
+
+def _honest_did_r_backend(
+    result: CausalResult,
+    e: int,
+    m_grid: Optional[List[float]],
+    method: str,
+    alpha: float,
+) -> pd.DataFrame:
+    """Run the R HonestDiD reference implementation for CI parity."""
+    rscript = _find_rscript()
+    if rscript is None:
+        raise ImportError(
+            "backend='honestdid' requires Rscript and the R package HonestDiD."
+        )
+
+    es = _extract_event_study(result)
+    target_row = es[es["relative_time"] == e]
+    if len(target_row) == 0:
+        raise ValueError(f"No event study estimate at relative time e={e}")
+
+    theta_hat = float(target_row["att"].iloc[0])
+    se_hat = float(target_row["se"].iloc[0])
+    if m_grid is None:
+        sigma = se_hat
+        m_grid = [0, 0.5 * sigma, sigma, 1.5 * sigma, 2.0 * sigma, 3.0 * sigma]
+
+    method_norm = method.lower().replace("-", "_")
+    if method_norm not in {"smoothness", "relative_magnitude", "relative_magnitudes"}:
+        raise ValueError(
+            f"method must be 'smoothness' or 'relative_magnitude', got '{method}'"
+        )
+
+    pre = es[es["relative_time"] < 0].sort_values("relative_time")
+    post = es[es["relative_time"] >= 0].sort_values("relative_time")
+    if len(pre) == 0:
+        raise ValueError("backend='honestdid' requires at least one pre-treatment period.")
+    if len(post) == 0 or e not in set(post["relative_time"].astype(int)):
+        raise ValueError("backend='honestdid' requires e to be a post-treatment period.")
+
+    r_code = r"""
+suppressPackageStartupMessages({
+  if (!requireNamespace("HonestDiD", quietly = TRUE)) {
+    stop("R package 'HonestDiD' is not installed")
+  }
+  if (!requireNamespace("jsonlite", quietly = TRUE)) {
+    stop("R package 'jsonlite' is not installed")
+  }
+})
+args <- commandArgs(trailingOnly = TRUE)
+input <- args[[1]]
+method <- args[[2]]
+alpha <- as.numeric(args[[3]])
+grid <- as.numeric(strsplit(args[[4]], ",", fixed = TRUE)[[1]])
+target_e <- as.numeric(args[[5]])
+df <- utils::read.csv(input)
+pre <- df[df$relative_time < 0, ]
+post <- df[df$relative_time >= 0, ]
+pre <- pre[order(pre$relative_time), ]
+post <- post[order(post$relative_time), ]
+if (nrow(pre) < 1 || nrow(post) < 1) {
+  stop("HonestDiD backend requires pre and post event-study periods")
+}
+post_idx <- which(post$relative_time == target_e)
+if (length(post_idx) != 1) {
+  stop("target e must match exactly one post-treatment period")
+}
+betahat <- c(pre$att, post$att)
+ses <- c(pre$se, post$se)
+sigma <- diag(ses^2)
+l_vec <- rep(0, nrow(post))
+l_vec[post_idx] <- 1
+l_vec <- matrix(l_vec, ncol = 1)
+if (method == "relative_magnitude") {
+  sens <- suppressWarnings(
+    HonestDiD::createSensitivityResults_relativeMagnitudes(
+      betahat = betahat,
+      sigma = sigma,
+      numPrePeriods = nrow(pre),
+      numPostPeriods = nrow(post),
+      l_vec = l_vec,
+      Mbarvec = grid,
+      alpha = alpha
+    )
+  )
+  out <- data.frame(M = sens$Mbar, ci_lower = sens$lb, ci_upper = sens$ub)
+} else {
+  sens <- suppressWarnings(
+    HonestDiD::createSensitivityResults(
+      betahat = betahat,
+      sigma = sigma,
+      numPrePeriods = nrow(pre),
+      numPostPeriods = nrow(post),
+      l_vec = l_vec,
+      Mvec = grid,
+      method = "FLCI",
+      alpha = alpha
+    )
+  )
+  out <- data.frame(M = sens$M, ci_lower = sens$lb, ci_upper = sens$ub)
+}
+cat(jsonlite::toJSON(out, dataframe = "rows", auto_unbox = TRUE,
+                     digits = 16, null = "null"))
+"""
+
+    with tempfile.TemporaryDirectory(prefix="statspai-honestdid-") as tmp:
+        tmp_path = Path(tmp)
+        csv_path = tmp_path / "event_study.csv"
+        script_path = tmp_path / "run_honestdid.R"
+        es[["relative_time", "att", "se"]].to_csv(csv_path, index=False)
+        script_path.write_text(r_code, encoding="utf-8")
+        grid_arg = ",".join(f"{float(m):.17g}" for m in m_grid)
+        method_arg = (
+            "relative_magnitude"
+            if method_norm in {"relative_magnitude", "relative_magnitudes"}
+            else "smoothness"
+        )
+        proc = subprocess.run(
+            [
+                rscript,
+                str(script_path),
+                str(csv_path),
+                method_arg,
+                f"{alpha:.17g}",
+                grid_arg,
+                f"{float(e):.17g}",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    if proc.returncode != 0:
+        raise RuntimeError(
+            "backend='honestdid' failed while running the R HonestDiD package: "
+            f"{proc.stderr.strip() or proc.stdout.strip()}"
+        )
+
+    out = json.loads(proc.stdout)
+    rows = []
+    for item in out:
+        ci_lower = float(item["ci_lower"])
+        ci_upper = float(item["ci_upper"])
+        rows.append(
+            {
+                "M": float(item["M"]),
+                "ci_lower": ci_lower,
+                "ci_upper": ci_upper,
+                "rejects_zero": not (ci_lower <= 0 <= ci_upper),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _find_rscript() -> Optional[str]:
+    """Return an Rscript executable, including the standard macOS R path."""
+    candidate = shutil.which("Rscript")
+    if candidate:
+        return candidate
+    for path in (
+        "/Library/Frameworks/R.framework/Resources/bin/Rscript",
+        "/usr/local/bin/Rscript",
+        "/opt/homebrew/bin/Rscript",
+    ):
+        if Path(path).exists():
+            return path
+    return None
 
 
 def breakdown_m(
