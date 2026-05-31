@@ -13,11 +13,11 @@
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/statspai?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/statspai)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19933900-blue.svg)](https://doi.org/10.5281/zenodo.19933900)
 
-StatsPAI is a **validation-tiered** Python platform for causal inference and applied econometrics. One `import`, **1,000+ registered functions** across **80+ submodules** (live count: `python scripts/registry_stats.py`), covering the empirical research workflow from classical econometrics to ML/AI causal methods to manuscript-ready tables in Word, Excel, and LaTeX.
+StatsPAI is a **validation-tiered** Python platform for causal inference and applied econometrics. One `import`, **1,000+ registered functions** across **80+ submodules** (live count: `python scripts/registry_stats.py`), spanning classical econometrics, ML/AI causal methods, and reporting utilities for Word, Excel, and LaTeX.
 
 **Built for AI agents**: every registered function has machine-readable discovery metadata (`list_functions()`, `describe_function()`, `function_schema()`), and parity-backed functions expose an explicit `validation_status` so agents and humans can distinguish certified numerical evidence from API-stable breadth.
 
-It brings R's [Causal Inference Task View](https://cran.r-project.org/web/views/CausalInference.html) (fixest, did, rdrobust, gsynth, DoubleML, MatchIt, CausalImpact, ...) and Stata's core econometrics commands into a single, consistent Python API.
+It places Python-native implementations, selected R-style causal workflows, and Stata-style econometric interfaces behind a shared import, registry, and reporting layer.
 
 ---
 
@@ -438,9 +438,9 @@ StatsPAI 1.4.0 is Sprint 2 of the 知识地图 v3 roadmap. Closes the four secon
 
 **Previously in v0.9.1 — Regression Discontinuity**: **18+ RD estimators, diagnostics, and inference methods across 14 modules (~10,300 LOC)**. This release expanded the RD API surface substantially; validation status still lives at the function and test-artifact level rather than in the breadth claim. Covers CCT sharp/fuzzy/kink, 2D/boundary RD (`rd2d`), RDIT, multi-cutoff & multi-score, honest CIs (Armstrong-Kolesar), local randomization (`rdrandinf`/`rdwinselect`/`rdsensitivity`), CJM density tests, Rosenbaum bounds, CATE via `rdhte` + ML variants (`rd_forest`/`rd_boost`/`rd_lasso`), external-validity extrapolation (Angrist-Rokkanen), power (`rdpower`/`rdsampsi`), and a diagnostic `sp.rdsummary()` dashboard. 97 RD tests pass; `rd/_core.py` consolidates kernel/WLS/sandwich primitives from 9 files into one 191-line canonical module.
 
-**Previously in v0.9.0 — Synthetic Control**: **20 SCM estimators + 6 inference strategies + analysis workflow**, all behind the unified `sp.synth(method=...)` dispatcher. Seven new estimators in this release: `bayesian_synth` (Dirichlet MCMC), `bsts_synth` / `causal_impact` (Kalman smoother), `penscm` (Abadie-L'Hour 2021), `fdid` (Forward DID), `cluster_synth`, `sparse_synth` (LASSO), `kernel_synth` + `kernel_ridge_synth`. Research workflow: `synth_compare()` runs all 20 · `synth_recommend()` auto-selects · `synth_power()` + `synth_mde()` first power-analysis tool for SCM · `synth_sensitivity()` · `synth_report(format='latex')`. ASCM re-implemented to Ben-Michael et al. (2021) Eq. 3; Bayesian MCMC Jacobian corrected; 9 release-blocker fixes from a 5-agent review; 144 synth tests passing. Canonical datasets: `california_tobacco()`, `german_reunification()`, `basque_terrorism()`. See the [synth guide](https://github.com/brycewang-stanford/statspai/blob/main/docs/guides/synth.md).
+**Previously in v0.9.0 — Synthetic Control**: **20 SCM estimators + 6 inference strategies + analysis workflow**, all behind the unified `sp.synth(method=...)` dispatcher. Seven new estimators in this release: `bayesian_synth` (Dirichlet MCMC), `bsts_synth` / `causal_impact` (Kalman smoother), `penscm` (Abadie-L'Hour 2021), `fdid` (Forward DID), `cluster_synth`, `sparse_synth` (LASSO), `kernel_synth` + `kernel_ridge_synth`. Research workflow: `synth_compare()` runs all 20 · `synth_recommend()` auto-selects · `synth_power()` + `synth_mde()` power-analysis helpers for SCM · `synth_sensitivity()` · `synth_report(format='latex')`. ASCM re-implemented to Ben-Michael et al. (2021) Eq. 3; Bayesian MCMC Jacobian corrected; 9 release-blocker fixes from a 5-agent review; 144 synth tests passing. Canonical datasets: `california_tobacco()`, `german_reunification()`, `basque_terrorism()`. See the [synth guide](https://github.com/brycewang-stanford/statspai/blob/main/docs/guides/synth.md).
 
-**Previously in v0.8.0**: **Spatial Econometrics Full-Stack** — 38 new API symbols covering weights, ESDA, ML/GMM regression, GWR/MGWR, and spatial panel. Plus: local projections, GARCH, ARIMA, BVAR, LiNGAM, GES, optimal matching, cardinality matching, RIF decomposition, mediation sensitivity, Cox frailty, AFT survival, rdpower, survey calibration. **60+ new functions across 10 domains.**
+**Previously in v0.8.0**: **Spatial Econometrics Expansion** — 38 new API symbols covering weights, ESDA, ML/GMM regression, GWR/MGWR, and spatial panel. Plus: local projections, GARCH, ARIMA, BVAR, LiNGAM, GES, optimal matching, cardinality matching, RIF decomposition, mediation sensitivity, Cox frailty, AFT survival, rdpower, survey calibration. **60+ new functions across 10 domains.**
 
 ![StatsPAI interactive plot editor](https://raw.githubusercontent.com/brycewang-stanford/StatsPAI/main/docs/assets/StatsPAI-interactive.png)
 
@@ -599,7 +599,7 @@ Where a method exists in R, the development target is explicit parity evidence o
 | `did()` | Auto-dispatching DID (2×2 or staggered) | — |
 | `did_summary()` | One-call robustness comparison across CS/SA/BJS/ETWFE/Stacked | — |
 | `did_summary_plot()` | Forest plot of method-robustness summary | — |
-| `did_summary_to_markdown()` / `_to_latex()` | Publication-ready tables from `did_summary` | — |
+| `did_summary_to_markdown()` / `_to_latex()` | Formatted tables from `did_summary` | — |
 | `did_report()` | One-call bundle: txt + md + tex + png + json into a folder | — |
 | `did_2x2()` | Classic two-group, two-period DID | — |
 | `callaway_santanna()` | Staggered DID with heterogeneous effects | Callaway & Sant'Anna (2021) |
@@ -974,20 +974,20 @@ sp.subgroup_analysis(card, formula="lwage ~ educ + exper",
 
 | Advantage | Detail |
 | --- | --- |
-| **Unified API** | One package, one `import`, consistent `.summary()` / `.plot()` / `.to_latex()` across all methods. Stata requires paid add-ons; R requires 20+ packages with different interfaces. |
-| **Modern ML causal methods** | DML, Causal Forest, Meta-Learners (S/T/X/R/DR), TMLE, DeepIV, TARNet/CFRNet/DragonNet, Policy Trees — all in one place. Stata has almost none of these. R has them scattered across incompatible packages. |
+| **Unified API** | One package, one `import`, and shared `.summary()` / `.plot()` / `.to_latex()` conventions for mature result objects. Comparable Stata and R workflows often span multiple commands or packages. |
+| **Modern ML causal methods** | DML, Causal Forest, Meta-Learners (S/T/X/R/DR), TMLE, DeepIV, TARNet/CFRNet/DragonNet, and Policy Trees in the same registry, with method-specific validation status. |
 | **Accelerator-ready selected workloads** | Neural causal estimators can route through PyTorch CUDA/MPS, and HDFE residualization exposes a JAX backend, while preserving the estimator-specific result surface, diagnostics, and export API used by those workloads. |
-| **Robustness automation** | `spec_curve()`, `robustness_report()`, `subgroup_analysis()` — no manual re-running. Neither Stata nor R offers this out-of-the-box. |
+| **Robustness automation** | `spec_curve()`, `robustness_report()`, `subgroup_analysis()` bundle repeated specifications and diagnostics behind explicit result objects. |
 | **Free & open source** | MIT license, \$0. Stata costs \$695–\$1,595/year. |
 | **Python ecosystem** | Integrates naturally with pandas, scikit-learn, PyTorch, Jupyter, cloud pipelines. |
-| **Auto-citations** | Every causal method has `.cite()` returning the correct BibTeX. Neither Stata nor R does this. |
-| **Interactive Plot Editor** | `sp.interactive()` — Stata Graph Editor-style GUI in Jupyter with 29 themes and auto-generated reproducible code. Stata's Graph Editor can't export edits to do-file; R has no equivalent. |
+| **Auto-citations** | Many causal result objects expose `.cite()` with BibTeX for the implemented method. |
+| **Interactive Plot Editor** | `sp.interactive()` provides a Jupyter GUI with themes and reproducible-code export for supported plots. |
 
 ### Where Stata still wins
 
 | Advantage | Detail |
 | --- | --- |
-| **Battle-tested at scale** | 40+ years of production use in economics. Edge cases are well-handled. |
+| **Long production history** | 40+ years of production use in economics, with extensive manuals and field-tested workflows. |
 | **Speed on many CPU tabular workloads** | Stata's compiled backend and mature Stata/MP parallelism remain very strong for simple OLS/FE on large datasets. StatsPAI does not claim universal speed superiority. |
 | **Survey data & complex designs** | `svy:` prefix, stratification, clustering — Stata's survey support is unmatched. |
 | **Mature documentation** | Every command has a PDF manual with worked examples. Community is massive. |
@@ -999,10 +999,10 @@ sp.subgroup_analysis(card, formula="lwage ~ educ + exper",
 | --- | --- |
 | **Cutting-edge methods** | New econometric methods (e.g., `fixest`, `did2s`, `HonestDiD`) often appear in R first. |
 | **`ggplot2` visualization** | R's grammar of graphics is more flexible than matplotlib for complex figures. |
-| **`modelsummary`** | R's `modelsummary` is the gold standard for regression tables — StatsPAI's is close but not yet identical. |
+| **`modelsummary`** | R's `modelsummary` is a mature reference point for regression tables; StatsPAI's output layer is close but not yet identical. |
 | **Mature GPU ecosystem** | R has established torch/tensorflow/OpenCL routes, but they are package-specific. StatsPAI's accelerator story is newer and currently limited to selected JAX/PyTorch-backed workloads. |
 | **CRAN quality control** | R packages go through peer review. Python packages vary in quality. |
-| **Spatial econometrics** | ~~`spdep`, `spatialreg`~~ — **As of v0.8.0, StatsPAI matches R's 5-package spatial stack** (spdep + spatialreg + sphet + splm + GWmodel) in a single unified API, with numerical parity to PySAL spreg at rtol<1e-7 on the Columbus benchmark. |
+| **Spatial econometrics** | R's `spdep`, `spatialreg`, `sphet`, `splm`, and `GWmodel` ecosystem remains broader and older. StatsPAI covers weights, ESDA, ML/GMM models, GWR/MGWR, and spatial panel interfaces, with selected PySAL `spreg` parity checks on the Columbus benchmark. |
 
 ---
 
@@ -1170,8 +1170,8 @@ Previous methods — classic, penalized, demeaned, unconstrained, augmented (ASC
 
 - `synth_compare(df, ...)` — run every method at once, tabular + graphical comparison
 - `synth_recommend(df, ...)` — auto-select best estimator by pre-fit + robustness
-- `synth_report(result, format='markdown'|'latex'|'text')` — one-command manuscript-ready report
-- `synth_power(df, effect_sizes=[...])` — first power-analysis tool for SCM designs
+- `synth_report(result, format='markdown'|'latex'|'text')` — one-command structured report
+- `synth_power(df, effect_sizes=[...])` — power-analysis helper for SCM designs
 - `synth_mde(df, target_power=0.8)` — minimum detectable effect
 - `synth_sensitivity(result)` — LOO + time placebos + donor sensitivity + RMSPE filtering
 - Canonical datasets: `california_tobacco()`, `german_reunification()`, `basque_terrorism()`
@@ -1188,7 +1188,7 @@ Previous methods — classic, penalized, demeaned, unconstrained, augmented (ASC
 
 **Tests & validation:** 144 synth tests passing (new: 12-method cross-method consistency benchmark). Full suite: 1481 passed, 4 skipped, 0 failed. New guide: `docs/guides/synth.md` with a 20-method decision table.
 
-### v0.8.0 (2026-04-16) — Spatial Econometrics Full-Stack + 10-Domain Breadth Upgrade
+### v0.8.0 (2026-04-16) — Spatial Econometrics + 10-Domain Breadth Upgrade
 
 **60+ new functions, 450+ total API, 1,230+ tests passing. Largest release in StatsPAI history.**
 

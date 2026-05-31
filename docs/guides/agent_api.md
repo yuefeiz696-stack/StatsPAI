@@ -315,7 +315,7 @@ What the server exposes:
   example).
 - **`prompts/list` / `prompts/get`** — three curated workflow
   templates (`audit_did_result`, `design_then_estimate`,
-  `robustness_followup`) MCP clients surface as one-click buttons.
+  `robustness_followup`) MCP clients surface as direct action buttons.
 
 When an estimator raises a structured `StatsPAIError`, the
 `tools/call` response carries the full payload alongside legacy

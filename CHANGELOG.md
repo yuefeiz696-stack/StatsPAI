@@ -1166,7 +1166,7 @@ additions close the gap between `sp.rd` and the canonical R/Stata
     the same data; returns a tidy `pd.DataFrame` ready for
     `sp.outreg2` / `sp.modelsummary`.
   - `sp.rd_robustness_table` — sweep over kernel × bandwidth × poly
-    × donut, returning manuscript-ready specifications with
+    × donut, returning paper-facing specifications with
     `to_latex()` / `to_excel()` for one-shot supplemental tables.
 
 - **`sp.rdrobust` polish**:
@@ -6514,7 +6514,7 @@ gaps vs. Stata / R dominance.
 - `mr_radial` — Bowden (2018) radial reparameterization + Bonferroni-
   thresholded outlier flagging.
 
-**Target trial emulation — manuscript-ready report**
+**Target trial emulation — structured report**
 
 - `TargetTrialResult.to_paper(fmt=...)` / `sp.target_trial.to_paper` —
   render STROBE-compatible Methods + Results block in Markdown /
@@ -8452,7 +8452,7 @@ Release focus: `statspai.rd`. **18+ RD estimators, diagnostics, and inference me
 
 | Function | Purpose |
 |---|---|
-| `sp.rdsummary(df, ...)` | **One-click dashboard** — rdrobust + density test + bandwidth sensitivity + placebo cutoffs + covariate balance |
+| `sp.rdsummary(df, ...)` | **Single-call dashboard** — rdrobust + density test + bandwidth sensitivity + placebo cutoffs + covariate balance |
 | `sp.rdplot(df, ...)` | IMSE-optimal binned scatter with pointwise CI bands (Calonico, Cattaneo & Titiunik 2015, *JASA*) |
 | `sp.rddensity(df, ...)` | Cattaneo-Jansson-Ma (2020, *JASA*) manipulation test |
 | `sp.rdbalance(df, covs=[...])` | Covariate balance tests at cutoff |
@@ -8517,8 +8517,8 @@ Previous methods — classic, penalized, demeaned, unconstrained, augmented, SDI
 
 - `synth_compare(df, ...)` — run every method at once, tabular + graphical comparison
 - `synth_recommend(df, ...)` — auto-select best estimator by pre-fit + robustness
-- `synth_report(result, format='markdown'|'latex'|'text')` — one-command manuscript-ready report
-- `synth_power(df, effect_sizes=[...])` — first power-analysis tool for SCM designs
+- `synth_report(result, format='markdown'|'latex'|'text')` — one-command structured report
+- `synth_power(df, effect_sizes=[...])` — power-analysis helper for SCM designs
 - `synth_mde(df, target_power=0.8)` — minimum detectable effect
 - `synth_sensitivity(result)` — LOO + time placebos + donor sensitivity + RMSPE filtering
 - Three canonical datasets shipped: `california_tobacco()`, `german_reunification()`, `basque_terrorism()`
@@ -8555,7 +8555,7 @@ Decomposition and Regression Discontinuity modules received significant upgrades
 
 ## [0.8.0] - 2026-04-16
 
-### Spatial Econometrics Full-Stack + 10-Domain Breadth Upgrade
+### Spatial Econometrics + 10-Domain Breadth Upgrade
 
 **Largest release in StatsPAI history. 60+ new functions across 10 domains.**
 
@@ -8764,7 +8764,7 @@ release).
 - **`CSReport.to_markdown()`** — GitHub-flavoured Markdown export
   with proper integer-column rendering and a configurable
   `float_format`.
-- **`CSReport.to_latex()`** — manuscript-ready booktabs fragment
+- **`CSReport.to_latex()`** — formatted booktabs fragment
   wrapped in a `table` float.  Zero `jinja2` dependency (hand-rolled
   booktabs renderer); auto-escapes LaTeX special characters.
 - **`CSReport.to_excel()`** — six-sheet workbook (`Summary`,

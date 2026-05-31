@@ -1,21 +1,21 @@
 # Replication Workflow — Question → Estimate → Paper → Archive
 
 > One call to bundle data, code, environment, paper, citations, and
-> per-number provenance into a journal-ready replication archive.
+> per-number provenance into a submission-oriented replication archive.
 > Built for the AEA / AEJ data-editor checklist out of the box.
 
 This guide ties together the v1.7.2 export trinity:
 
 - `sp.paper(...)` / `q.paper()` — **data → draft** pipeline (Markdown,
   LaTeX, Quarto `.qmd`, Word).
-- `sp.replication_pack(...)` — **draft → journal-ready zip** with
+- `sp.replication_pack(...)` — **draft → submission-oriented zip** with
   manifest, hashes, environment lock, and lineage.
 - `sp.Provenance` / `sp.attach_provenance()` — **per-number traceability**
   back to the call that produced it.
 
 Plus the surrounding glue:
 
-- `sp.gt(result)` — `great_tables` adapter for publication-grade HTML
+- `sp.gt(result)` — `great_tables` adapter for formatted HTML
   / LaTeX tables.
 - `sp.csl_url(...)` / `sp.write_bib(...)` — CSL hub + `paper.bib`
   writer for Quarto citation rendering.
@@ -47,7 +47,7 @@ draft = sp.paper(df, "effect of trained on wage",
                  treatment="trained", y="wage",
                  fmt="qmd")  # Quarto-native output
 
-# 2. Draft → journal-ready replication archive
+# 2. Draft -> submission-oriented replication archive
 sp.replication_pack(draft, "submission.zip",
                     code="analysis.py")
 ```
@@ -134,7 +134,7 @@ explicit method):
 | Format   | Method                       | When                                    |
 | ---      | ---                          | ---                                     |
 | Markdown | `to_markdown()` / `.md`      | Quick review, GitHub gist               |
-| Quarto   | `to_qmd()` / `.qmd`          | Publication-grade pipeline (recommended)|
+| Quarto   | `to_qmd()` / `.qmd`          | Formatted pipeline (recommended)|
 | LaTeX    | `to_tex()` / `.tex`          | Direct overleaf submission              |
 | Word     | `to_docx(path)` / `.docx`    | Co-authors who only edit in Word        |
 
@@ -535,7 +535,7 @@ print(sp.get_provenance(r))   # None if not yet instrumented
 
 ## Tables — `sp.gt(result)` great_tables adapter
 
-For publication-grade HTML / LaTeX tables, pipe a `RegtableResult`
+For formatted HTML / LaTeX tables, pipe a `RegtableResult`
 through Posit's `great_tables`:
 
 ```python

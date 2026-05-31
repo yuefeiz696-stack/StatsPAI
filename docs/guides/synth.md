@@ -101,7 +101,7 @@ sp.synth_donor_sensitivity(res)  # random donor-pool subsampling
 sp.synth_rmspe_filter(res)       # drop high-residual placebos
 ```
 
-### One-click publication report
+### Structured report helper
 
 ```python
 sp.synth_report(res, format='markdown')   # 'text' | 'markdown' | 'latex'

@@ -23,7 +23,7 @@
 - `dag/llm_dag.py` only does *single-shot* merge of an oracle with a CI
   skeleton — no iteration, no per-edge confidence
 - `sp.causal()` produces an HTML/MD report but **does not** produce a
-  publication-ready TeX/Word section, and is not callable from a single
+  formatted TeX/Word section, and is not callable from a single
   user-facing entry point that takes data + a natural-language question
 - No `causal_text` module exists (text/embedding as treatment / outcome /
   confounder / measurement-error correction is unaddressed)

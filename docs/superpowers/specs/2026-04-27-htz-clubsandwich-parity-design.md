@@ -30,8 +30,8 @@ its current docstring (`src/statspai/fast/inference.py:743`) is honest:
 > implemented here. On moderate panels the two can differ by **50-100%**.
 
 For users who do paper replication / cross-language reproducibility against R
-clubSandwich, that 50-100% drift is unacceptable. The entire point of `sp.fast`
-parity claims is "drop-in replacement at machine precision".
+clubSandwich, that 50-100% drift is unacceptable. The parity target for
+`sp.fast` is reference-agreement at machine precision where that claim is made.
 
 ### 1.2 What this PR ships
 

@@ -195,7 +195,7 @@ r = sp.iv.iv_diag(
     random_state=42,
 )
 
-print(r.summary())            # publication-ready text panel
+print(r.summary())            # formatted text panel
 r.to_frame()                  # tidy DataFrame, one row per CI method
 r.plot("diagnostic")          # 2x2 panel: first-stage / AR / forest / leverage
 r.plot("forest")              # forest plot of all CI methods

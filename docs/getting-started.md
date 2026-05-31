@@ -1,6 +1,6 @@
 # Getting started — your first analysis in 5 minutes
 
-This page takes you from `pip install` to a manuscript-ready difference-in-
+This page takes you from `pip install` to a reproducible difference-in-
 differences estimate, with citation, in well under five minutes. Every code
 block below is runnable as-is against a bundled dataset.
 

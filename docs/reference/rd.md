@@ -69,7 +69,7 @@ sp.rdpower(df, y='y', x='x', c=0, tau=1.5)
 sp.rdsampsi(df, y='y', x='x', c=0, tau=1.5, power=0.80)
 ```
 
-## One-click dashboard
+## Single-call dashboard
 
 ```python
 sp.rdsummary(df, y='earnings', x='score', c=0)

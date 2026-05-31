@@ -1403,7 +1403,7 @@ For pyfixest-style native output, `sp.etable(*models, ...)` is the alternative; 
 
 ## §A. Epidemiology / public health pipeline (Mode A)
 
-> **Convention**: STROBE (observational) / TRIPOD-AI (prediction) reporting. The modern epi gold standard is **target-trial emulation** (Hernán & Robins) — write the protocol of the hypothetical RCT first, then emulate it with observational data using a doubly-robust estimator. Outcomes are commonly **risk differences, risk ratios, hazard ratios, or restricted mean survival time**, not just OLS coefficients. The skill mirrors the AER 8-section flow but swaps the Step-4 estimator stack and adds survival/MR-specific reporting rows.
+> **Convention**: STROBE (observational) / TRIPOD-AI (prediction) reporting. A modern epidemiology reference design is **target-trial emulation** (Hernán & Robins): write the protocol of the hypothetical RCT first, then emulate it with observational data using a doubly-robust estimator. Outcomes are commonly **risk differences, risk ratios, hazard ratios, or restricted mean survival time**, not just OLS coefficients. The skill mirrors the AER 8-section flow but swaps the Step-4 estimator stack and adds survival/MR-specific reporting rows.
 
 Running example: `statin_initiation → 5-yr_MACE` in an EHR cohort (`patient_id / index_date / age / sex / ldl_baseline / comorbidity_index / followup_days / event`). The exposure is time-varying, confounders are time-varying, and competing-risk censoring matters — the canonical setting where naïve OLS / Cox-with-baseline-adjustment is biased.
 
@@ -1485,7 +1485,7 @@ gcomp = sp.gformula(cohort, y="mace", treat="statin_initiation",
                     time_varying=["ldl_current"],
                     intervention="always_treat", reference="never_treat")
 
-# (3) TMLE — doubly robust, the modern gold standard.
+# (3) TMLE -- doubly robust targeted learning estimator.
 # Pass an sklearn-style library list for nuisance learners; statspai stacks them
 # internally via SuperLearner. Keep `outcome_library` and `propensity_library`
 # explicit so the reviewer can see your nuisance choices.
