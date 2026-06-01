@@ -22,7 +22,7 @@ affiliations:
     ror: 00f54p054
   - name: StatsPAI Inc., United States
     index: 2
-date: 31 May 2026
+date: 1 June 2026
 bibliography: paper.bib
 ---
 
@@ -78,7 +78,7 @@ through estimation, robustness, and publication output.
 `StatsPAI` addresses this gap for graduate students, applied
 economists, policy researchers, and data scientists who want a
 Python-native workflow without giving up the breadth of Stata or the
-methodological depth of R. The goal of StatsPAI is not to replace every specialized
+methodological depth of R. The goal of `StatsPAI` is not to replace every specialized
 implementation. Instead, it provides a coherent empirical workspace:
 shared formula conventions, compatible result surfaces for mature
 estimators, export methods where supported, citations attached to
@@ -142,9 +142,9 @@ PyPI under the MIT license.
 
 `StatsPAI` ships a concrete validation and community-readiness dossier
 built from two complementary tracks. The first is a cross-language
-parity harness that checks whether StatsPAI reproduces the numerical
+parity harness that checks whether `StatsPAI` reproduces the numerical
 output of established R and Stata implementations on identical inputs:
-a 51-module R-joined Track A parity table in which StatsPAI, R, and
+a 51-module R-joined Track A parity table in which `StatsPAI`, R, and
 Stata read the same input bytes, of which 43 modules also carry a
 frozen Stata sibling (plus one Python-Stata-only `xtabond` migration
 check, for 44 frozen Stata modules in total). On closed-form estimators
@@ -169,7 +169,7 @@ The near-term research impact is a more reproducible empirical workflow
 for applied policy evaluation. Because methods share one interface,
 researchers can compare estimators on the same data, export tables with
 the same metadata, and record the citations and assumptions attached to
-each analysis. StatsPAI is currently being used in an ongoing working
+each analysis. `StatsPAI` is currently being used in an ongoing working
 paper connected to the Rural Education Action Program at Stanford
 University, *Family contagion of screen time? Within-person evidence
 from six waves in China* (Wang, Zhang, and Hou, in preparation), which
@@ -212,7 +212,7 @@ The authors thank the Stanford Rural Education Action Program (REAP)
 research community and the CoPaper.AI team for feedback on early
 workflows. StatsPAI Inc. is the legal entity associated with the
 project, and CoPaper.AI is a commercial downstream product that may
-call the MIT-licensed StatsPAI package; the StatsPAI package itself is
+call the MIT-licensed `StatsPAI` package; the `StatsPAI` package itself is
 permanently open source under the MIT license. The authors are also
 grateful to the developers of NumPy, SciPy, Pandas, statsmodels,
 scikit-learn, linearmodels, PyTorch, JAX, and the broader open-source
