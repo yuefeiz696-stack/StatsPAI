@@ -199,3 +199,7 @@ CausalAgentBench/
 
 # Temp files
 MORNING_REPORT_2026-04-29.md
+
+# Local JOSS review-prep scratch (reviewer-by-name strategy notes; never publish
+# to this public repo — the JOSS reviewers actively watch it). Keep local only.
+.joss-review-notes/
