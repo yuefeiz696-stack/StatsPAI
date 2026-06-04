@@ -27,7 +27,7 @@ Blundell, R. and Bond, S. (1998). "Initial Conditions and Moment Restrictions."
 """
 
 import warnings
-from typing import Optional, List, Dict, Any, Tuple, Union
+from typing import Optional, List, Dict, Any, Tuple
 
 import numpy as np
 import pandas as pd
@@ -773,7 +773,6 @@ def _fit_cre(
             # Add time-specific deviations from the entity mean
             for t_val in time_vals[1:]:  # skip first to avoid collinearity
                 t_col = f'_cham_{var}_t{t_val}'
-                t_mean = df.loc[df[time] == t_val].groupby(entity)[var].transform('mean')
                 df[t_col] = 0.0
                 df.loc[df[time] == t_val, t_col] = (
                     df.loc[df[time] == t_val, var] -
